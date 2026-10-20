@@ -1,0 +1,56 @@
+# ---------- Sincronización ----------
+  .syncthing.*
+  .sync-conflict-*
+  *.sync-conflict-*
+  
+  # ---------- Archivos ocultos ----------
+  .fuse_hidden
+  .directory
+  
+  # ---------- Editores ----------
+  .vscode/
+  !.vscode/extensions.json
+  .idea/
+  *.swp
+  *.swo
+  *~
+  *.suo
+  *.ntvs*
+  *.njsproj
+  *.sln
+  *.sw?
+  .zk/
+  
+  # ---------- Logs ----------
+  logs
+  *.log
+  npm-debug.log*
+  yarn-debug.log*
+  yarn-error.log*
+  pnpm-debug.log*
+  lerna-debug.log*
+  
+  # ---------- Node / Build ----------
+  node_modules/
+  dist/
+  dist-ssr/
+  *.local
+  
+  # ---------- React / JS ----------
+  *.env
+  .env.*
+  coverage/
+  *.cache
+  .next/
+  out/
+  build/
+  
+  # ---------- Antigravity ----------
+  .antigravity/
+  .antigravity-cache/
+  .antigravity-temp/
+  
+  # ---------- Otros ----------
+  *.tmp
+  *.bak
+  *.old
