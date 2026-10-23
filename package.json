@@ -7,7 +7,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:init": "tsx db/scripts/init-db.ts",
+    "db:seed": "tsx db/scripts/seed-db.ts"
   },
   "repository": {
     "type": "git",
