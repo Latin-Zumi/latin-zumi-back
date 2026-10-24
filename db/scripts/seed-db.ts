@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { readdir, readFile } from 'node:fs/promises';
 import pg from 'pg';
 
@@ -42,7 +42,7 @@ try {
   try {
     await client.query('ROLLBACK');
   } catch {
-    // La conexi├│n podr├¡a no haberse establecido o estar cerrada.
+    // La conexión podría no haberse establecido o estar cerrada.
   }
   console.error(err instanceof Error ? err.message : err);
   process.exitCode = 1;

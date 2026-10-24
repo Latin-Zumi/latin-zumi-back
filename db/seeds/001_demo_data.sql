@@ -1,4 +1,4 @@
-﻿INSERT INTO accounts (id, user_id, currency, account_type)
+INSERT INTO accounts (id, user_id, currency, account_type)
 VALUES
     ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'USD', 'user'),
     ('10000000-0000-4000-8000-000000000002', NULL, 'USD', 'external'),
@@ -11,7 +11,7 @@ WITH new_transaction AS (
     VALUES (
         '30000000-0000-4000-8000-000000000001',
         'seed:demo:usd-deposit',
-        'Dep├│sito de demostraci├│n en USD',
+        'Depósito de demostración en USD',
         '2026-01-15T12:00:00Z'
     )
     ON CONFLICT (idempotency_key) DO NOTHING
@@ -30,7 +30,7 @@ WITH new_transaction AS (
     VALUES (
         '30000000-0000-4000-8000-000000000002',
         'seed:demo:cop-deposit',
-        'Dep├│sito de demostraci├│n en COP',
+        'Depósito de demostración en COP',
         '2026-01-16T12:00:00Z'
     )
     ON CONFLICT (idempotency_key) DO NOTHING
