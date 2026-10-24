@@ -1,7 +1,7 @@
 // Este módulo crea y configura la aplicación de Express
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { errorHandler } from './middleware/error-handler.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import { AppError } from './utils/AppError.js';
 
 export const app = express();
