@@ -16,7 +16,11 @@ export const openApiSpec = {
             in: 'path',
             required: true,
             description: 'Identificador UUID de la cuenta.',
-            schema: { type: 'string', format: 'uuid' },
+            schema: {
+              type: 'string',
+              format: 'uuid',
+              example: '10000000-0000-4000-8000-000000000001',
+            },
           },
         ],
         responses: {
@@ -27,6 +31,16 @@ export const openApiSpec = {
                 schema: {
                   type: 'object',
                   required: ['data'],
+                  example: {
+                    data: {
+                      id: '10000000-0000-4000-8000-000000000001',
+                      user_id: '20000000-0000-4000-8000-000000000001',
+                      currency: 'USD',
+                      account_type: 'user',
+                      allow_negative: false,
+                      balance: '125.00000000',
+                    },
+                  },
                   properties: {
                     data: {
                       type: 'object',
@@ -102,7 +116,11 @@ export const openApiSpec = {
             in: 'path',
             required: true,
             description: 'Identificador UUID de la cuenta.',
-            schema: { type: 'string', format: 'uuid' },
+            schema: {
+              type: 'string',
+              format: 'uuid',
+              example: '10000000-0000-4000-8000-000000000001',
+            },
           },
         ],
         responses: {
