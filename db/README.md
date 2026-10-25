@@ -1,5 +1,84 @@
 # Base de datos
 
+Esta guía concentra todo lo relacionado con la persistencia PostgreSQL del
+backend: modelo contable, configuración, migración, seeds y consultas de
+verificación.
+
+## Conceptos del ledger
+
+### ¿Qué es un asiento?
+
+Un **asiento** es un registro individual que representa cómo una operación
+afecta a una cuenta. En este proyecto, cada asiento corresponde a una fila de
+la tabla `entries` y contiene la cuenta afectada (`account_id`), el importe
+(`amount`), la moneda (`currency`) y la dirección (`direction`), que puede ser
+`debit` o `credit`.
+
+Un asiento no es una cuenta ni una transacción completa. Una **transacción** es
+el conjunto de asientos que describe una operación completa. Por ejemplo, un
+depósito de `125.00 USD` en una cuenta de usuario se representa con dos
+asientos dentro de una misma transacción:
+
+| Cuenta | Dirección | Importe | Efecto en el saldo |
+| --- | --- | ---: | ---: |
+| Cuenta externa | `debit` | `125.00 USD` | `-125.00` |
+| Cuenta del usuario | `credit` | `125.00 USD` | `+125.00` |
+
+La suma de los asientos debe quedar balanceada por moneda: el total debitado y
+el total acreditado deben ser iguales. El saldo se calcula a partir de los
+asientos confirmados, en lugar de guardar un número que se modifica
+directamente.
+
+### ¿Qué significa ledger append-only?
+
+`Append-only` significa **solo agregar**. Los registros nuevos se pueden
+añadir al ledger, pero los asientos históricos no se editan ni se borran. Si
+se comete un error, se registra un nuevo asiento de corrección o reversión en
+lugar de cambiar el asiento original.
+
+En este proyecto, PostgreSQL protege esa regla sobre `entries`: las
+operaciones de `UPDATE` y `DELETE` no modifican los asientos existentes. La
+vista `account_balances` vuelve a calcular los saldos desde el historial y un
+trigger diferido evita confirmar una transacción cuyos débitos y créditos no
+estén balanceados.
+
+### ¿Por qué se recomienda para movimientos de dinero?
+
+Este enfoque se recomienda especialmente para wallets, pagos y otros sistemas
+financieros porque conserva un historial auditable, permite reconstruir cómo
+se obtuvo un saldo, evita perder evidencia al sobrescribir movimientos y
+facilita investigar errores, reclamos o posibles fraudes.
+
+No significa que todos los datos deban ser inmutables ni que el sistema sea
+automáticamente seguro: la inmutabilidad se aplica aquí a los movimientos
+contables. El costo es que una corrección requiere registrar movimientos
+adicionales y consultar un historial potencialmente más grande. Ese costo suele
+ser preferible a perder trazabilidad en un sistema donde el saldo representa
+dinero.
+
+## Configuración
+
+El backend necesita Node.js, npm y PostgreSQL. Crea una base de datos y un
+usuario con permisos para crear el esquema y cargar los datos demo.
+
+Desde la raíz del proyecto, copia `.env.example` como `.env`:
+
+```sh
+cp .env.example .env
+```
+
+Configura estas variables:
+
+| Variable | Descripción | Valor predeterminado |
+| --- | --- | --- |
+| `DB_HOST` | Host de PostgreSQL | — |
+| `DB_PORT` | Puerto de PostgreSQL | `5432` |
+| `DB_NAME` | Nombre de la base de datos | — |
+| `DB_USER` | Usuario de PostgreSQL | — |
+| `DB_PASSWORD` | Contraseña de PostgreSQL | — |
+| `DB_MAX` | Máximo de conexiones del pool | `20` |
+| `PORT` | Puerto HTTP de Express | `3000` |
+
 ## Inicializar el esquema
 
 Configura `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` en el
@@ -9,6 +88,11 @@ archivo `.env`, y ejecuta:
 npm run db:init
 ```
 
+La migración [`migrations/001_ledger.sql`](./migrations/001_ledger.sql) crea
+las tablas `accounts`, `transactions` y `entries`, además de la vista
+`account_balances`. También define las restricciones de balance, el trigger
+diferido y las reglas que impiden modificar o eliminar asientos.
+
 ## Cargar datos de demostración
 
 Con el esquema inicializado, ejecuta:
@@ -17,7 +101,7 @@ Con el esquema inicializado, ejecuta:
 npm run db:seed
 ```
 
-El ejecutor aplica en orden alfabético los archivos `.sql` de `db/seeds/` dentro
+El ejecutor aplica en orden alfabético los archivos `.sql` de `seeds/` dentro
 de una transacción. Los seeds incluidos crean cuentas demo USD y COP y una
 transacción balanceada por moneda. Se pueden ejecutar varias veces: conservan
 los registros existentes y no duplican los datos de demostración.
@@ -32,3 +116,18 @@ ORDER BY currency, account_id;
 
 Los saldos demo esperados son `125.00 USD` y `500000.00 COP` en las cuentas de
 usuario, con los valores negativos correspondientes en las cuentas externas.
+
+## Archivos de base de datos
+
+```text
+db/
+├── migrations/001_ledger.sql  esquema y reglas del ledger
+├── seeds/001_demo_data.sql     cuentas y movimientos demo
+├── scripts/init-db.ts          ejecuta la migración
+└── scripts/seed-db.ts          ejecuta los seeds en orden
+```
+
+Los comandos deben ejecutarse desde la raíz del repositorio. La inicialización
+del esquema usa SQL directo y no está diseñada como una migración incremental;
+si el esquema ya existe, revisa el estado de la base antes de volver a ejecutar
+`npm run db:init`.
