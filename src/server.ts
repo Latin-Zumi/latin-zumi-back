@@ -16,7 +16,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 app.use(accountsRouter);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
-    next(new AppError('Ruta no encontrada', 404));
+  next(new AppError('Ruta no encontrada', 404));
 });
 
 app.use(errorHandler);
