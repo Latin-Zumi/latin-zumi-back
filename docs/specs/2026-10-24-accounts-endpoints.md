@@ -31,9 +31,13 @@ middleware de errores existente.
 ```ts
 export const accountsRouter = Router();
 
-accountsRouter.get('/accounts/:id', asyncHandler(getAccount));
 accountsRouter.get('/accounts/:id/balance', asyncHandler(getAccountBalance));
+accountsRouter.get('/accounts/:id', asyncHandler(getAccount));
 ```
+
+En la implementación, la ruta específica de `balance` se registra antes de la
+ruta parametrizada `/accounts/:id` para evitar que `balance` se interprete como
+el identificador de una cuenta.
 
 #### Controller: validación y respuestas HTTP
 
@@ -108,7 +112,7 @@ La ruta no tendrá SQL, y el controller no importará ni usará `pool`.
    inválido y cuenta inexistente.
 
 ## Cómo probar
-- [ ] Ejecutar `npm run build` sin errores de TypeScript.
+- [x] Ejecutar `npm run build` sin errores de TypeScript.
 - [ ] Consultar `GET /accounts/10000000-0000-4000-8000-000000000001` y recibir
   `200` con la cuenta demo USD y saldo `125.00000000`.
 - [ ] Consultar `GET /accounts/10000000-0000-4000-8000-000000000001/balance`
