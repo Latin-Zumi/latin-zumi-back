@@ -50,10 +50,10 @@ example: {
 3. Ejecutar `npm run build` y revisar Swagger UI.
 
 ## Cómo probar
-- [ ] Abrir `/api-docs` y confirmar que el parámetro muestra el ID real de la
+- [x] Abrir `/api-docs` y confirmar que el parámetro muestra el ID real de la
   cuenta demo.
-- [ ] Confirmar que el `Example Value` muestra IDs distintos.
-- [ ] Ejecutar `GET /accounts/{id}` usando el ejemplo y recibir `200` si el
+- [x] Confirmar que el `Example Value` muestra IDs distintos.
+- [x] Ejecutar `GET /accounts/{id}` usando el ejemplo y recibir `200` si el
   seed demo está cargado.
 - [x] Ejecutar `npm run build` sin errores.
 
