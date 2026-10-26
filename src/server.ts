@@ -4,6 +4,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { errorHandler } from './middleware/errorHandler.js';
 import { AppError } from './utils/AppError.js';
 import { accountsRouter } from './routes/accounts.route.js';
+import { transactionsRouter } from './routes/transactions.route.js';
 import swaggerUi from 'swagger-ui-express';
 import { openApiSpec } from './config/swagger.js';
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
 app.use(accountsRouter);
+app.use(transactionsRouter);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
   next(new AppError('Ruta no encontrada', 404));

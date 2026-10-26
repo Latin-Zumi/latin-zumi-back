@@ -8,13 +8,18 @@ import { AppError } from '../utils/AppError.js';
 
 const accountIdSchema = z.string().uuid();
 
-export async function getAccount(req: Request, res: Response) {
-  const parsedId = accountIdSchema.safeParse(req.params.id);
+function parseAccountId(value: string | string[] | undefined): string {
+  const parsedId = accountIdSchema.safeParse(value);
   if (!parsedId.success) {
     throw new AppError('ID de cuenta inválido', 400);
   }
 
-  const account = await getAccountById(parsedId.data);
+  return parsedId.data;
+}
+
+export async function getAccount(req: Request, res: Response) {
+  const accountId = parseAccountId(req.params.id);
+  const account = await getAccountById(accountId);
   if (!account) {
     throw new AppError('Cuenta no encontrada', 404);
   }
@@ -23,12 +28,8 @@ export async function getAccount(req: Request, res: Response) {
 }
 
 export async function getAccountBalance(req: Request, res: Response) {
-  const parsedId = accountIdSchema.safeParse(req.params.id);
-  if (!parsedId.success) {
-    throw new AppError('ID de cuenta inválido', 400);
-  }
-
-  const balance = await getBalanceByAccountId(parsedId.data);
+  const accountId = parseAccountId(req.params.id);
+  const balance = await getBalanceByAccountId(accountId);
   if (!balance) {
     throw new AppError('Cuenta no encontrada', 404);
   }
