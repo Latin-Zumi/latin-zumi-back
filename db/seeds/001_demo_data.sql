@@ -1,3 +1,12 @@
+INSERT INTO users (id, username, email, password_hash)
+VALUES (
+    '20000000-0000-4000-8000-000000000001',
+    'demo-user',
+    'demo@example.com',
+    'seed-only-not-for-authentication'
+)
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO accounts (id, user_id, currency, account_type)
 VALUES
     ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'USD', 'user'),

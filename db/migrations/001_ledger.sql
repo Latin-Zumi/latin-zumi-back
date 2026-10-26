@@ -1,3 +1,11 @@
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     user_id UUID,
@@ -15,7 +23,8 @@ CREATE TABLE accounts (
         user_id,
         currency,
         account_type
-    )
+    ),
+    CONSTRAINT accounts_user_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
 CREATE TABLE transactions (

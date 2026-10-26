@@ -6,6 +6,160 @@ export const openApiSpec = {
     description: 'Documentación de los endpoints de Latin Zumi.',
   },
   paths: {
+    '/users': {
+      post: {
+        summary: 'Registrar usuario y crear su billetera',
+        operationId: 'createUser',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['username', 'email', 'password'],
+                example: {
+                  username: 'ana.perez',
+                  email: 'ana@example.com',
+                  password: 'una-clave-segura',
+                  currency: 'COP',
+                },
+                properties: {
+                  username: {
+                    type: 'string',
+                    minLength: 3,
+                    maxLength: 30,
+                    pattern: '^[a-zA-Z0-9._-]+$',
+                  },
+                  email: { type: 'string', format: 'email', maxLength: 254 },
+                  password: {
+                    type: 'string',
+                    format: 'password',
+                    minLength: 8,
+                    maxLength: 128,
+                  },
+                  currency: {
+                    type: 'string',
+                    minLength: 3,
+                    maxLength: 3,
+                    default: 'COP',
+                    example: 'COP',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Usuario registrado y billetera creada con saldo cero.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['data'],
+                  example: {
+                    data: {
+                      user: {
+                        id: '20000000-0000-4000-8000-000000000003',
+                        username: 'ana.perez',
+                        email: 'ana@example.com',
+                      },
+                      account: {
+                        id: '10000000-0000-4000-8000-000000000003',
+                        user_id: '20000000-0000-4000-8000-000000000003',
+                        currency: 'COP',
+                        account_type: 'user',
+                        allow_negative: false,
+                        balance: '0',
+                      },
+                    },
+                  },
+                  properties: {
+                    data: {
+                      type: 'object',
+                      required: ['user', 'account'],
+                      properties: {
+                        user: {
+                          type: 'object',
+                          required: ['id', 'username', 'email'],
+                          properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            username: { type: 'string' },
+                            email: { type: 'string', format: 'email' },
+                          },
+                        },
+                        account: {
+                          type: 'object',
+                          required: [
+                            'id',
+                            'user_id',
+                            'currency',
+                            'account_type',
+                            'allow_negative',
+                            'balance',
+                          ],
+                          properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            user_id: { type: 'string', format: 'uuid' },
+                            currency: { type: 'string', example: 'COP' },
+                            account_type: { type: 'string', example: 'user' },
+                            allow_negative: { type: 'boolean', example: false },
+                            balance: {
+                              type: 'string',
+                              description: 'Saldo inicial serializado como texto.',
+                              example: '0',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'El payload de registro no cumple la validación.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    error: { type: 'string', example: 'Datos de registro inválidos' },
+                  },
+                },
+              },
+            },
+          },
+          '409': {
+            description: 'El username o email ya está registrado.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    error: { type: 'string', example: 'Username o email ya registrado' },
+                  },
+                },
+              },
+            },
+          },
+          '500': {
+            description: 'Error interno del servidor.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    error: { type: 'string', example: 'Error interno del servidor' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/accounts/{id}': {
       get: {
         summary: 'Consultar una cuenta',

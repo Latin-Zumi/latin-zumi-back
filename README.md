@@ -70,6 +70,22 @@ Con la configuración predeterminada, la API queda disponible en
 Todas las respuestas exitosas usan el formato `{ "data": ... }`. Los saldos
 se serializan como texto para conservar la precisión decimal de PostgreSQL.
 
+### Registrar usuario y billetera
+
+`POST /users`
+
+Registra un username y email, almacena un hash de la contraseña y crea una
+billetera asociada. `currency` es opcional y usa `COP` por defecto.
+
+```sh
+curl -X POST http://localhost:3000/users \
+  -H 'Content-Type: application/json' \\
+  -d '{"username":"ana.perez","email":"ana@example.com","password":"una-clave-segura","currency":"COP"}'
+```
+
+La respuesta `201` contiene los datos públicos del usuario y la cuenta creada.
+No incluye la contraseña ni su hash. La cuenta inicia con saldo `"0"`.
+
 ### Consultar una cuenta
 
 `GET /accounts/:id`

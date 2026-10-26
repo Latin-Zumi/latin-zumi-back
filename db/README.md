@@ -88,10 +88,13 @@ archivo `.env`, y ejecuta:
 npm run db:init
 ```
 
-La migración [`migrations/001_ledger.sql`](./migrations/001_ledger.sql) crea
-las tablas `accounts`, `transactions` y `entries`, además de la vista
-`account_balances`. También define las restricciones de balance, el trigger
-diferido y las reglas que impiden modificar o eliminar asientos.
+`db:init` crea el esquema inicial cuando la base está vacía y aplica las
+migraciones incrementales pendientes cuando ya existe. La migración
+[`migrations/001_ledger.sql`](./migrations/001_ledger.sql) crea el ledger y
+[`migrations/002_users.sql`](./migrations/002_users.sql) agrega usuarios y la
+relación con las cuentas. El esquema también incluye la vista
+`account_balances`, las restricciones de balance, el trigger diferido y las
+reglas que impiden modificar o eliminar asientos.
 
 ## Cargar datos de demostración
 
@@ -122,12 +125,13 @@ usuario, con los valores negativos correspondientes en las cuentas externas.
 ```text
 db/
 ├── migrations/001_ledger.sql  esquema y reglas del ledger
-├── seeds/001_demo_data.sql     cuentas y movimientos demo
-├── scripts/init-db.ts          ejecuta la migración
-└── scripts/seed-db.ts          ejecuta los seeds en orden
+├── migrations/002_users.sql   usuarios y relación con cuentas
+├── seeds/001_demo_data.sql    cuentas y movimientos demo
+├── scripts/init-db.ts         ejecuta esquema/migraciones
+└── scripts/seed-db.ts         ejecuta los seeds en orden
 ```
 
 Los comandos deben ejecutarse desde la raíz del repositorio. La inicialización
-del esquema usa SQL directo y no está diseñada como una migración incremental;
-si el esquema ya existe, revisa el estado de la base antes de volver a ejecutar
-`npm run db:init`.
+del esquema se ejecuta dentro de una transacción. En una base existente,
+`npm run db:init` omite la creación inicial y aplica `002_users.sql`; después
+puedes volver a ejecutar `npm run db:seed`.
