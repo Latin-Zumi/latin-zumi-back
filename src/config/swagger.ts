@@ -18,7 +18,7 @@ export const openApiSpec = {
                 type: 'object',
                 required: ['identifier', 'password'],
                 properties: {
-                  identifier: { type: 'string', example: 'ana.perez' },
+                  identifier: { type: 'string', example: 'usuario.registrado' },
                   password: { type: 'string', format: 'password' },
                 },
               },
@@ -117,8 +117,8 @@ export const openApiSpec = {
                 type: 'object',
                 required: ['username', 'email', 'password'],
                 example: {
-                  username: 'ana.perez',
-                  email: 'ana@example.com',
+                  username: 'usuario.prueba',
+                  email: 'usuario@example.com',
                   password: 'una-clave-segura',
                   currency: 'COP',
                 },
@@ -140,6 +140,7 @@ export const openApiSpec = {
                     type: 'string',
                     minLength: 3,
                     maxLength: 3,
+                    enum: ['USD', 'COP', 'ARS', 'EUR'],
                     default: 'COP',
                     example: 'COP',
                   },
@@ -159,13 +160,13 @@ export const openApiSpec = {
                   example: {
                     data: {
                       user: {
-                        id: '20000000-0000-4000-8000-000000000003',
-                        username: 'ana.perez',
-                        email: 'ana@example.com',
+                        id: '20000000-0000-4000-8000-000000000099',
+                        username: 'usuario.prueba',
+                        email: 'usuario@example.com',
                       },
                       account: {
-                        id: '10000000-0000-4000-8000-000000000003',
-                        user_id: '20000000-0000-4000-8000-000000000003',
+                        id: '10000000-0000-4000-8000-000000000099',
+                        user_id: '20000000-0000-4000-8000-000000000099',
                         currency: 'COP',
                         account_type: 'user',
                         allow_negative: false,
@@ -182,7 +183,7 @@ export const openApiSpec = {
                           type: 'object',
                           required: ['id', 'username', 'email'],
                           properties: {
-                            id: { type: 'string', format: 'uuid' },
+                        id: { type: 'string', format: 'uuid' },
                             username: { type: 'string' },
                             email: { type: 'string', format: 'email' },
                           },
@@ -200,7 +201,11 @@ export const openApiSpec = {
                           properties: {
                             id: { type: 'string', format: 'uuid' },
                             user_id: { type: 'string', format: 'uuid' },
-                            currency: { type: 'string', example: 'COP' },
+                            currency: {
+                              type: 'string',
+                              enum: ['USD', 'COP', 'ARS', 'EUR'],
+                              example: 'COP',
+                            },
                             account_type: { type: 'string', example: 'user' },
                             allow_negative: { type: 'boolean', example: false },
                             balance: {
@@ -293,7 +298,7 @@ export const openApiSpec = {
                       currency: 'USD',
                       account_type: 'user',
                       allow_negative: false,
-                      balance: '125.00000000',
+                      balance: '325.00000000',
                     },
                   },
                   properties: {
@@ -310,14 +315,18 @@ export const openApiSpec = {
                       properties: {
                         id: { type: 'string', format: 'uuid' },
                         user_id: { type: 'string', format: 'uuid', nullable: true },
-                        currency: { type: 'string', example: 'USD' },
+                        currency: {
+                          type: 'string',
+                          enum: ['USD', 'COP', 'ARS', 'EUR'],
+                          example: 'USD',
+                        },
                         account_type: { type: 'string', example: 'user' },
                         allow_negative: { type: 'boolean', example: false },
                         balance: {
                           type: 'string',
                           description:
                             'Saldo decimal serializado como texto; es "0" cuando la cuenta aún no tiene movimientos.',
-                          example: '125.00000000',
+                          example: '325.00000000',
                         },
                       },
                     },
@@ -395,7 +404,7 @@ export const openApiSpec = {
                     data: {
                       account_id: '10000000-0000-4000-8000-000000000001',
                       currency: 'USD',
-                      balance: '125.00000000',
+                      balance: '325.00000000',
                     },
                   },
                   properties: {
@@ -404,12 +413,16 @@ export const openApiSpec = {
                       required: ['account_id', 'currency', 'balance'],
                       properties: {
                         account_id: { type: 'string', format: 'uuid' },
-                        currency: { type: 'string', example: 'USD' },
+                        currency: {
+                          type: 'string',
+                          enum: ['USD', 'COP', 'ARS', 'EUR'],
+                          example: 'USD',
+                        },
                         balance: {
                           type: 'string',
                           description:
                             'Saldo decimal serializado como texto; es "0" cuando la cuenta aún no tiene movimientos.',
-                          example: '125.00000000',
+                          example: '325.00000000',
                         },
                       },
                     },
@@ -509,7 +522,7 @@ export const openApiSpec = {
                         'entries',
                       ],
                       properties: {
-                        id: { type: 'string', format: 'uuid' },
+                            id: { type: 'string', format: 'uuid' },
                         description: { type: 'string', nullable: true },
                         occurred_at: { type: 'string', format: 'date-time' },
                         entries: {
@@ -536,7 +549,11 @@ export const openApiSpec = {
                                 type: 'string',
                                 enum: ['debit', 'credit'],
                               },
-                              currency: { type: 'string', example: 'USD' },
+                              currency: {
+                                type: 'string',
+                                enum: ['USD', 'COP', 'ARS', 'EUR'],
+                                example: 'USD',
+                              },
                               created_at: { type: 'string', format: 'date-time' },
                             },
                           },

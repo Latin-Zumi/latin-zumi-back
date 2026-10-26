@@ -48,10 +48,10 @@ este fragmento muestra la forma de un movimiento COP:
 WITH tx AS (
   INSERT INTO transactions (id, idempotency_key, description, occurred_at)
   VALUES (
-    '30000000-0000-4000-8000-000000000010',
-    'seed:ana:cop:deposit-1',
-    'Depósito demo COP 1',
-    '2026-02-01T12:00:00Z'
+    '30000000-0000-4000-8000-000000000104',
+    'seed:portfolio:02:cop:movement-1',
+    'Movimiento demo COP 1',
+    '2026-02-04T12:00:00Z'
   )
   ON CONFLICT (idempotency_key) DO NOTHING
   RETURNING id
@@ -60,8 +60,8 @@ INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
 SELECT tx.id, movement.account_id, movement.amount, movement.direction, 'COP'
 FROM tx
 CROSS JOIN (VALUES
-  ('10000000-0000-4000-8000-000000000020'::uuid, 25000.00::numeric, 'debit'),
-  ('10000000-0000-4000-8000-000000000010'::uuid, 25000.00::numeric, 'credit')
+  ('10000000-0000-4000-8000-000000000004'::uuid, 500000.00::numeric, 'debit'),
+  ('10000000-0000-4000-8000-000000000003'::uuid, 500000.00::numeric, 'credit')
 ) AS movement(account_id, amount, direction);
 ```
 
@@ -119,26 +119,34 @@ ORDER BY a.currency, u.username;
    comprobar idempotencia y consultar cuentas, balances y entries.
 
 ## Cómo probar
-- [ ] Migraciones, seeds, README y Swagger no presentan asociaciones de UUID o
+- [x] Migraciones, seeds, README y Swagger no presentan asociaciones de UUID o
   monedas contradictorias.
-- [ ] Un código distinto de `USD`, `COP`, `ARS` y `EUR` se rechaza al registrar
+- [x] Un código distinto de `USD`, `COP`, `ARS` y `EUR` se rechaza al registrar
   usuario y al insertar cuenta o entry.
-- [ ] `npm run db:init` y `npm run db:seed` terminan correctamente en una base
-  de desarrollo limpia y en una base de desarrollo con el esquema previo.
-- [ ] Hay al menos seis cuentas de usuario, las cuatro monedas están
+- [x] `npm run db:init` y `npm run db:seed` terminan correctamente en la base
+  de desarrollo existente con el esquema previo; las cuatro migraciones y dos
+  ejecuciones del seed también se verifican en un esquema temporal limpio.
+- [x] Hay al menos seis cuentas de usuario, las cuatro monedas están
   representadas y cada cuenta participa en al menos tres transacciones.
-- [ ] Todas las transacciones seeded tienen débitos y créditos iguales por
+- [x] Todas las transacciones seeded tienen débitos y créditos iguales por
   moneda, y ningún entry está en una moneda distinta de la cuenta afectada.
-- [ ] Ejecutar `npm run db:seed` por segunda vez no duplica usuarios, cuentas,
+- [x] Ejecutar `npm run db:seed` por segunda vez no duplica usuarios, cuentas,
   transacciones ni entries.
-- [ ] Consultas de balance y transacción confirman saldos y entries esperados;
+- [x] Consultas de balance y transacción confirman saldos y entries esperados;
   los ejemplos Swagger y `db/README.md` coinciden con esos datos.
-- [ ] `npm run build` compila la validación de moneda y Swagger.
+- [x] `npm run build` compila la validación de moneda y Swagger.
 
 ## Riesgos / notas
+- No fue posible crear una base de datos temporal independiente porque el rol
+  PostgreSQL local no tiene permiso `CREATEDB`; la comprobación limpia se hizo
+  en un esquema temporal transaccional y se revirtió al terminar.
 - UUID ya existentes pueden identificar usuarios reales o tener referencias;
   no se reasignarán a otra persona. Si hay incompatibilidad en una base
   persistente, se preservarán sus filas y se añadirá la corrección compatible.
+- En la base local ya existía una cuenta COP de Ana con UUID generado por el
+  registro. El seed la localiza por username, conserva su UUID y le agrega tres
+  transacciones; por eso esa base tiene siete cuentas de usuario, mientras que
+  una base limpia queda con seis.
 - La restricción de moneda no debe permitir que `entries.currency` difiera de
   la moneda de su cuenta; el esquema actual no impone esa igualdad.
 - `entries` es append-only. La validación desde cero se hace en una base de

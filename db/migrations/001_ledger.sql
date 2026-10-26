@@ -10,6 +10,7 @@ CREATE TABLE accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     user_id UUID,
     currency CHAR(3) NOT NULL,
+    CONSTRAINT accounts_currency_supported CHECK (currency IN ('USD', 'COP', 'ARS', 'EUR')),
     account_type TEXT NOT NULL CHECK (
         account_type IN (
             'user',
@@ -24,6 +25,7 @@ CREATE TABLE accounts (
         currency,
         account_type
     ),
+    CONSTRAINT accounts_id_currency_unique UNIQUE (id, currency),
     CONSTRAINT accounts_user_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
@@ -43,6 +45,9 @@ CREATE TABLE entries (
         direction IN ('debit', 'credit')
     ),
     currency CHAR(3) NOT NULL,
+    CONSTRAINT entries_currency_supported CHECK (currency IN ('USD', 'COP', 'ARS', 'EUR')),
+    CONSTRAINT entries_account_currency_fk FOREIGN KEY (account_id, currency)
+        REFERENCES accounts (id, currency),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
