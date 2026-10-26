@@ -55,7 +55,7 @@ CREATE INDEX entries_transaction_id_idx ON entries (transaction_id);
 
 CREATE INDEX entries_account_currency_idx ON entries (account_id, currency);
 
-CREATE FUNCTION assert_transaction_balanced()
+CREATE OR REPLACE FUNCTION assert_transaction_balanced()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$

@@ -100,7 +100,10 @@ reglas que impiden modificar o eliminar asientos. La migración
 limita las nuevas cuentas y entries a USD, COP, ARS y EUR y exige que la moneda
 de cada entry coincida con la de su cuenta. En bases existentes, las
 restricciones se agregan como `NOT VALID`: preservan filas históricas y se
-aplican a filas nuevas.
+aplican a filas nuevas. [`migrations/005_single_user_account.sql`](./migrations/005_single_user_account.sql)
+garantiza una sola cuenta `user` activa por usuario; si una base histórica
+tiene varias, conserva las filas y cierra las cuentas adicionales sin borrar
+sus entries.
 
 ## Cargar datos de demostración
 
@@ -111,10 +114,9 @@ npm run db:seed
 ```
 
 El ejecutor aplica en orden alfabético los archivos `.sql` de `seeds/` dentro
-de una transacción. Los seeds incluidos crean seis cuentas de usuario,
+de una transacción. Los seeds incluidos crean una sola cuenta por usuario,
 distribuidas entre USD, COP, ARS y EUR, con tres movimientos por cuenta y
-entries balanceadas. Las dos cuentas históricas del usuario demo conservan
-también sus transacciones anteriores. Se pueden ejecutar varias veces:
+entries balanceadas. Se pueden ejecutar varias veces:
 conservan los registros existentes y no duplican los movimientos demo.
 Las identidades sembradas usan valores de hash que no sirven para iniciar
 sesión; crea un usuario desde `POST /users` para probar autenticación.
@@ -127,13 +129,18 @@ FROM account_balances
 ORDER BY currency, account_id;
 ```
 
-Los saldos demo esperados en las cuentas de usuario son: cuenta `...0001`,
-`325.00 USD`; `...0003`, `1100000.00 COP`; `...0005`, `170000.00 ARS`;
-`...0006`, `155.00 EUR`; `...0007`, `125.00 USD`; y `...0008`,
-`230000.00 COP`. Las cuentas externas tienen los valores negativos
-correspondientes. Si Ana ya tenía una cuenta COP con otro UUID antes de cargar
-estos seeds, se conserva ese ID y se le agregan tres movimientos COP; en una
-base limpia no se crea esa cuenta adicional.
+En una base limpia, los saldos demo esperados en las cuentas de usuario son:
+cuenta `...0001`, `200.00 USD`; `...0005`, `170000.00 ARS`; `...0006`,
+`155.00 EUR`; `...0007`, `125.00 USD`; y `...0008`, `230000.00 COP`. Las
+cuentas externas tienen los valores negativos correspondientes.
+
+En una base existente, la migración puede conservar como activa una cuenta
+creada previamente si su moneda tiene prioridad. Por ejemplo, si Ana ya tenía
+una cuenta COP creada por registro y además existe la cuenta seeded ARS
+`...0005`, la cuenta COP permanece activa y la ARS queda cerrada; sus entries y
+su saldo histórico se conservan, pero la cuenta ARS no se muestra como wallet
+activa. Por eso los UUIDs y saldos activos pueden diferir entre una base limpia
+y una base histórica sin que existan huérfanos.
 
 ## Archivos de base de datos
 
@@ -143,7 +150,8 @@ db/
 ├── migrations/002_users.sql   usuarios y relación con cuentas
 ├── migrations/003_auth_sessions.sql sesiones revocables
 ├── migrations/004_supported_currencies.sql monedas admitidas e integridad
-├── seeds/001_demo_data.sql    seis cuentas y movimientos demo
+├── migrations/005_single_user_account.sql una cuenta user activa por usuario
+├── seeds/001_demo_data.sql    cuentas únicas y movimientos demo
 ├── scripts/init-db.ts         ejecuta esquema/migraciones
 └── scripts/seed-db.ts         ejecuta los seeds en orden
 ```
@@ -152,4 +160,5 @@ Los comandos deben ejecutarse desde la raíz del repositorio. La inicialización
 del esquema se ejecuta dentro de una transacción. En una base existente,
 `npm run db:init` omite la creación inicial y aplica las migraciones
 incrementales `002_users.sql`, `003_auth_sessions.sql` y
-`004_supported_currencies.sql`; después puedes ejecutar `npm run db:seed`.
+`004_supported_currencies.sql`, `005_single_user_account.sql`; después puedes
+ejecutar `npm run db:seed`.

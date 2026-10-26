@@ -53,6 +53,12 @@ try {
   );
   await client.query(supportedCurrenciesMigration);
 
+  const singleUserAccountMigration = await readFile(
+    new URL('../migrations/005_single_user_account.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(singleUserAccountMigration);
+
   await client.query('COMMIT');
   console.log('Schema y migraciones aplicados');
 } catch (err: unknown) {

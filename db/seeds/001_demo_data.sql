@@ -12,7 +12,6 @@ SELECT seed.account_id, owner.id, seed.currency, seed.account_type
   FROM (VALUES
     ('10000000-0000-4000-8000-000000000001'::UUID, 'demo-user', 'USD', 'user'),
     ('10000000-0000-4000-8000-000000000002'::UUID, NULL, 'USD', 'external'),
-    ('10000000-0000-4000-8000-000000000003'::UUID, 'demo-user', 'COP', 'user'),
     ('10000000-0000-4000-8000-000000000004'::UUID, NULL, 'COP', 'external'),
     ('10000000-0000-4000-8000-000000000005'::UUID, 'ana.perez', 'ARS', 'user'),
     ('10000000-0000-4000-8000-000000000006'::UUID, 'luca.fernandez', 'EUR', 'user'),
@@ -40,53 +39,6 @@ WITH tx AS (
       ) AS movement(account_id, amount, direction, currency)
     RETURNING id
 ) SELECT COUNT(*) FROM inserted_entries;
-
--- Ana may already have a wallet from a prior registration with a generated
--- UUID. Resolve her COP account by username and preserve that existing ID.
-WITH target AS (
-    SELECT a.id AS account_id
-      FROM accounts a
-      JOIN users u ON u.id = a.user_id
-     WHERE u.username = 'ana.perez'
-       AND a.currency = 'COP'
-       AND a.account_type = 'user'
-), movement AS (
-    SELECT * FROM (VALUES
-        (1, '201', 25000.00::NUMERIC),
-        (2, '202', 10000.00::NUMERIC),
-        (3, '203', 5000.00::NUMERIC)
-    ) AS valueset(number, suffix, amount)
-), tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    SELECT ('30000000-0000-4000-8000-' || lpad(movement.suffix, 12, '0'))::UUID,
-           'seed:legacy:ana:cop:movement-' || movement.number,
-           'Movimiento demo COP Ana ' || movement.number,
-           ('2026-03-' || lpad(movement.number::TEXT, 2, '0') || 'T12:00:00Z')::TIMESTAMPTZ
-      FROM target
-      CROSS JOIN movement
-    ON CONFLICT (idempotency_key) DO NOTHING
-    RETURNING id, idempotency_key
-), entry_rows AS (
-    SELECT tx.id AS transaction_id,
-           '10000000-0000-4000-8000-000000000004'::UUID AS account_id,
-           movement.amount,
-           'debit'::TEXT AS direction,
-           'COP'::CHAR(3) AS currency
-      FROM tx
-      JOIN movement ON tx.idempotency_key = 'seed:legacy:ana:cop:movement-' || movement.number
-    UNION ALL
-    SELECT tx.id,
-           target.account_id,
-           movement.amount,
-           'credit'::TEXT,
-           'COP'::CHAR(3)
-      FROM tx
-      JOIN target ON TRUE
-      JOIN movement ON tx.idempotency_key = 'seed:legacy:ana:cop:movement-' || movement.number
-)
-INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
-SELECT transaction_id, account_id, amount, direction, currency
-  FROM entry_rows;
 
 WITH tx AS (
     INSERT INTO transactions (id, idempotency_key, description, occurred_at)
@@ -116,54 +68,6 @@ WITH tx AS (
       CROSS JOIN (VALUES
         ('10000000-0000-4000-8000-000000000002'::UUID, 50.00::NUMERIC, 'debit', 'USD'),
         ('10000000-0000-4000-8000-000000000001'::UUID, 50.00::NUMERIC, 'credit', 'USD')
-      ) AS movement(account_id, amount, direction, currency)
-    RETURNING id
-) SELECT COUNT(*) FROM inserted_entries;
-
-WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000104', 'seed:portfolio:02:cop:movement-1', 'Movimiento demo COP 1', '2026-02-04T12:00:00Z')
-    ON CONFLICT (idempotency_key) DO NOTHING
-    RETURNING id
-), inserted_entries AS (
-    INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
-    SELECT tx.id, movement.account_id, movement.amount, movement.direction, movement.currency
-      FROM tx
-      CROSS JOIN (VALUES
-        ('10000000-0000-4000-8000-000000000004'::UUID, 500000.00::NUMERIC, 'debit', 'COP'),
-        ('10000000-0000-4000-8000-000000000003'::UUID, 500000.00::NUMERIC, 'credit', 'COP')
-      ) AS movement(account_id, amount, direction, currency)
-    RETURNING id
-) SELECT COUNT(*) FROM inserted_entries;
-
-WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000105', 'seed:portfolio:02:cop:movement-2', 'Movimiento demo COP 2', '2026-02-05T12:00:00Z')
-    ON CONFLICT (idempotency_key) DO NOTHING
-    RETURNING id
-), inserted_entries AS (
-    INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
-    SELECT tx.id, movement.account_id, movement.amount, movement.direction, movement.currency
-      FROM tx
-      CROSS JOIN (VALUES
-        ('10000000-0000-4000-8000-000000000004'::UUID, 20000.00::NUMERIC, 'debit', 'COP'),
-        ('10000000-0000-4000-8000-000000000003'::UUID, 20000.00::NUMERIC, 'credit', 'COP')
-      ) AS movement(account_id, amount, direction, currency)
-    RETURNING id
-) SELECT COUNT(*) FROM inserted_entries;
-
-WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000106', 'seed:portfolio:02:cop:movement-3', 'Movimiento demo COP 3', '2026-02-06T12:00:00Z')
-    ON CONFLICT (idempotency_key) DO NOTHING
-    RETURNING id
-), inserted_entries AS (
-    INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
-    SELECT tx.id, movement.account_id, movement.amount, movement.direction, movement.currency
-      FROM tx
-      CROSS JOIN (VALUES
-        ('10000000-0000-4000-8000-000000000004'::UUID, 80000.00::NUMERIC, 'debit', 'COP'),
-        ('10000000-0000-4000-8000-000000000003'::UUID, 80000.00::NUMERIC, 'credit', 'COP')
       ) AS movement(account_id, amount, direction, currency)
     RETURNING id
 ) SELECT COUNT(*) FROM inserted_entries;
