@@ -187,8 +187,8 @@ esquemas de cada campo de respuesta.
 5. Documentar el endpoint en OpenAPI y verificar compilación y respuestas.
 
 ## Cómo probar
-- [ ] Ejecutar `npm run build` sin errores de TypeScript.
-- [ ] Consultar la transacción demo
+- [x] Ejecutar `npm run build` sin errores de TypeScript.
+- [x] Consultar la transacción demo
   `30000000-0000-4000-8000-000000000001` y recibir `200`, la cabecera y sus
   dos asientos USD.
 - [ ] Confirmar que los importes de los asientos se serializan como texto.
