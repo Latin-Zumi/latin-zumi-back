@@ -38,16 +38,12 @@ export async function getAccountById(
 export async function getBalanceByAccountId(
   accountId: string,
 ): Promise<AccountBalance | null> {
-  const result = await pool.query<AccountBalance>(
-    `SELECT a.id AS account_id,
-            RTRIM(a.currency) AS currency,
-            COALESCE(b.balance, 0)::text AS balance
-       FROM accounts a
-       LEFT JOIN account_balances b
-         ON b.account_id = a.id AND b.currency = a.currency
-      WHERE a.id = $1`,
-    [accountId],
-  );
+  const account = await getAccountById(accountId);
+  if (!account) return null;
 
-  return result.rows[0] ?? null;
+  return {
+    account_id: account.id,
+    currency: account.currency,
+    balance: account.balance,
+  };
 }
