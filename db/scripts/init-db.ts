@@ -40,6 +40,13 @@ try {
     'utf8',
   );
   await client.query(usersMigration);
+
+  const authSessionsMigration = await readFile(
+    new URL('../migrations/003_auth_sessions.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(authSessionsMigration);
+
   await client.query('COMMIT');
   console.log('Schema y migraciones aplicados');
 } catch (err: unknown) {

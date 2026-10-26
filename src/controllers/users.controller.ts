@@ -1,11 +1,8 @@
-import { randomBytes, scrypt as scryptCallback } from 'node:crypto';
-import { promisify } from 'node:util';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { registerUser } from '../services/users.service.js';
 import { AppError } from '../utils/AppError.js';
-
-const scrypt = promisify(scryptCallback);
+import { hashPassword, isPasswordLongEnough } from '../utils/password.js';
 
 const registrationSchema = z.object({
   username: z
@@ -21,7 +18,7 @@ const registrationSchema = z.object({
     .email()
     .max(254)
     .transform((value) => value.toLowerCase()),
-  password: z.string().min(8).max(128),
+  password: z.string().max(128).refine(isPasswordLongEnough),
   currency: z
     .string()
     .trim()
@@ -30,12 +27,6 @@ const registrationSchema = z.object({
     .transform((value) => value.toUpperCase())
     .default('COP'),
 });
-
-async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString('hex');
-  const derivedKey = (await scrypt(password, salt, 64)) as Buffer;
-  return `scrypt$${salt}$${derivedKey.toString('hex')}`;
-}
 
 export async function createUser(req: Request, res: Response) {
   const parsed = registrationSchema.safeParse(req.body);
