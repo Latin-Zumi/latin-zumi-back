@@ -9,7 +9,8 @@ PostgreSQL.
 Actualmente el proyecto incluye:
 
 - Persistencia PostgreSQL basada en un ledger contable append-only.
-- Seeds idempotentes con cuentas demo en USD y COP.
+- Seeds idempotentes con seis cuentas de usuario y movimientos demo en USD,
+  COP, ARS y EUR.
 - Registro de usuario y billetera, login y logout con sesiones Bearer.
 - Consultas autenticadas de cuentas, saldos y transacciones propias.
 - Documentación interactiva OpenAPI/Swagger en `/api-docs`.
@@ -76,12 +77,13 @@ se serializan como texto para conservar la precisión decimal de PostgreSQL.
 
 Registra un username y email, almacena un hash de la contraseña y crea una
 billetera asociada. La contraseña debe tener entre 15 y 128 caracteres;
-`currency` es opcional y usa `COP` por defecto.
+`currency` es opcional, acepta `USD`, `COP`, `ARS` o `EUR` y usa `COP` por
+defecto.
 
 ```sh
 curl -X POST http://localhost:3000/users \
   -H 'Content-Type: application/json' \
-  -d '{"username":"ana.perez","email":"ana@example.com","password":"una-frase-de-acceso-larga","currency":"COP"}'
+  -d '{"username":"usuario.prueba","email":"usuario@example.com","password":"una-frase-de-acceso-larga","currency":"COP"}'
 ```
 
 La respuesta `201` contiene los datos públicos del usuario y la cuenta creada.
@@ -95,7 +97,7 @@ inicia sesión para obtener un token y consultar datos privados.
 ```sh
 curl -i -X POST http://localhost:3000/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"identifier":"ana.perez","password":"una-frase-de-acceso-larga"}'
+  -d '{"identifier":"usuario.prueba","password":"una-frase-de-acceso-larga"}'
 ```
 
 Usa el `access_token` devuelto como Bearer token en las rutas de cuenta,
@@ -142,7 +144,7 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
     "currency": "USD",
     "account_type": "user",
     "allow_negative": false,
-    "balance": "125.00000000"
+    "balance": "325.00000000"
   }
 }
 ```
@@ -163,7 +165,7 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/bala
   "data": {
     "account_id": "10000000-0000-4000-8000-000000000001",
     "currency": "USD",
-    "balance": "125.00000000"
+    "balance": "325.00000000"
   }
 }
 ```

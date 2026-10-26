@@ -95,7 +95,12 @@ migraciones incrementales pendientes cuando ya existe. La migración
 relación con las cuentas. [`migrations/003_auth_sessions.sql`](./migrations/003_auth_sessions.sql)
 agrega sesiones de autenticación. El esquema también incluye la vista
 `account_balances`, las restricciones de balance, el trigger diferido y las
-reglas que impiden modificar o eliminar asientos.
+reglas que impiden modificar o eliminar asientos. La migración
+[`migrations/004_supported_currencies.sql`](./migrations/004_supported_currencies.sql)
+limita las nuevas cuentas y entries a USD, COP, ARS y EUR y exige que la moneda
+de cada entry coincida con la de su cuenta. En bases existentes, las
+restricciones se agregan como `NOT VALID`: preservan filas históricas y se
+aplican a filas nuevas.
 
 ## Cargar datos de demostración
 
@@ -106,9 +111,13 @@ npm run db:seed
 ```
 
 El ejecutor aplica en orden alfabético los archivos `.sql` de `seeds/` dentro
-de una transacción. Los seeds incluidos crean cuentas demo USD y COP y una
-transacción balanceada por moneda. Se pueden ejecutar varias veces: conservan
-los registros existentes y no duplican los datos de demostración.
+de una transacción. Los seeds incluidos crean seis cuentas de usuario,
+distribuidas entre USD, COP, ARS y EUR, con tres movimientos por cuenta y
+entries balanceadas. Las dos cuentas históricas del usuario demo conservan
+también sus transacciones anteriores. Se pueden ejecutar varias veces:
+conservan los registros existentes y no duplican los movimientos demo.
+Las identidades sembradas usan valores de hash que no sirven para iniciar
+sesión; crea un usuario desde `POST /users` para probar autenticación.
 
 Para revisar los saldos:
 
@@ -118,8 +127,13 @@ FROM account_balances
 ORDER BY currency, account_id;
 ```
 
-Los saldos demo esperados son `125.00 USD` y `500000.00 COP` en las cuentas de
-usuario, con los valores negativos correspondientes en las cuentas externas.
+Los saldos demo esperados en las cuentas de usuario son: cuenta `...0001`,
+`325.00 USD`; `...0003`, `1100000.00 COP`; `...0005`, `170000.00 ARS`;
+`...0006`, `155.00 EUR`; `...0007`, `125.00 USD`; y `...0008`,
+`230000.00 COP`. Las cuentas externas tienen los valores negativos
+correspondientes. Si Ana ya tenía una cuenta COP con otro UUID antes de cargar
+estos seeds, se conserva ese ID y se le agregan tres movimientos COP; en una
+base limpia no se crea esa cuenta adicional.
 
 ## Archivos de base de datos
 
@@ -128,12 +142,14 @@ db/
 ├── migrations/001_ledger.sql  esquema y reglas del ledger
 ├── migrations/002_users.sql   usuarios y relación con cuentas
 ├── migrations/003_auth_sessions.sql sesiones revocables
-├── seeds/001_demo_data.sql    cuentas y movimientos demo
+├── migrations/004_supported_currencies.sql monedas admitidas e integridad
+├── seeds/001_demo_data.sql    seis cuentas y movimientos demo
 ├── scripts/init-db.ts         ejecuta esquema/migraciones
 └── scripts/seed-db.ts         ejecuta los seeds en orden
 ```
 
 Los comandos deben ejecutarse desde la raíz del repositorio. La inicialización
 del esquema se ejecuta dentro de una transacción. En una base existente,
-`npm run db:init` omite la creación inicial y aplica `002_users.sql`; después
-puedes volver a ejecutar `npm run db:seed`.
+`npm run db:init` omite la creación inicial y aplica las migraciones
+incrementales `002_users.sql`, `003_auth_sessions.sql` y
+`004_supported_currencies.sql`; después puedes ejecutar `npm run db:seed`.

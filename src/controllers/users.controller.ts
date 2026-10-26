@@ -20,11 +20,14 @@ const registrationSchema = z.object({
     .transform((value) => value.toLowerCase()),
   password: z.string().max(128).refine(isPasswordLongEnough),
   currency: z
-    .string()
-    .trim()
-    .length(3)
-    .regex(/^[a-zA-Z]{3}$/)
-    .transform((value) => value.toUpperCase())
+    .enum(['USD', 'COP', 'ARS', 'EUR'])
+    .or(
+      z
+        .string()
+        .trim()
+        .transform((value) => value.toUpperCase())
+        .pipe(z.enum(['USD', 'COP', 'ARS', 'EUR'])),
+    )
     .default('COP'),
 });
 

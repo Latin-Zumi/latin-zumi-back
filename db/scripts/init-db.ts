@@ -47,6 +47,12 @@ try {
   );
   await client.query(authSessionsMigration);
 
+  const supportedCurrenciesMigration = await readFile(
+    new URL('../migrations/004_supported_currencies.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(supportedCurrenciesMigration);
+
   await client.query('COMMIT');
   console.log('Schema y migraciones aplicados');
 } catch (err: unknown) {
