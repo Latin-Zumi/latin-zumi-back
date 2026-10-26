@@ -22,13 +22,32 @@ const client = new Client({
 
 try {
   await client.connect();
-  const sql: string = await readFile(
-    new URL('../migrations/001_ledger.sql', import.meta.url),
+  const existingSchema = await client.query<{ accounts_table: string | null }>(
+    "SELECT to_regclass('accounts')::text AS accounts_table",
+  );
+
+  await client.query('BEGIN');
+  if (!existingSchema.rows[0]?.accounts_table) {
+    const initialSchema = await readFile(
+      new URL('../migrations/001_ledger.sql', import.meta.url),
+      'utf8',
+    );
+    await client.query(initialSchema);
+  }
+
+  const usersMigration = await readFile(
+    new URL('../migrations/002_users.sql', import.meta.url),
     'utf8',
   );
-  await client.query(sql);
-  console.log('Schema creado');
+  await client.query(usersMigration);
+  await client.query('COMMIT');
+  console.log('Schema y migraciones aplicados');
 } catch (err: unknown) {
+  try {
+    await client.query('ROLLBACK');
+  } catch {
+    // La conexión podría no haberse establecido o estar cerrada.
+  }
   console.error(err instanceof Error ? err.message : err);
   process.exitCode = 1;
 } finally {
