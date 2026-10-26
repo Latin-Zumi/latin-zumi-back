@@ -92,7 +92,8 @@ npm run db:init
 migraciones incrementales pendientes cuando ya existe. La migración
 [`migrations/001_ledger.sql`](./migrations/001_ledger.sql) crea el ledger y
 [`migrations/002_users.sql`](./migrations/002_users.sql) agrega usuarios y la
-relación con las cuentas. El esquema también incluye la vista
+relación con las cuentas. [`migrations/003_auth_sessions.sql`](./migrations/003_auth_sessions.sql)
+agrega sesiones de autenticación. El esquema también incluye la vista
 `account_balances`, las restricciones de balance, el trigger diferido y las
 reglas que impiden modificar o eliminar asientos.
 
@@ -126,6 +127,7 @@ usuario, con los valores negativos correspondientes en las cuentas externas.
 db/
 ├── migrations/001_ledger.sql  esquema y reglas del ledger
 ├── migrations/002_users.sql   usuarios y relación con cuentas
+├── migrations/003_auth_sessions.sql sesiones revocables
 ├── seeds/001_demo_data.sql    cuentas y movimientos demo
 ├── scripts/init-db.ts         ejecuta esquema/migraciones
 └── scripts/seed-db.ts         ejecuta los seeds en orden

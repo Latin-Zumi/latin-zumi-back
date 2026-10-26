@@ -17,6 +17,7 @@ export interface AccountBalance {
 
 export async function getAccountById(
   accountId: string,
+  userId: string,
 ): Promise<Account | null> {
   const result = await pool.query<Account>(
     `SELECT a.id,
@@ -28,8 +29,9 @@ export async function getAccountById(
        FROM accounts a
        LEFT JOIN account_balances b
          ON b.account_id = a.id AND b.currency = a.currency
-      WHERE a.id = $1`,
-    [accountId],
+      WHERE a.id = $1
+        AND a.user_id = $2`,
+    [accountId, userId],
   );
 
   return result.rows[0] ?? null;
@@ -37,8 +39,9 @@ export async function getAccountById(
 
 export async function getBalanceByAccountId(
   accountId: string,
+  userId: string,
 ): Promise<AccountBalance | null> {
-  const account = await getAccountById(accountId);
+  const account = await getAccountById(accountId, userId);
   if (!account) return null;
 
   return {

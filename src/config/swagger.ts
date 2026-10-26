@@ -6,6 +6,105 @@ export const openApiSpec = {
     description: 'Documentación de los endpoints de Latin Zumi.',
   },
   paths: {
+    '/auth/login': {
+      post: {
+        summary: 'Iniciar sesión',
+        operationId: 'login',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['identifier', 'password'],
+                properties: {
+                  identifier: { type: 'string', example: 'ana.perez' },
+                  password: { type: 'string', format: 'password' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Sesión creada. El token se muestra una sola vez.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  example: {
+                    data: {
+                      access_token: '<token-bearer>',
+                      token_type: 'Bearer',
+                      expires_at: '2026-10-26T19:00:00.000Z',
+                      password_change_required: false,
+                    },
+                  },
+                  properties: {
+                    data: {
+                      type: 'object',
+                      properties: {
+                        access_token: { type: 'string' },
+                        token_type: { type: 'string', example: 'Bearer' },
+                        expires_at: { type: 'string', format: 'date-time' },
+                        password_change_required: { type: 'boolean' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Payload de login inválido.' },
+          '401': { description: 'Username/email o contraseña incorrectos.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
+        },
+      },
+    },
+    '/auth/change-password': {
+      post: {
+        summary: 'Cambiar contraseña',
+        operationId: 'changePassword',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['current_password', 'new_password'],
+                properties: {
+                  current_password: { type: 'string', format: 'password' },
+                  new_password: {
+                    type: 'string',
+                    format: 'password',
+                    minLength: 15,
+                    maxLength: 128,
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '204': { description: 'Contraseña actualizada; las otras sesiones se revocan.' },
+          '400': { description: 'La nueva contraseña debe tener de 15 a 128 caracteres.' },
+          '401': { description: 'Sesión inválida o contraseña actual incorrecta.' },
+          '403': { description: 'Se requiere cambiar la contraseña antes de consultar datos.' },
+        },
+      },
+    },
+    '/auth/logout': {
+      post: {
+        summary: 'Cerrar sesión actual',
+        operationId: 'logout',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '204': { description: 'Sesión revocada.' },
+          '401': { description: 'Sesión inválida o vencida.' },
+        },
+      },
+    },
     '/users': {
       post: {
         summary: 'Registrar usuario y crear su billetera',
@@ -34,7 +133,7 @@ export const openApiSpec = {
                   password: {
                     type: 'string',
                     format: 'password',
-                    minLength: 8,
+                    minLength: 15,
                     maxLength: 128,
                   },
                   currency: {
@@ -164,6 +263,7 @@ export const openApiSpec = {
       get: {
         summary: 'Consultar una cuenta',
         operationId: 'getAccount',
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: 'id',
@@ -238,7 +338,7 @@ export const openApiSpec = {
             },
           },
           '404': {
-            description: 'No existe una cuenta con ese identificador.',
+            description: 'La cuenta no existe o no pertenece al titular autenticado.',
             content: {
               'application/json': {
                 schema: {
@@ -248,6 +348,8 @@ export const openApiSpec = {
               },
             },
           },
+          '401': { description: 'Se requiere un Bearer token válido.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de consultar datos.' },
           '500': {
             description: 'Error interno del servidor.',
             content: {
@@ -266,6 +368,7 @@ export const openApiSpec = {
       get: {
         summary: 'Consultar el saldo de una cuenta',
         operationId: 'getAccountBalance',
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: 'id',
@@ -327,7 +430,7 @@ export const openApiSpec = {
             },
           },
           '404': {
-            description: 'No existe una cuenta con ese identificador.',
+            description: 'La cuenta no existe o no pertenece al titular autenticado.',
             content: {
               'application/json': {
                 schema: {
@@ -337,6 +440,8 @@ export const openApiSpec = {
               },
             },
           },
+          '401': { description: 'Se requiere un Bearer token válido.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de consultar datos.' },
           '500': {
             description: 'Error interno del servidor.',
             content: {
@@ -355,6 +460,7 @@ export const openApiSpec = {
       get: {
         summary: 'Consultar una transacción',
         operationId: 'getTransaction',
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: 'id',
@@ -370,7 +476,7 @@ export const openApiSpec = {
         ],
         responses: {
           '200': {
-            description: 'Cabecera de la transacción y sus asientos.',
+            description: 'Actividad de la transacción limitada a los asientos del titular autenticado.',
             content: {
               'application/json': {
                 schema: {
@@ -379,18 +485,9 @@ export const openApiSpec = {
                   example: {
                     data: {
                       id: '30000000-0000-4000-8000-000000000001',
-                      idempotency_key: 'seed:demo:usd-deposit',
                       description: 'Depósito de demostración en USD',
                       occurred_at: '2026-01-15T12:00:00.000Z',
                       entries: [
-                        {
-                          id: '1',
-                          account_id: '10000000-0000-4000-8000-000000000002',
-                          amount: '125.00000000',
-                          direction: 'debit',
-                          currency: 'USD',
-                          created_at: '2026-01-15T12:00:00.000Z',
-                        },
                         {
                           id: '2',
                           account_id: '10000000-0000-4000-8000-000000000001',
@@ -407,14 +504,12 @@ export const openApiSpec = {
                       type: 'object',
                       required: [
                         'id',
-                        'idempotency_key',
                         'description',
                         'occurred_at',
                         'entries',
                       ],
                       properties: {
                         id: { type: 'string', format: 'uuid' },
-                        idempotency_key: { type: 'string' },
                         description: { type: 'string', nullable: true },
                         occurred_at: { type: 'string', format: 'date-time' },
                         entries: {
@@ -479,6 +574,8 @@ export const openApiSpec = {
               },
             },
           },
+          '401': { description: 'Se requiere un Bearer token válido.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de consultar datos.' },
           '500': {
             description: 'Error interno del servidor.',
             content: {
@@ -493,6 +590,15 @@ export const openApiSpec = {
             },
           },
         },
+      },
+    },
+  },
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'opaque session token',
       },
     },
   },
