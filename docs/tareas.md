@@ -1,9 +1,9 @@
 # Tareas
 
-- [ ] Seeds
-- [ ] Rutas/Endpoints
-- [ ] Servidores
-- [ ] Controladores
-- [ ] Errores
-- [ ] Handlers
-- [ ] Router/independiente?
+- [x] Seeds
+- [x] Rutas/Endpoints
+- [x] Servidores
+- [x] Controladores
+- [x] Errores
+- [x] Handlers
+- [x] Router/independiente?

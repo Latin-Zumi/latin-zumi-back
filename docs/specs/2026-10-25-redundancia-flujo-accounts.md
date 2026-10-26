@@ -37,9 +37,9 @@ cambios de rutas ni de respuestas públicas.
 
 ## Cómo probar
 - [x] Ejecutar `npm run build` sin errores de TypeScript.
-- [ ] Confirmar que `GET /accounts/:id` conserva su respuesta, incluido el
+- [x] Confirmar que `GET /accounts/:id` conserva su respuesta, incluido el
   balance y el caso de saldo cero.
-- [ ] Confirmar que `GET /accounts/:id/balance` conserva exactamente las
+- [x] Confirmar que `GET /accounts/:id/balance` conserva exactamente las
   propiedades `account_id`, `currency` y `balance`.
 - [ ] Confirmar que ambos endpoints responden `400` ante UUID inválido y `404`
   ante una cuenta válida inexistente.

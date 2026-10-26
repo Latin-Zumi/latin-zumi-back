@@ -25,7 +25,8 @@ export const openApiSpec = {
         ],
         responses: {
           '200': {
-            description: 'Datos y saldo de la cuenta consultada.',
+            description:
+              'Datos y saldo de la cuenta consultada. Si aún no tiene movimientos, el saldo es "0".',
             content: {
               'application/json': {
                 schema: {
@@ -60,7 +61,8 @@ export const openApiSpec = {
                         allow_negative: { type: 'boolean', example: false },
                         balance: {
                           type: 'string',
-                          description: 'Saldo decimal serializado como texto.',
+                          description:
+                            'Saldo decimal serializado como texto; es "0" cuando la cuenta aún no tiene movimientos.',
                           example: '125.00000000',
                         },
                       },
@@ -125,12 +127,20 @@ export const openApiSpec = {
         ],
         responses: {
           '200': {
-            description: 'Saldo de la cuenta consultada.',
+            description:
+              'Saldo de la cuenta consultada. Si aún no tiene movimientos, el saldo es "0".',
             content: {
               'application/json': {
                 schema: {
                   type: 'object',
                   required: ['data'],
+                  example: {
+                    data: {
+                      account_id: '10000000-0000-4000-8000-000000000001',
+                      currency: 'USD',
+                      balance: '125.00000000',
+                    },
+                  },
                   properties: {
                     data: {
                       type: 'object',
@@ -140,7 +150,8 @@ export const openApiSpec = {
                         currency: { type: 'string', example: 'USD' },
                         balance: {
                           type: 'string',
-                          description: 'Saldo decimal serializado como texto.',
+                          description:
+                            'Saldo decimal serializado como texto; es "0" cuando la cuenta aún no tiene movimientos.',
                           example: '125.00000000',
                         },
                       },

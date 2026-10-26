@@ -32,10 +32,10 @@ no existen movimientos. No cambiar rutas, handlers ni respuestas del API.
 4. Compilar y revisar `/api-docs` si el servidor está disponible.
 
 ## Cómo probar
-- [ ] Ejecutar `npm run build` sin errores de TypeScript.
+- [x] Ejecutar `npm run build` sin errores de TypeScript.
 - [ ] Confirmar en Swagger UI que ambos endpoints muestran ejemplos y la
   explicación del saldo cero.
-- [ ] Confirmar que los esquemas documentados mantienen los campos y errores
+- [x] Confirmar que los esquemas documentados mantienen los campos y errores
   reales de ambos endpoints.
 
 ## Riesgos / notas
