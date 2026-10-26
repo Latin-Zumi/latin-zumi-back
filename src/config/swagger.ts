@@ -107,7 +107,7 @@ export const openApiSpec = {
     },
     '/users': {
       post: {
-        summary: 'Registrar usuario y crear su billetera',
+        summary: 'Registrar usuario y crear su wallet única',
         operationId: 'createUser',
         requestBody: {
           required: true,
@@ -143,6 +143,7 @@ export const openApiSpec = {
                     enum: ['USD', 'COP', 'ARS', 'EUR'],
                     default: 'COP',
                     example: 'COP',
+                    description: 'Moneda de liquidación de la única wallet del usuario.',
                   },
                 },
               },
@@ -151,7 +152,8 @@ export const openApiSpec = {
         },
         responses: {
           '201': {
-            description: 'Usuario registrado y billetera creada con saldo cero.',
+            description:
+              'Usuario registrado y una única wallet de liquidación creada con saldo cero.',
             content: {
               'application/json': {
                 schema: {
@@ -266,7 +268,7 @@ export const openApiSpec = {
     },
     '/accounts/{id}': {
       get: {
-        summary: 'Consultar una cuenta',
+        summary: 'Consultar la wallet única del usuario',
         operationId: 'getAccount',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -274,7 +276,8 @@ export const openApiSpec = {
             name: 'id',
             in: 'path',
             required: true,
-            description: 'Identificador UUID de la cuenta.',
+              description:
+                'Identificador UUID de la única cuenta user activa del titular.',
             schema: {
               type: 'string',
               format: 'uuid',
@@ -285,7 +288,7 @@ export const openApiSpec = {
         responses: {
           '200': {
             description:
-              'Datos y saldo de la cuenta consultada. Si aún no tiene movimientos, el saldo es "0".',
+              'Datos y saldo de la wallet única. Si aún no tiene movimientos, el saldo es "0".',
             content: {
               'application/json': {
                 schema: {
@@ -375,7 +378,7 @@ export const openApiSpec = {
     },
     '/accounts/{id}/balance': {
       get: {
-        summary: 'Consultar el saldo de una cuenta',
+        summary: 'Consultar el saldo de la wallet única',
         operationId: 'getAccountBalance',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -383,7 +386,8 @@ export const openApiSpec = {
             name: 'id',
             in: 'path',
             required: true,
-            description: 'Identificador UUID de la cuenta.',
+              description:
+                'Identificador UUID de la única cuenta user activa del titular.',
             schema: {
               type: 'string',
               format: 'uuid',
@@ -483,7 +487,7 @@ export const openApiSpec = {
             schema: {
               type: 'string',
               format: 'uuid',
-              example: '30000000-0000-4000-8000-000000000001',
+              example: '30000000-0000-4000-8000-000000000101',
             },
           },
         ],
@@ -497,9 +501,9 @@ export const openApiSpec = {
                   required: ['data'],
                   example: {
                     data: {
-                      id: '30000000-0000-4000-8000-000000000001',
-                      description: 'Depósito de demostración en USD',
-                      occurred_at: '2026-01-15T12:00:00.000Z',
+                      id: '30000000-0000-4000-8000-000000000101',
+                      description: 'Movimiento demo USD 1',
+                      occurred_at: '2026-02-01T12:00:00.000Z',
                       entries: [
                         {
                           id: '2',
@@ -507,7 +511,7 @@ export const openApiSpec = {
                           amount: '125.00000000',
                           direction: 'credit',
                           currency: 'USD',
-                          created_at: '2026-01-15T12:00:00.000Z',
+                          created_at: '2026-02-01T12:00:00.000Z',
                         },
                       ],
                     },

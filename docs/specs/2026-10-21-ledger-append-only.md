@@ -7,7 +7,11 @@
 Los saldos almacenados y modificados directamente pueden quedar corruptos sin historial auditable. Se requiere un esquema PostgreSQL que permita derivarlos de asientos contables inmutables y balanceados por moneda.
 
 ## Solución propuesta
-Crear únicamente `db/migrations/001_ledger.sql`. La migración habilitará `pgcrypto`; creará `accounts`, `transactions` y `entries` con las restricciones solicitadas; añadirá los índices mínimos, reglas para ignorar `UPDATE`/`DELETE` en `entries`, el trigger de balance y la vista `account_balances`.
+Crear únicamente `db/migrations/001_ledger.sql`. La migración creará `users`,
+`accounts`, `transactions` y `entries` con las restricciones solicitadas;
+usará `gen_random_uuid()` disponible en el PostgreSQL del proyecto, añadirá
+los índices mínimos, reglas para ignorar `UPDATE`/`DELETE` en `entries`, el
+trigger de balance y la vista `account_balances`.
 
 El balance se validará con un constraint trigger diferido al final de la transacción. De ese modo se puede insertar el conjunto completo de partidas antes de comparar débitos y créditos por moneda, y una transacción incompleta no podrá confirmarse. Se usará una vista normal para calcular siempre el saldo actual desde el ledger, sin un proceso de refresco que pueda dejar datos derivados desactualizados.
 
@@ -15,8 +19,6 @@ El balance se validará con un constraint trigger diferido al final de la transa
 - `db/migrations/001_ledger.sql` — única pieza de implementación. Contendrá, entre otras, estas definiciones representativas:
 
 ```sql
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 CREATE TABLE accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID,

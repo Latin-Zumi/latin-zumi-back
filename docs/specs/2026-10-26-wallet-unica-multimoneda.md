@@ -32,7 +32,9 @@ La base deberá:
 - conservar `entries.currency` igual a la moneda de la cuenta afectada;
 - conservar cuentas, entries e IDs históricos sin borrarlos;
 - definir una migración explícita para usuarios existentes que tengan más de
-  una cuenta, sin fusionar importes de distintas monedas automáticamente.
+  una cuenta, sin fusionar importes de distintas monedas automáticamente. La
+  migración conserva como activa la cuenta según esta prioridad: USD, COP, ARS,
+  EUR; en empate usa el UUID menor y marca las demás como cerradas.
 
 El endpoint de wallet devolverá una sola cuenta y un solo saldo:
 
@@ -81,12 +83,17 @@ en [el spec de conversión al recibir fondos](./2026-10-26-conversion-tasas-exch
   liquidación.
 - [ ] Una segunda creación de cuenta `user` para el mismo usuario es rechazada.
 - [ ] La consulta de wallet devuelve un único saldo y una única moneda.
-- [ ] No se pueden insertar entries con moneda distinta a la cuenta user.
-- [ ] El ledger sigue permitiendo cuentas internas en distintas monedas y
+- [x] No se pueden insertar entries con moneda distinta a la cuenta user.
+- [x] El ledger sigue permitiendo cuentas internas en distintas monedas y
   balancea cada moneda por separado.
-- [ ] La migración no borra ni modifica entries históricos.
+- [x] La migración no borra ni modifica entries históricos; las cuentas
+  duplicadas quedan cerradas y sus balances históricos permanecen.
 - [ ] Un usuario no puede consultar la cuenta de otro usuario.
-- [ ] Los seeds son idempotentes, Swagger refleja el contrato y el build pasa.
+- [x] Swagger refleja el contrato de una única wallet activa.
+- [x] `npm run db:init` se puede ejecutar nuevamente sin error y
+  `npm run db:seed` se puede repetir sin duplicar usuarios, cuentas,
+  transacciones ni entries.
+- [x] `npm run build` pasa.
 
 ## Riesgos / notas
 - Esta decisión simplifica mucho la experiencia del usuario, pero cada
@@ -94,6 +101,6 @@ en [el spec de conversión al recibir fondos](./2026-10-26-conversion-tasas-exch
   saldo disponible en la moneda original.
 - La conversión debe ser una operación contable con tasa fijada y no solo una
   multiplicación al mostrar datos.
-- Para usuarios existentes con varias cuentas no es seguro escoger una y
-  eliminar las demás. Se requiere una política explícita de conversión,
-  cierre o conservación histórica.
+- Para usuarios existentes con varias cuentas, la migración aplica la política
+  explícita USD → COP → ARS → EUR, cierra las cuentas restantes y conserva sus
+  entries históricos. No convierte ni elimina automáticamente esos saldos.

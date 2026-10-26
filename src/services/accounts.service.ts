@@ -30,7 +30,8 @@ export async function getAccountById(
        LEFT JOIN account_balances b
          ON b.account_id = a.id AND b.currency = a.currency
       WHERE a.id = $1
-        AND a.user_id = $2`,
+        AND a.user_id = $2
+        AND a.closed_at IS NULL`,
     [accountId, userId],
   );
 

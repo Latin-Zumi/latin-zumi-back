@@ -76,7 +76,7 @@ se serializan como texto para conservar la precisión decimal de PostgreSQL.
 `POST /users`
 
 Registra un username y email, almacena un hash de la contraseña y crea una
-billetera asociada. La contraseña debe tener entre 15 y 128 caracteres;
+única cuenta/wallet de liquidación. La contraseña debe tener entre 15 y 128 caracteres;
 `currency` es opcional, acepta `USD`, `COP`, `ARS` o `EUR` y usa `COP` por
 defecto.
 
@@ -182,7 +182,7 @@ responden `500`.
 Devuelve solo los asientos asociados a las cuentas del usuario autenticado:
 
 ```sh
-curl -i http://localhost:3000/transactions/30000000-0000-4000-8000-000000000001 \
+curl -i http://localhost:3000/transactions/30000000-0000-4000-8000-000000000101 \
   -H 'Authorization: Bearer <access_token>'
 ```
 

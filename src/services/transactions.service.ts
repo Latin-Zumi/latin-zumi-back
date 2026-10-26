@@ -34,6 +34,7 @@ export async function getTransactionById(
              JOIN accounts a ON a.id = e.account_id
             WHERE e.transaction_id = t.id
               AND a.user_id = $2
+                AND a.closed_at IS NULL
          )`,
     [transactionId, userId],
   );
@@ -52,6 +53,7 @@ export async function getTransactionById(
        JOIN accounts a ON a.id = e.account_id
       WHERE e.transaction_id = $1
         AND a.user_id = $2
+        AND a.closed_at IS NULL
       ORDER BY e.id`,
     [transactionId, userId],
   );
