@@ -19,6 +19,8 @@ Actualmente el proyecto incluye:
 La guía de PostgreSQL, migraciones y seeds está en [`db/README.md`](./db/README.md).
 Para ejecutar el flujo de ingreso completo, usa la
 [guía de prueba de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).
+El estado de endpoints y la checklist tentativa de despliegue en Railway están
+en la [auditoría del proyecto](./docs/auditoria-estado-proyecto-y-deploy.md).
 
 ## Stack
 

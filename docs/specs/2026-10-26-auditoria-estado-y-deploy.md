@@ -109,11 +109,11 @@ entorno elegido.
    configuración de servicios externos.
 
 ## Cómo probar
-- [ ] Confirmar el inventario de rutas contra los archivos `src/routes/` y la
+- [x] Confirmar el inventario de rutas contra los archivos `src/routes/` y la
   especificación OpenAPI.
-- [ ] Ejecutar `npm ci`, `npm run build` y `npm test`, y registrar sus
+- [x] Ejecutar `npm ci`, `npm run build` y `npm test`, y registrar sus
   resultados.
-- [ ] Verificar el procedimiento de migraciones y configuración contra
+- [x] Verificar el procedimiento de migraciones y configuración contra
   `db/README.md` y `.env.example`.
 - [ ] Validar health check, TLS, secretos y arranque en un proveedor de deploy
   elegido.
@@ -122,8 +122,10 @@ entorno elegido.
 - La necesidad de retiros, transferencias, recuperación de contraseña, CORS,
   administración u otros endpoints depende del alcance funcional; no se
   inventarán como requisitos confirmados.
-- No se selecciona proveedor ni se publican secretos. Los detalles de red,
-  dominio, TLS, backups, observabilidad y costos dependen del entorno final.
+- Railway se toma como proveedor tentativo para la checklist; no se crea ni
+  configura un servicio y no se publican secretos. Los detalles de red,
+  dominio, TLS, backups, observabilidad y costos deben confirmarse en ese
+  entorno.
 - La revisión de seguridad previa ya documenta riesgos del modelo; esta
   auditoría debe enlazar hallazgos relacionados en lugar de duplicar sus
   recomendaciones.
