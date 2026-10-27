@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-26
 
+## Orden de ejecución: 010
+
 ## Problema
 El modelo actual permite consultar cuentas del ledger, pero no registra
 usuarios ni permite crear una billetera. `accounts.user_id` no tiene una tabla

@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-26
 
+## Orden de ejecución: 012
+
 ## Problema
 Se necesita una revisión del modelo de cuentas, el flujo entre routes,
 controllers y services, el manejo de errores y las prácticas aplicables a una

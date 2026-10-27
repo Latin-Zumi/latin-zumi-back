@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-26
 
+## Orden de ejecución: 013
+
 ## Problema
 Los datos de ejemplo están repartidos entre las migraciones `001_ledger.sql` y
 `002_users.sql`, el seed `001_demo_data.sql` y ejemplos de Swagger. La

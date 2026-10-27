@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-24
 
+## Orden de ejecución: 005
+
 ## Problema
 El módulo `accounts` solo expone actualmente una consulta de saldo y necesita
 quedar organizado como un flujo completo de lectura: las rutas deben conectar

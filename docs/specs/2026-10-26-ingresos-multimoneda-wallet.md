@@ -2,7 +2,8 @@
 
 ## Fecha
 2026-10-26
-Orden de ejecución: 016
+
+## Orden de ejecución: 016
 
 ## Problema
 La wallet del usuario debe ser una sola experiencia, con una moneda

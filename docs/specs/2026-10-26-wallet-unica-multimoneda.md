@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-26
 
+## Orden de ejecución: 014
+
 ## Problema
 El esquema actual permite una cuenta `user` por usuario y moneda porque la
 unicidad es `(user_id, currency, account_type)`. Esto obliga a pensar en una

@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-25
 
+## Orden de ejecución: 009
+
 ## Problema
 El esquema ya guarda cabeceras en `transactions` y asientos asociados en
 `entries`, pero la API todavía no expone este historial. Sin una ruta de

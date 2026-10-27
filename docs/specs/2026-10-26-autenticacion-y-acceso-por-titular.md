@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-26
 
+## Orden de ejecución: 011
+
 ## Problema
 Los endpoints `GET /accounts/:id`, `GET /accounts/:id/balance` y
 `GET /transactions/:id` aceptan un UUID sin autenticar al solicitante ni
