@@ -71,10 +71,53 @@ Vas a hacer el siguiente cambio: <describe el cambio>.
 Antes de escribir código:
 1. Crea un archivo en docs/specs/ con nombre YYYY-MM-DD-titulo-corto.md
    usando la plantilla de docs/specs/_plantilla.md.
-2. Muéstrame el spec para que lo apruebe.
-3. Cuando lo apruebe, implementa el cambio.
-4. Al final, marca los checkboxes de "Cómo probar" que se cumplan.
+2. Asigna el siguiente número correlativo de ejecución consultando el índice
+   "Orden de ejecución de los specs" de docs/specs/README.md. Inclúyelo en el
+   spec como `Orden de ejecución: NNN` y añade el nuevo spec al final del índice.
+   No reutilices números ya asignados, aunque un spec esté archivado o superado.
+3. El spec debe incluir snippets representativos de código para cada flujo o
+   comportamiento principal que cambie. Después de cada snippet, explica en
+   lenguaje claro qué ocurre, quién lo ejecuta y qué resultado produce. Usa el
+   lenguaje correspondiente (SQL, TypeScript, JSON, etc.); los snippets deben
+   aclarar el comportamiento y no ser código de relleno.
+4. Muéstrame el spec para que lo apruebe.
+5. Cuando lo apruebe, implementa el cambio.
+6. Al final, marca los checkboxes de "Cómo probar" que se cumplan.
 ```
+
+## Orden de ejecución de los specs
+
+El número de orden es un identificador permanente del lugar del spec en la
+secuencia de trabajo; no es la fecha del archivo ni el estado actual de la
+implementación. Se reconstruyó el orden histórico usando las fechas, las
+dependencias descritas en los propios specs y `git log` (cuando el historial
+está disponible). Los specs posteriores de una misma área se ejecutan después
+de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
+
+| Orden | Spec | Relación / nota |
+|---:|---|---|
+| 001 | [Esquema SQL ledger append-only](./2026-10-21-ledger-append-only.md) | Base de datos requerida por los demás flujos. |
+| 002 | [Seeds de datos para probar la DB](./2026-10-23-seeds-db.md) | Requiere el esquema del ledger. |
+| 003 | [Ruta de consulta de saldo del ledger](./2026-10-24-ledger-balance-route.md) | Primer flujo HTTP de lectura, sobre esquema y seeds. |
+| 004 | [Documentación Swagger de la API](./2026-10-24-swagger-api-docs.md) | Documenta la ruta de saldo existente. |
+| 005 | [Rutas y capas de consulta de accounts](./2026-10-24-accounts-endpoints.md) | Amplía la consulta con el detalle de cuenta. |
+| 006 | [Ejemplos reales de accounts en Swagger](./2026-10-24-swagger-account-examples.md) | Depende de los endpoints y de los IDs de seeds. |
+| 007 | [Reducir duplicación en el flujo de accounts](./2026-10-25-redundancia-flujo-accounts.md) | Refactoriza el flujo de lectura ya establecido. |
+| 008 | [Alinear Swagger UI de accounts](./2026-10-25-swagger-accounts-alineacion.md) | Alinea la documentación con los contratos de accounts. |
+| 009 | [Consultar detalle de transactions](./2026-10-25-transactions-read-endpoint.md) | Añade lectura del historial del ledger. |
+| 010 | [Registro de usuario y billetera](./2026-10-26-registro-usuario-billetera.md) | Añade identidad y creación de cuenta. |
+| 011 | [Autenticación y acceso por titular](./2026-10-26-autenticacion-y-acceso-por-titular.md) | Protege las lecturas y requiere usuarios registrados. |
+| 012 | [Revisión de prácticas para una wallet virtual](./2026-10-26-revision-practicas-wallet.md) | Revisión/hoja de ruta; no implementa cambios. Su contenido evalúa el estado previo a las decisiones de wallet siguientes. |
+| 013 | [Congruencia de seeds y datos de prueba](./2026-10-26-congruencia-seeds-cuentas.md) | Alinea datos de DB, seeds y ejemplos para las pruebas. |
+| 014 | [Cuenta única de liquidación por usuario](./2026-10-26-wallet-unica-multimoneda.md) | Define una sola cuenta user y la moneda de liquidación. |
+| 015 | [Conversión de ingresos a la moneda de la wallet](./2026-10-26-conversion-tasas-exchange-rate.md) | Depende de la decisión de cuenta única y su moneda de liquidación. |
+| 016 | [Ingresos convertidos a la moneda principal de la wallet](./2026-10-26-ingresos-multimoneda-wallet.md) | Evolución posterior del modelo de wallet; revisar junto con 014–015 porque amplía el modelo a saldos secundarios. |
+
+Los órdenes 014–016 reflejan la secuencia documental del historial, no una
+afirmación de que sus diseños sean todos compatibles entre sí. Antes de
+implementar cambios de wallet, comprobar si un spec posterior reemplaza o
+extiende la decisión anterior y actualizar esta nota si el equipo decide otro
+orden. No renumerar los identificadores ya publicados.
 
 ## Flujo resumido
 

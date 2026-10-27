@@ -174,13 +174,15 @@ export const openApiSpec = {
                         allow_negative: false,
                         balance: '0',
                       },
+                      wallet_id: '40000000-0000-4000-8000-000000000099',
                     },
                   },
                   properties: {
                     data: {
                       type: 'object',
-                      required: ['user', 'account'],
+                      required: ['user', 'account', 'wallet_id'],
                       properties: {
+                        wallet_id: { type: 'string', format: 'uuid', description: 'ID de la wallet lógica, que puede contener saldos por moneda.' },
                         user: {
                           type: 'object',
                           required: ['id', 'username', 'email'],
@@ -373,6 +375,59 @@ export const openApiSpec = {
               },
             },
           },
+        },
+      },
+      post: {
+        summary: 'Registrar un ingreso y convertirlo a la moneda principal de la wallet',
+        operationId: 'createIncoming',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 }, example: 'ingreso-externo-123' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['source_currency', 'source_amount'],
+                example: { source_currency: 'EUR', source_amount: '100.00' },
+                properties: {
+                  source_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                  source_amount: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$' },
+                  destination_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'], description: 'Opcional; si se envía debe coincidir con la moneda principal de la wallet.' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Ingreso contabilizado, o respuesta original de una repetición idempotente.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  example: { data: {
+                    transaction_id: '30000000-0000-4000-8000-000000000123',
+                    wallet_id: '20000000-0000-4000-8000-000000000123',
+                    source: { currency: 'EUR', amount: '100.00' },
+                    destination: { currency: 'ARS', amount: '123456.78' },
+                    rate: '1234.56780000', rate_source: 'exchangeRate-api',
+                    rate_observed_at: '2026-10-26T12:00:00.000Z', rounding: 'HALF_UP_2',
+                  } },
+                },
+              },
+            },
+          },
+          '400': { description: 'Payload, cuenta o clave inválidos; destino distinto de la moneda principal.' },
+          '401': { description: 'Se requiere un Bearer token válido.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de operar.' },
+          '404': { description: 'La cuenta no existe o no pertenece al titular autenticado.' },
+          '409': { description: 'La clave idempotente ya se usó con otro ingreso.' },
+          '422': { description: 'El importe convertido se redondearía a cero.' },
+          '503': { description: 'No hay una tasa vigente disponible; puede reintentarse con la misma clave.' },
         },
       },
     },

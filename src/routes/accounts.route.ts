@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getAccount,
   getAccountBalance,
+  createIncoming,
 } from '../controllers/accounts.controller.js';
 import { asyncHandler } from '../handlers/asyncHandler.js';
 import { requireAuth } from '../middleware/requireAuth.js';
@@ -14,6 +15,11 @@ accountsRouter.get(
   '/accounts/:id/balance',
   asyncHandler(requireAuth),
   asyncHandler(getAccountBalance),
+);
+accountsRouter.post(
+  '/accounts/:id/incoming',
+  asyncHandler(requireAuth),
+  asyncHandler(createIncoming),
 );
 accountsRouter.get(
   '/accounts/:id',

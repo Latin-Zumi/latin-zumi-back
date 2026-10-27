@@ -9,17 +9,16 @@ PostgreSQL.
 Actualmente el proyecto incluye:
 
 - Persistencia PostgreSQL basada en un ledger contable append-only.
-- Seeds idempotentes con seis cuentas de usuario y movimientos demo en USD,
-  COP, ARS y EUR.
-- Registro de usuario y billetera, login y logout con sesiones Bearer.
+- Wallets con una moneda principal y cuentas de saldo por moneda.
+- Registro de usuario, login y logout con sesiones Bearer.
 - Consultas autenticadas de cuentas, saldos y transacciones propias.
+- Ingresos convertidos y registrados de forma idempotente en el ledger.
 - Documentación interactiva OpenAPI/Swagger en `/api-docs`.
 - Middleware centralizado para errores HTTP y de PostgreSQL.
 
-Todavía no se incluyen endpoints para depósitos, retiros o transferencias.
-
-La explicación del modelo contable, la configuración de PostgreSQL, la
-migración y los seeds está en [`db/README.md`](./db/README.md).
+La guía de PostgreSQL, migraciones y seeds está en [`db/README.md`](./db/README.md).
+Para ejecutar el flujo de ingreso completo, usa la
+[guía de prueba de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).
 
 ## Stack
 
@@ -71,14 +70,16 @@ Con la configuración predeterminada, la API queda disponible en
 Todas las respuestas exitosas usan el formato `{ "data": ... }`. Los saldos
 se serializan como texto para conservar la precisión decimal de PostgreSQL.
 
-### Registrar usuario y billetera
+### Usuario y sesión
+
+#### Registrar usuario y billetera
 
 `POST /users`
 
 Registra un username y email, almacena un hash de la contraseña y crea una
-única cuenta/wallet de liquidación. La contraseña debe tener entre 15 y 128 caracteres;
-`currency` es opcional, acepta `USD`, `COP`, `ARS` o `EUR` y usa `COP` por
-defecto.
+Crea una wallet lógica y su cuenta inicial en la moneda principal. La
+contraseña debe tener entre 15 y 128 caracteres; `currency` es opcional,
+acepta `USD`, `COP`, `ARS` o `EUR` y usa `COP` por defecto.
 
 ```sh
 curl -X POST http://localhost:3000/users \
@@ -90,7 +91,7 @@ La respuesta `201` contiene los datos públicos del usuario y la cuenta creada.
 No incluye la contraseña ni su hash. La cuenta inicia con saldo `"0"`. Luego
 inicia sesión para obtener un token y consultar datos privados.
 
-### Iniciar sesión
+#### Iniciar sesión
 
 `POST /auth/login`
 
@@ -125,7 +126,9 @@ curl -i -X POST http://localhost:3000/auth/logout \
   -H 'Authorization: Bearer <access_token>'
 ```
 
-### Consultar una cuenta
+### Wallet e ingresos
+
+#### Consultar una cuenta
 
 `GET /accounts/:id`
 
@@ -149,7 +152,7 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
 }
 ```
 
-### Consultar el saldo
+#### Consultar el saldo
 
 `GET /accounts/:id/balance`
 
@@ -170,12 +173,41 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/bala
 }
 ```
 
-Errores relevantes: `400` para UUID inválido, `401` sin una sesión válida,
-`403` si una contraseña legada debe actualizarse y `404` si la cuenta no
-existe o no pertenece al usuario. Los errores internos no controlados
-responden `500`.
+#### Registrar un ingreso convertido
 
-### Consultar una transacción
+`POST /accounts/:id/incoming` requiere una sesión Bearer y una clave
+`Idempotency-Key` entregada por el sistema que confirmó el ingreso. El importe
+se acredita en la moneda principal de la wallet. `destination_currency` es
+opcional y, si se envía, debe coincidir con esa moneda.
+
+```sh
+curl -X POST http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/incoming \
+  -H 'Authorization: Bearer <access_token>' \
+  -H 'Idempotency-Key: ingreso-externo-123' \
+  -H 'Content-Type: application/json' \
+  -d '{"source_currency":"EUR","source_amount":"100.00"}'
+```
+
+La respuesta informa importes y monedas, tasa, proveedor y fecha de observación.
+No se cobra comisión; el importe acreditado se redondea `HALF_UP` a 2
+decimales. Una repetición idéntica devuelve el resultado original; reutilizar
+la clave con otro ingreso responde `409`. Si ambos proveedores fallan o la tasa
+supera las 24 horas, responde `503` sin crear entries. Las tasas son referencias
+indicativas, no precios bancarios garantizados. ExchangeRate-API Open Access
+requiere atribución; consulta sus [condiciones](https://www.exchangerate-api.com/terms).
+
+Para probar el flujo completo, desde registro hasta verificar las entries del
+ledger, sigue la [guía de prueba de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).
+
+Errores relevantes: `400` para payload o UUID inválido, `401` sin una sesión
+válida, `403` si una contraseña legada debe actualizarse, `404` si la cuenta
+no existe o no pertenece al usuario, `409` si se reutiliza una clave con otra
+solicitud, `422` si el importe convertido redondea a cero y `503` si no hay
+una tasa vigente. Los errores internos no controlados responden `500`.
+
+### Actividad del ledger
+
+#### Consultar una transacción
 
 `GET /transactions/:id`
 
@@ -200,7 +232,7 @@ src/
 ├── handlers/     adaptadores para handlers asíncronos
 ├── middleware/   manejo centralizado de errores
 ├── routes/       definición y conexión de rutas
-├── services/     consultas SQL parametrizadas y acceso a datos
+├── services/     consultas SQL parametrizadas, ledger y tasas externas
 └── utils/        errores de aplicación
 ```
 
@@ -211,22 +243,23 @@ route → asyncHandler → controller → service → PostgreSQL
 ```
 
 Las rutas no contienen SQL y los controllers no acceden directamente al pool
-de PostgreSQL. La ruta específica `/accounts/:id/balance` se registra antes de
-`/accounts/:id` para que `balance` no se interprete como un identificador.
+de PostgreSQL. Las rutas específicas `/accounts/:id/balance` y
+`/accounts/:id/incoming` se registran antes de `/accounts/:id`.
 
 ## Pruebas y validación
 
 ```sh
 npm run build
-npx vitest run
+npm test
 ```
 
-La validación manual de integración requiere PostgreSQL inicializado y los
-seeds cargados. Debe comprobar los casos de éxito, UUID inválido, cuenta
-inexistente y la documentación en `/api-docs`.
+La validación manual de integración con PostgreSQL está descrita en la
+[guía de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).
 
 ## Documentación del proyecto
 
+- [`docs/guia-e2e-ingreso-convertido.md`](./docs/guia-e2e-ingreso-convertido.md): registro, login, ingreso, idempotencia y verificación del ledger.
+- [`db/README.md`](./db/README.md): PostgreSQL, migraciones y seeds.
 - [`docs/specs/README.md`](./docs/specs/README.md): guía y reglas para crear specs.
 - [`docs/specs/2026-10-21-ledger-append-only.md`](./docs/specs/2026-10-21-ledger-append-only.md): diseño del ledger inmutable.
 - [`docs/specs/2026-10-23-seeds-db.md`](./docs/specs/2026-10-23-seeds-db.md): datos de demostración e idempotencia.
