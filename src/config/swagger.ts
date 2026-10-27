@@ -73,6 +73,51 @@ export const openApiSpec = {
         },
       },
     },
+    '/auth/register': {
+      post: {
+        summary: 'Registrar usuario e iniciar sesión',
+        description:
+          'Crea usuario, wallet, cuenta inicial y sesión en una transacción. La moneda inicial se deriva del país.',
+        operationId: 'register',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['nombre', 'email', 'pais', 'password'],
+                properties: {
+                  nombre: { type: 'string', minLength: 2, maxLength: 50, example: 'Ana Pérez' },
+                  email: { type: 'string', format: 'email', maxLength: 254 },
+                  pais: { type: 'string', enum: ['Argentina', 'Colombia', 'Otro'] },
+                  password: { type: 'string', format: 'password', minLength: 15, maxLength: 128 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Registro completado y sesión creada.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['token', 'user'],
+                  properties: {
+                    token: { type: 'string' },
+                    user: { $ref: '#/components/schemas/AuthUser' },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Datos de registro inválidos.' },
+          '409': { description: 'Email ya registrado.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
+        },
+      },
+    },
     '/auth/login': {
       post: {
         summary: 'Iniciar sesión',
@@ -176,7 +221,8 @@ export const openApiSpec = {
     },
     '/users': {
       post: {
-        summary: 'Registrar usuario y crear su wallet y cuenta inicial',
+        deprecated: true,
+        summary: 'Legado: crear usuario, wallet y cuenta sin iniciar sesión',
         operationId: 'createUser',
         requestBody: {
           required: true,

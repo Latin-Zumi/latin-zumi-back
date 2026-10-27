@@ -3,22 +3,21 @@ import type { PoolClient } from 'pg';
 import { pool } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../utils/password.js';
+import { createUserWithWallet, type UserProfileRow } from './users.service.js';
+import { currencyForCountry, type Pais } from '../utils/country.js';
 
 interface UserCredential {
   id: string;
   password_hash: string | null;
 }
 
-export interface AuthUserRow {
-  id: string;
-  username: string;
+export type AuthUserRow = UserProfileRow;
+
+export interface RegisterAccountInput {
+  nombre: string;
   email: string;
-  nombre: string | null;
-  pais: string | null;
-  moneda_preferida: string;
-  roles: string[];
-  estado: string;
-  foto_url: string | null;
+  pais: Pais;
+  password: string;
 }
 
 export interface AuthUser {
@@ -61,6 +60,56 @@ export function toAuthUser(row: AuthUserRow): AuthUser {
     estado: row.estado,
     foto_url: row.foto_url,
   };
+}
+
+function buildUsername(email: string): string {
+  const localPart = email
+    .slice(0, email.indexOf('@'))
+    .replace(/[^a-z0-9._-]/g, '')
+    .slice(0, 30);
+  return localPart || 'user';
+}
+
+function isEmailUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const databaseError = error as { code?: string; constraint?: string };
+  return databaseError.code === '23505' && (
+    databaseError.constraint === 'users_email_key' ||
+    databaseError.constraint === 'users_email_lower_idx'
+  );
+}
+
+export async function registerAccount(
+  input: RegisterAccountInput,
+): Promise<{ token: string; user: AuthUser }> {
+  const passwordHash = await hashPassword(input.password);
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+    const { user } = await createUserWithWallet(client, {
+      username: buildUsername(input.email),
+      email: input.email,
+      passwordHash,
+      nombre: input.nombre,
+      pais: input.pais,
+      monedaPreferida: currencyForCountry(input.pais),
+    });
+    const session = await createSessionForUser(user.id, {
+      passwordChangeRequired: false,
+      client,
+    });
+    await client.query('COMMIT');
+    return { token: session.token, user: toAuthUser(user) };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (isEmailUniqueViolation(error)) {
+      throw new AppError('Email ya registrado', 409);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function createSessionForUser(

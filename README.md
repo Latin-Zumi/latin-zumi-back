@@ -87,9 +87,27 @@ texto para conservar la precisión decimal de PostgreSQL.
 
 ### Usuario y sesión
 
-#### Registrar usuario y billetera
+#### Registrar y abrir una sesión
 
-`POST /users`
+`POST /auth/register` es el flujo nuevo. Crea el usuario, su wallet, la cuenta
+inicial y una sesión; el país determina la moneda (`Argentina` → `ARS`,
+`Colombia` → `COP`, `Otro` → `USD`). La contraseña debe tener entre 15 y 128
+caracteres.
+
+```sh
+curl -i -X POST http://localhost:3000/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"nombre":"Ana Pérez","email":"ana@example.com","pais":"Argentina","password":"una-frase-de-acceso-larga"}'
+```
+
+Responde `201` con `{ token, user }`, listo para usar el token como Bearer.
+Los errores de validación, email duplicado y límite de intentos responden
+`400`, `409` y `429`, respectivamente.
+
+#### Registrar usuario y billetera (legado)
+
+`POST /users` está obsoleto; se conserva para clientes existentes y no crea
+una sesión. Para nuevas integraciones usa `POST /auth/register`.
 
 Registra un username y email, almacena un hash de la contraseña y crea una
 wallet lógica y su cuenta inicial en la moneda principal. La contraseña debe
