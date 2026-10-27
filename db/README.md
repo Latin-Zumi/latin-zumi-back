@@ -67,15 +67,27 @@ Desde la raíz del proyecto, copia `.env.example` como `.env`:
 cp .env.example .env
 ```
 
-Configura estas variables:
+Configura `DATABASE_URL` con la cadena de conexión pooled de Neon (o de tu
+proveedor PostgreSQL) para conectar el backend usando una sola variable. La URL
+debe incluir TLS cuando el proveedor lo requiera. Si no usas una URL, configura
+los campos `DB_*` para PostgreSQL local:
+
+```env
+DATABASE_URL=postgresql://<usuario>:<contraseña>@<endpoint-pooler>.neon.tech/<base>?sslmode=require
+```
+
+No guardes una URL con credenciales en Git. Usa `.env` local o el gestor de
+secretos de tu plataforma. Si `DATABASE_URL` y `DB_*` están definidos a la vez,
+la URL tiene prioridad.
 
 | Variable | Descripción | Valor predeterminado |
 | --- | --- | --- |
-| `DB_HOST` | Host de PostgreSQL | — |
+| `DATABASE_URL` | URL completa de conexión PostgreSQL; tiene prioridad sobre `DB_*` | — |
+| `DB_HOST` | Host de PostgreSQL local, requerido junto con los demás campos `DB_*` si no hay URL | — |
 | `DB_PORT` | Puerto de PostgreSQL | `5432` |
-| `DB_NAME` | Nombre de la base de datos | — |
-| `DB_USER` | Usuario de PostgreSQL | — |
-| `DB_PASSWORD` | Contraseña de PostgreSQL | — |
+| `DB_NAME` | Nombre de la base de datos local | — |
+| `DB_USER` | Usuario de PostgreSQL local | — |
+| `DB_PASSWORD` | Contraseña de PostgreSQL local | — |
 | `DB_MAX` | Máximo de conexiones del pool | `20` |
 | `EXCHANGE_RATE_TIMEOUT_MS` | Timeout por proveedor de tasas | `3000` |
 | `EXCHANGE_RATE_MAX_AGE_HOURS` | Antigüedad máxima aceptada para tasas | `24` |
@@ -83,8 +95,8 @@ Configura estas variables:
 
 ## Inicializar el esquema
 
-Configura `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` en el
-archivo `.env`, y ejecuta:
+Configura `DATABASE_URL` o todos los campos `DB_*` en el archivo `.env`, y
+ejecuta:
 
 ```sh
 npm run db:init
