@@ -17,7 +17,8 @@ transacciones visibles para el titular actual con sus asientos de cuentas
 activas propias.
 
 - Paginación por `page` (por defecto `1`) y `limit` (por defecto `20`, máximo
-  `100`); ambos deben ser enteros positivos.
+  `100`); ambos deben ser enteros positivos y el offset calculado debe ser un
+  entero seguro.
 - Filtros opcionales `account_id` (UUID de una cuenta activa propia), `from` y
   `to` (fechas ISO 8601 inclusivas sobre `occurred_at`). Si se envían ambas
   fechas, `from` no puede ser posterior a `to`.
@@ -152,18 +153,18 @@ tamaño del resultado filtrado.
 ## Cómo probar
 - [ ] `GET /transactions` sin filtros responde con la primera página de
   actividad del titular autenticado y metadatos.
-- [ ] `page`, `limit`, `account_id`, `from` y `to` filtran y paginan según el
+- [x] `page`, `limit`, `account_id`, `from` y `to` filtran y paginan según el
   contrato; `limit` no puede superar `100`.
-- [ ] Fechas invertidas, UUID inválido y parámetros fuera de rango responden
-  `400`.
-- [ ] Una cuenta inexistente, cerrada o ajena responde `404` sin revelar si
+- [x] Fechas invertidas, UUID inválido, offset no seguro y parámetros fuera de
+  rango responden `400`.
+- [x] Una cuenta inexistente, cerrada o ajena responde `404` sin revelar si
   pertenece a otro titular.
-- [ ] Ninguna transacción ni asiento de cuentas ajenas/inactivas aparece en la
+- [x] Ninguna transacción ni asiento de cuentas ajenas/inactivas aparece en la
   respuesta.
-- [ ] Los importes se serializan como texto y el orden es estable ante empates
+- [x] Los importes se serializan como texto y el orden es estable ante empates
   de `occurred_at`.
-- [ ] `GET /transactions` aparece documentado en `/api-docs`.
-- [ ] `npm test` y `npm run build` terminan sin errores.
+- [x] `GET /transactions` aparece documentado en `/api-docs`.
+- [x] `npm test` y `npm run build` terminan sin errores.
 
 ## Riesgos / notas
 - La paginación usa offset y puede volverse menos eficiente en páginas muy
@@ -172,3 +173,5 @@ tamaño del resultado filtrado.
   filtra ni se revela la actividad interna del ledger.
 - El filtro `to` es inclusivo. Para consultar un día completo, el cliente debe
   enviar el instante final deseado con su zona horaria.
+- No se ejecutó una prueba de integración contra PostgreSQL; el primer caso de
+  "Cómo probar" queda pendiente para validar la respuesta HTTP con datos reales.

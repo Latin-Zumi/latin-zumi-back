@@ -613,6 +613,160 @@ export const openApiSpec = {
         },
       },
     },
+    '/transactions': {
+      get: {
+        summary: 'Listar el historial del usuario autenticado',
+        operationId: 'getTransactions',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'page',
+            in: 'query',
+            description: 'Número de página, desde 1.',
+            schema: { type: 'integer', minimum: 1, default: 1 },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Cantidad de resultados por página (máximo 100).',
+            schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+          },
+          {
+            name: 'account_id',
+            in: 'query',
+            description: 'UUID de una cuenta activa del titular autenticado.',
+            schema: { type: 'string', format: 'uuid' },
+          },
+          {
+            name: 'from',
+            in: 'query',
+            description: 'Instante inicial inclusivo de occurred_at (ISO 8601).',
+            schema: { type: 'string', format: 'date-time' },
+          },
+          {
+            name: 'to',
+            in: 'query',
+            description: 'Instante final inclusivo de occurred_at (ISO 8601).',
+            schema: { type: 'string', format: 'date-time' },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Página de transacciones y metadatos de paginación.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['data', 'meta'],
+                  example: {
+                    data: [
+                      {
+                        id: '30000000-0000-4000-8000-000000000101',
+                        idempotency_key: 'seed:portfolio:01:usd:movement-1',
+                        description: 'Movimiento demo USD 1',
+                        occurred_at: '2026-02-01T12:00:00.000Z',
+                        entries: [
+                          {
+                            id: '2',
+                            account_id: '10000000-0000-4000-8000-000000000001',
+                            amount: '125.00000000',
+                            direction: 'credit',
+                            currency: 'USD',
+                            created_at: '2026-02-01T12:00:00.000Z',
+                          },
+                        ],
+                      },
+                    ],
+                    meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+                  },
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        required: [
+                          'id',
+                          'idempotency_key',
+                          'description',
+                          'occurred_at',
+                          'entries',
+                        ],
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          idempotency_key: { type: 'string' },
+                          description: { type: 'string', nullable: true },
+                          occurred_at: { type: 'string', format: 'date-time' },
+                          entries: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              required: [
+                                'id',
+                                'account_id',
+                                'amount',
+                                'direction',
+                                'currency',
+                                'created_at',
+                              ],
+                              properties: {
+                                id: { type: 'string' },
+                                account_id: { type: 'string', format: 'uuid' },
+                                amount: {
+                                  type: 'string',
+                                  description: 'Importe decimal serializado como texto.',
+                                },
+                                direction: {
+                                  type: 'string',
+                                  enum: ['debit', 'credit'],
+                                },
+                                currency: {
+                                  type: 'string',
+                                  enum: ['USD', 'COP', 'ARS', 'EUR'],
+                                },
+                                created_at: { type: 'string', format: 'date-time' },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    meta: {
+                      type: 'object',
+                      required: ['page', 'limit', 'total', 'totalPages'],
+                      properties: {
+                        page: { type: 'integer', minimum: 1 },
+                        limit: { type: 'integer', minimum: 1, maximum: 100 },
+                        total: { type: 'integer', minimum: 0 },
+                        totalPages: { type: 'integer', minimum: 0 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Los filtros o parámetros de paginación son inválidos.' },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': {
+            description: 'Debes actualizar tu contraseña antes de consultar datos.',
+          },
+          '404': { description: 'Cuenta no encontrada.' },
+          '500': {
+            description: 'Error interno del servidor.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    error: { type: 'string', example: 'Error interno del servidor' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/transactions/{id}': {
       get: {
         summary: 'Consultar una transacción',

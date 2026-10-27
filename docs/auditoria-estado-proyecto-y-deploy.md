@@ -60,15 +60,15 @@ definidos. No se recomienda agregar rutas solo para completar una lista.
 | --- | --- | --- |
 | `GET /health`, `GET /health/ready` | Implementados: `/health` confirma que responde el proceso y `/health/ready` también ejecuta `SELECT 1` contra PostgreSQL. | Configurar Railway con `/health/ready`; validar en el servicio desplegado. |
 | `GET /accounts` | Implementado; lista las cuentas activas del titular y el saldo por moneda sin exigir IDs al cliente. | Permite descubrir las cuentas/monedas del usuario tras autenticarse. |
-| `GET /transactions` o historial paginado | Ausente; solo existe consulta por ID. | Si la app debe mostrar actividad reciente. Debe definirse paginación y filtros. |
+| `GET /transactions` o historial paginado | Implementado con paginación, filtros por cuenta y fechas, y acceso limitado al titular autenticado. | Permite mostrar actividad reciente; ordena por fecha descendente y limita cada página a 100 resultados. |
 | Retiro (`POST /accounts/:id/withdraw`) | Ausente. | Solo si el producto permite salida de fondos; exige saldo disponible, concurrencia, autorización e idempotencia. |
 | Transferencia (`POST /transfers`) | Ausente. | Solo si se permiten movimientos entre usuarios/cuentas; definir atomicidad, destinatario y reversas. |
 | Recuperación de contraseña | Ausente. | Si usuarios finales pueden recuperar acceso sin soporte administrativo. Requiere canal y flujo de verificación. |
 | Perfil (`GET /users/me`) | Ausente. | Si el cliente necesita cargar identidad propia tras iniciar sesión. |
 
 La lista anterior no reemplaza un backlog aprobado. En particular, no hay un
-requisito registrado que confirme retiros, transferencias, historial o
-recuperación de contraseña.
+requisito registrado que confirme retiros, transferencias o recuperación de
+contraseña.
 
 ## Preparación de Railway
 
@@ -161,8 +161,8 @@ versionado.
 - `express-rate-limit` usa su almacenamiento en memoria por defecto; con varias
   réplicas los límites no se comparten. Evaluar un store común antes de escalar
   si esos límites deben ser globales.
-- El proyecto documenta lectura de una transacción por ID, pero no un endpoint
-  de listado/historial.
+- El historial lista únicamente transacciones con asientos en cuentas activas
+  del titular autenticado; no expone cuentas internas ni ajenas.
 
 ## Fuentes Railway
 
