@@ -1,8 +1,9 @@
-import type { PoolClient } from 'pg';
+
 import { pool } from '../config/db.js';
 import { getExchangeRate } from './exchange-rate.service.js';
 import { multiplyAndRoundHalfUp, normalizeDecimal } from '../utils/decimal.js';
 import { AppError } from '../utils/AppError.js';
+import { getInternalAccount } from './internal-account.service.js';
 
 export interface IncomingConversionInput {
   accountId: string;
@@ -33,27 +34,6 @@ interface WalletAccountRow {
 interface ExistingConversion extends IncomingConversionResult {
   user_id: string;
   account_id: string;
-}
-
-async function getInternalAccount(
-  client: PoolClient,
-  currency: string,
-  type: 'external' | 'treasury',
-): Promise<string> {
-  await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`internal:${type}:${currency}`]);
-  const result = await client.query<{ id: string }>(
-    `SELECT id FROM accounts
-      WHERE account_type = $1 AND user_id IS NULL AND currency = $2
-      ORDER BY id LIMIT 1`,
-    [type, currency],
-  );
-  if (result.rows[0]) return result.rows[0].id;
-  const created = await client.query<{ id: string }>(
-    `INSERT INTO accounts (currency, account_type, allow_negative)
-     VALUES ($1, $2, true) RETURNING id`,
-    [currency, type],
-  );
-  return created.rows[0].id;
 }
 
 function resultFromRow(row: ExistingConversion): IncomingConversionResult {
@@ -93,7 +73,10 @@ export async function recordIncomingConversion(
       throw new AppError('destination_currency debe coincidir con la moneda principal de la wallet', 400);
     }
 
-    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`incoming:${input.idempotencyKey}`]);
+    await client.query(
+      'SELECT pg_advisory_xact_lock(hashtext($1))',
+      [`operation:${input.idempotencyKey}`],
+    );
     const previous = await client.query<ExistingConversion>(
       `SELECT t.id AS transaction_id, c.wallet_id, c.user_id, c.account_id,
               jsonb_build_object('currency', RTRIM(c.source_currency), 'amount', c.source_amount::text) AS source,

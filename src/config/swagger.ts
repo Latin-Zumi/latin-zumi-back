@@ -6,6 +6,73 @@ export const openApiSpec = {
     description: 'Documentación de los endpoints de Latin Zumi.',
   },
   paths: {
+    '/health': {
+      get: {
+        summary: 'Comprobar que la API está activa',
+        operationId: 'getHealth',
+        responses: {
+          '200': {
+            description: 'El proceso de la API está respondiendo.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['status'],
+                  properties: {
+                    status: { type: 'string', enum: ['ok'], example: 'ok' },
+                  },
+                  example: { status: 'ok' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/health/ready': {
+      get: {
+        summary: 'Comprobar disponibilidad de la API y PostgreSQL',
+        operationId: 'getReadiness',
+        responses: {
+          '200': {
+            description: 'La API responde y PostgreSQL acepta consultas.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['status', 'db'],
+                  properties: {
+                    status: { type: 'string', enum: ['ok'], example: 'ok' },
+                    db: { type: 'string', enum: ['ok'], example: 'ok' },
+                  },
+                  example: { status: 'ok', db: 'ok' },
+                },
+              },
+            },
+          },
+          '503': {
+            description: 'La API está activa, pero PostgreSQL no está disponible.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['status', 'db'],
+                  properties: {
+                    status: { type: 'string', enum: ['error'], example: 'error' },
+                    db: {
+                      type: 'string',
+                      enum: ['unavailable'],
+                      example: 'unavailable',
+                    },
+                  },
+                  example: { status: 'error', db: 'unavailable' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/auth/login': {
       post: {
         summary: 'Iniciar sesión',
@@ -107,7 +174,7 @@ export const openApiSpec = {
     },
     '/users': {
       post: {
-        summary: 'Registrar usuario y crear su wallet única',
+        summary: 'Registrar usuario y crear su wallet y cuenta inicial',
         operationId: 'createUser',
         requestBody: {
           required: true,
@@ -143,7 +210,7 @@ export const openApiSpec = {
                     enum: ['USD', 'COP', 'ARS', 'EUR'],
                     default: 'COP',
                     example: 'COP',
-                    description: 'Moneda de liquidación de la única wallet del usuario.',
+                    description: 'Moneda de liquidación inicial de la wallet del usuario.',
                   },
                 },
               },
@@ -153,7 +220,7 @@ export const openApiSpec = {
         responses: {
           '201': {
             description:
-              'Usuario registrado y una única wallet de liquidación creada con saldo cero.',
+              'Usuario registrado con una wallet lógica y una cuenta inicial en la moneda de liquidación, con saldo cero.',
             content: {
               'application/json': {
                 schema: {
@@ -182,7 +249,7 @@ export const openApiSpec = {
                       type: 'object',
                       required: ['user', 'account', 'wallet_id'],
                       properties: {
-                        wallet_id: { type: 'string', format: 'uuid', description: 'ID de la wallet lógica, que puede contener saldos por moneda.' },
+                        wallet_id: { type: 'string', format: 'uuid', description: 'ID de la wallet lógica, que puede contener cuentas de saldo por moneda.' },
                         user: {
                           type: 'object',
                           required: ['id', 'username', 'email'],
@@ -292,6 +359,14 @@ export const openApiSpec = {
                         allow_negative: false,
                         balance: '325.00000000',
                       },
+                      {
+                        id: '10000000-0000-4000-8000-000000000005',
+                        user_id: '20000000-0000-4000-8000-000000000001',
+                        currency: 'ARS',
+                        account_type: 'user',
+                        allow_negative: false,
+                        balance: '170000.00000000',
+                      },
                     ],
                   },
                   properties: {
@@ -355,7 +430,7 @@ export const openApiSpec = {
     },
     '/accounts/{id}': {
       get: {
-        summary: 'Consultar la wallet única del usuario',
+        summary: 'Consultar una cuenta activa del usuario',
         operationId: 'getAccount',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -364,7 +439,7 @@ export const openApiSpec = {
             in: 'path',
             required: true,
               description:
-                'Identificador UUID de la única cuenta user activa del titular.',
+                'Identificador UUID de una cuenta user activa del titular.',
             schema: {
               type: 'string',
               format: 'uuid',
@@ -375,7 +450,7 @@ export const openApiSpec = {
         responses: {
           '200': {
             description:
-              'Datos y saldo de la wallet única. Si aún no tiene movimientos, el saldo es "0".',
+              'Datos y saldo de la cuenta consultada. Si aún no tiene movimientos, el saldo es "0".',
             content: {
               'application/json': {
                 schema: {
@@ -518,7 +593,7 @@ export const openApiSpec = {
     },
     '/accounts/{id}/balance': {
       get: {
-        summary: 'Consultar el saldo de la wallet única',
+        summary: 'Consultar el saldo de una cuenta activa',
         operationId: 'getAccountBalance',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -527,7 +602,7 @@ export const openApiSpec = {
             in: 'path',
             required: true,
               description:
-                'Identificador UUID de la única cuenta user activa del titular.',
+                'Identificador UUID de una cuenta user activa del titular.',
             schema: {
               type: 'string',
               format: 'uuid',
@@ -610,6 +685,77 @@ export const openApiSpec = {
               },
             },
           },
+        },
+      },
+    },
+    '/accounts/{id}/withdraw': {
+      post: {
+        summary: 'Retirar saldo de la cuenta autenticada',
+        operationId: 'withdrawAccount',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
+              format: 'uuid',
+              example: '10000000-0000-4000-8000-000000000001',
+            },
+          },
+          {
+            name: 'Idempotency-Key',
+            in: 'header',
+            required: true,
+            schema: { type: 'string', maxLength: 200 },
+            example: 'retiro-orden-123',
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['amount'],
+                example: { amount: '50.00' },
+                properties: {
+                  amount: {
+                    type: 'string',
+                    pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$',
+                    description: 'Importe positivo en la moneda de la cuenta.',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Retiro contabilizado o respuesta original de un reintento idempotente.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  example: {
+                    data: {
+                      transaction_id: '30000000-0000-4000-8000-000000000123',
+                      account_id: '10000000-0000-4000-8000-000000000001',
+                      amount: { currency: 'USD', amount: '50.00' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'ID, importe o clave idempotente inválidos.' },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de operar.' },
+          '404': { description: 'La cuenta no existe o no pertenece al titular autenticado.' },
+          '409': { description: 'La clave idempotente ya se usó con otra solicitud u operación.' },
+          '422': { description: 'El saldo disponible es insuficiente.' },
+          '500': { description: 'Error interno del servidor.' },
         },
       },
     },

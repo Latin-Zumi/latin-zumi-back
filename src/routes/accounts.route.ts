@@ -4,6 +4,7 @@ import {
   getAccount,
   getAccountBalance,
   createIncoming,
+  withdrawAccount,
 } from '../controllers/accounts.controller.js';
 import { asyncHandler } from '../handlers/asyncHandler.js';
 import { requireAuth } from '../middleware/requireAuth.js';
@@ -27,6 +28,11 @@ accountsRouter.post(
   '/accounts/:id/incoming',
   asyncHandler(requireAuth),
   asyncHandler(createIncoming),
+);
+accountsRouter.post(
+  '/accounts/:id/withdraw',
+  asyncHandler(requireAuth),
+  asyncHandler(withdrawAccount),
 );
 accountsRouter.get(
   '/accounts/:id',

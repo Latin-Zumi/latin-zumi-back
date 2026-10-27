@@ -61,7 +61,7 @@ definidos. No se recomienda agregar rutas solo para completar una lista.
 | `GET /health`, `GET /health/ready` | Implementados: `/health` confirma que responde el proceso y `/health/ready` también ejecuta `SELECT 1` contra PostgreSQL. | Configurar Railway con `/health/ready`; validar en el servicio desplegado. |
 | `GET /accounts` | Implementado; lista las cuentas activas del titular y el saldo por moneda sin exigir IDs al cliente. | Permite descubrir las cuentas/monedas del usuario tras autenticarse. |
 | `GET /transactions` o historial paginado | Implementado con paginación, filtros por cuenta y fechas, y acceso limitado al titular autenticado. | Permite mostrar actividad reciente; ordena por fecha descendente y limita cada página a 100 resultados. |
-| Retiro (`POST /accounts/:id/withdraw`) | Ausente. | Solo si el producto permite salida de fondos; exige saldo disponible, concurrencia, autorización e idempotencia. |
+| Retiro (`POST /accounts/:id/withdraw`) | Implementado: retiro autenticado del titular, con saldo suficiente, serialización por wallet e idempotencia. | Registra un movimiento en el ledger contra una cuenta `external`; no ejecuta un desembolso bancario o de un proveedor externo. |
 | Transferencia (`POST /transfers`) | Ausente. | Solo si se permiten movimientos entre usuarios/cuentas; definir atomicidad, destinatario y reversas. |
 | Recuperación de contraseña | Ausente. | Si usuarios finales pueden recuperar acceso sin soporte administrativo. Requiere canal y flujo de verificación. |
 | Perfil (`GET /users/me`) | Ausente. | Si el cliente necesita cargar identidad propia tras iniciar sesión. |

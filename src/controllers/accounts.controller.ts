@@ -9,12 +9,16 @@ import { AppError } from '../utils/AppError.js';
 import { getAuthContext } from '../middleware/requireAuth.js';
 import { recordIncomingConversion } from '../services/incoming-conversion.service.js';
 import { multiplyAndRoundHalfUp } from '../utils/decimal.js';
+import { withdrawFromAccount } from '../services/withdrawal.service.js';
 
 const accountIdSchema = z.string().uuid();
 const incomingSchema = z.object({
   source_currency: z.enum(['USD', 'COP', 'ARS', 'EUR']),
   source_amount: z.string().regex(/^\d{1,12}(?:\.\d{1,2})?$/),
   destination_currency: z.enum(['USD', 'COP', 'ARS', 'EUR']).optional(),
+});
+const withdrawalSchema = z.object({
+  amount: z.string().regex(/^\d{1,12}(?:\.\d{1,2})?$/),
 });
 
 function parseAccountId(value: string | string[] | undefined): string {
@@ -71,6 +75,25 @@ export async function createIncoming(req: Request, res: Response) {
     sourceCurrency: parsed.data.source_currency,
     sourceAmount: multiplyAndRoundHalfUp(parsed.data.source_amount, '1', 2),
     destinationCurrency: parsed.data.destination_currency,
+  });
+  return res.status(200).json({ data: result });
+}
+
+export async function withdrawAccount(req: Request, res: Response) {
+  const accountId = parseAccountId(req.params.id);
+  const parsed = withdrawalSchema.safeParse(req.body);
+  if (!parsed.success || /^0+(?:\.0+)?$/.test(parsed.success ? parsed.data.amount : '')) {
+    throw new AppError('Datos de retiro inválidos', 400);
+  }
+  const idempotencyKey = req.header('Idempotency-Key');
+  if (!idempotencyKey || idempotencyKey.length > 200 || !/^[\x21-\x7E]+$/.test(idempotencyKey)) {
+    throw new AppError('Se requiere un Idempotency-Key válido (máximo 200 caracteres)', 400);
+  }
+  const result = await withdrawFromAccount({
+    accountId,
+    userId: getAuthContext(req).userId,
+    idempotencyKey,
+    amount: parsed.data.amount,
   });
   return res.status(200).json({ data: result });
 }
