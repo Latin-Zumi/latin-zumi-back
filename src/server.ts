@@ -9,10 +9,24 @@ import { usersRouter } from './routes/users.route.js';
 import { authRouter } from './routes/auth.route.js';
 import swaggerUi from 'swagger-ui-express';
 import { openApiSpec } from './config/swagger.js';
+import { pool } from './config/db.js';
 
 export const app = express();
 
 app.use(express.json());
+
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+app.get('/health/ready', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.status(200).json({ status: 'ok', db: 'ok' });
+  } catch {
+    res.status(503).json({ status: 'error', db: 'unavailable' });
+  }
+});
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
