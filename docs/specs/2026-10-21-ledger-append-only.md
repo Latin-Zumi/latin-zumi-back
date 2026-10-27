@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-21
 
+## Orden de ejecución: 001
+
 ## Problema
 Los saldos almacenados y modificados directamente pueden quedar corruptos sin historial auditable. Se requiere un esquema PostgreSQL que permita derivarlos de asientos contables inmutables y balanceados por moneda.
 

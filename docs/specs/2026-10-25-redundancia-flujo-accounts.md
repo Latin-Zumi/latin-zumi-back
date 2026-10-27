@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-25
 
+## Orden de ejecución: 007
+
 ## Problema
 Las consultas de cuenta y saldo repiten el mismo `LEFT JOIN` entre `accounts`
 y `account_balances`, con filtros y tratamiento de moneda/saldo idénticos.

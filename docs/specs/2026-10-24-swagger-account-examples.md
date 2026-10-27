@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-24
 
+## Orden de ejecución: 006
+
 ## Problema
 Swagger muestra un `Example Value` genérico donde `id` y `user_id` tienen el
 mismo UUID. Además, el parámetro de la ruta no ofrece un ejemplo de una cuenta

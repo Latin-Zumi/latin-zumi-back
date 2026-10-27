@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-25
 
+## Orden de ejecución: 008
+
 ## Problema
 La definición OpenAPI de los dos endpoints de `accounts` coincide con sus
 campos y respuestas actuales. Sin embargo, la respuesta exitosa de

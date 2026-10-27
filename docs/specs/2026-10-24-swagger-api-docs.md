@@ -5,6 +5,8 @@ http://localhost:3000/api-docs
 ## Fecha
 2026-10-24
 
+## Orden de ejecución: 004
+
 ## Problema
 La API no tiene una página interactiva para consultar sus endpoints y contratos. `swagger-ui-express` ya está instalado, pero no se usa.
 
