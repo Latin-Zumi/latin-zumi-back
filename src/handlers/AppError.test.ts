@@ -1,20 +1,20 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { describe, expect, it } from 'vitest';
 import { AppError } from "../utils/AppError.js";
 
-test("AppError cra una instancia correcta", () => {
-  const err = new AppError("No encontrado", 404);
+describe('AppError', () => {
+  it('creates an operational error with an HTTP status', () => {
+    const err = new AppError('No encontrado', 404);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.message).toBe('No encontrado');
+    expect(err.statusCode).toBe(404);
+    expect(err.isOperational).toBe(true);
+    expect(err.stack).toBeDefined();
+  });
 
-  assert.ok(err instanceof Error);
-  assert.ok(err instanceof AppError);
-  assert.equal(err.message, "No encontrado");
-  assert.equal(err.statusCode, 404);
-  assert.equal(err.isOperational, true);
-  assert.ok(err.stack, undefined);
-});
-
-test("hereda correctamente de Error", () => {
-  const err = new AppError("boom", 500);
-  assert.equal(err.name, "Error");
-  assert.equal(Object.getPrototypeOf(err), AppError.prototype);
+  it('inherits from Error', () => {
+    const err = new AppError('boom', 500);
+    expect(err.name).toBe('Error');
+    expect(Object.getPrototypeOf(err)).toBe(AppError.prototype);
+  });
 });

@@ -1,7 +1,16 @@
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     user_id UUID,
     currency CHAR(3) NOT NULL,
+    CONSTRAINT accounts_currency_supported CHECK (currency IN ('USD', 'COP', 'ARS', 'EUR')),
     account_type TEXT NOT NULL CHECK (
         account_type IN (
             'user',
@@ -15,7 +24,9 @@ CREATE TABLE accounts (
         user_id,
         currency,
         account_type
-    )
+    ),
+    CONSTRAINT accounts_id_currency_unique UNIQUE (id, currency),
+    CONSTRAINT accounts_user_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
 CREATE TABLE transactions (
@@ -34,6 +45,9 @@ CREATE TABLE entries (
         direction IN ('debit', 'credit')
     ),
     currency CHAR(3) NOT NULL,
+    CONSTRAINT entries_currency_supported CHECK (currency IN ('USD', 'COP', 'ARS', 'EUR')),
+    CONSTRAINT entries_account_currency_fk FOREIGN KEY (account_id, currency)
+        REFERENCES accounts (id, currency),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -41,7 +55,7 @@ CREATE INDEX entries_transaction_id_idx ON entries (transaction_id);
 
 CREATE INDEX entries_account_currency_idx ON entries (account_id, currency);
 
-CREATE FUNCTION assert_transaction_balanced()
+CREATE OR REPLACE FUNCTION assert_transaction_balanced()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$

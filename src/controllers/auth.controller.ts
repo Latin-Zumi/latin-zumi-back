@@ -1,0 +1,51 @@
+import type { Request, Response } from 'express';
+import { z } from 'zod';
+import {
+  changeUserPassword,
+  createLoginSession,
+  revokeSession,
+} from '../services/auth.service.js';
+import { getAuthContext } from '../middleware/requireAuth.js';
+import { AppError } from '../utils/AppError.js';
+import { isPasswordLongEnough } from '../utils/password.js';
+
+const loginSchema = z.object({
+  identifier: z.string().trim().min(3).max(254).transform((value) => value.toLowerCase()),
+  password: z.string().max(128),
+});
+
+const changePasswordSchema = z.object({
+  current_password: z.string().min(1).max(128),
+  new_password: z.string().max(128).refine(isPasswordLongEnough),
+});
+
+export async function login(req: Request, res: Response) {
+  const parsed = loginSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError('Datos de login inválidos', 400);
+
+  const session = await createLoginSession(
+    parsed.data.identifier,
+    parsed.data.password,
+  );
+  return res.status(200).json({ data: session });
+}
+
+export async function logout(req: Request, res: Response) {
+  const auth = getAuthContext(req);
+  await revokeSession(auth.userId, auth.sessionId);
+  return res.status(204).end();
+}
+
+export async function changePassword(req: Request, res: Response) {
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new AppError('La contraseña nueva debe tener entre 15 y 128 caracteres', 400);
+  }
+
+  await changeUserPassword(
+    getAuthContext(req),
+    parsed.data.current_password,
+    parsed.data.new_password,
+  );
+  return res.status(204).end();
+}

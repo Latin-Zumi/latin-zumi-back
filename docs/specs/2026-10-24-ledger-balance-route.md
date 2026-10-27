@@ -3,6 +3,8 @@
 ## Fecha
 2026-10-24
 
+## Orden de ejecución: 003
+
 ## Problema
 El repositorio ya tiene un esquema de ledger, seeds de demostración y una conexión compartida a PostgreSQL, pero la aplicación Express aún no monta rutas. No hay un flujo HTTP para comprobar que los datos seeded se pueden consultar desde la aplicación. También hace falta revisar el esquema y la carga de seeds dentro de ese flujo.
 
