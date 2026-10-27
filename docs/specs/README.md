@@ -39,6 +39,8 @@ Pídele a la IA que **cree este archivo antes de tocar código**:
 ## Fecha
 YYYY-MM-DD
 
+## Orden de ejecución: 
+
 ## Problema
 ¿Qué hay que resolver? ¿Por qué?
 
