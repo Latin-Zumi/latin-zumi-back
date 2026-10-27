@@ -12,13 +12,15 @@ function getEnv(name: string): string {
   return value;
 }
 
-const client = new Client({
-  host: getEnv('DB_HOST'),
-  port: Number(getEnv('DB_PORT')),
-  database: getEnv('DB_NAME'),
-  user: getEnv('DB_USER'),
-  password: getEnv('DB_PASSWORD'),
-});
+const client = process.env.DATABASE_URL
+  ? new Client({ connectionString: process.env.DATABASE_URL })
+  : new Client({
+      host: getEnv('DB_HOST'),
+      port: Number(getEnv('DB_PORT')),
+      database: getEnv('DB_NAME'),
+      user: getEnv('DB_USER'),
+      password: getEnv('DB_PASSWORD'),
+    });
 
 try {
   await client.connect();
@@ -70,6 +72,12 @@ try {
     'utf8',
   );
   await client.query(currencyConversionsMigration);
+
+  const googleAuthProfileMigration = await readFile(
+    new URL('../migrations/008_google_auth_profile.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(googleAuthProfileMigration);
 
   await client.query('COMMIT');
   console.log('Schema y migraciones aplicados');

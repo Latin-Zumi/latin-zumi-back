@@ -1,10 +1,12 @@
 -- Stable demo identities. Password hashes are deliberately unusable for login.
-INSERT INTO users (id, username, email, password_hash) VALUES
-    ('20000000-0000-4000-8000-000000000001', 'demo-user', 'demo@example.com', 'seed-only-not-for-authentication'),
-    ('20000000-0000-4000-8000-000000000002', 'ana.perez', 'ana@example.com', 'seed-only-not-for-authentication'),
-    ('20000000-0000-4000-8000-000000000004', 'luca.fernandez', 'luca@example.com', 'seed-only-not-for-authentication'),
-    ('20000000-0000-4000-8000-000000000005', 'sofia.gomez', 'sofia@example.com', 'seed-only-not-for-authentication'),
-    ('20000000-0000-4000-8000-000000000006', 'mateo.rios', 'mateo@example.com', 'seed-only-not-for-authentication')
+INSERT INTO users
+    (id, username, email, password_hash, nombre, pais, moneda_preferida)
+VALUES
+    ('20000000-0000-4000-8000-000000000001', 'demo-user', 'demo@example.com', 'seed-only-not-for-authentication', 'Demo User', 'Otro', 'USD'),
+    ('20000000-0000-4000-8000-000000000002', 'ana.perez', 'ana@example.com', 'seed-only-not-for-authentication', 'Ana Pérez', 'Argentina', 'ARS'),
+    ('20000000-0000-4000-8000-000000000004', 'luca.fernandez', 'luca@example.com', 'seed-only-not-for-authentication', 'Luca Fernández', 'Otro', 'EUR'),
+    ('20000000-0000-4000-8000-000000000005', 'sofia.gomez', 'sofia@example.com', 'seed-only-not-for-authentication', 'Sofía Gómez', 'Otro', 'USD'),
+    ('20000000-0000-4000-8000-000000000006', 'mateo.rios', 'mateo@example.com', 'seed-only-not-for-authentication', 'Mateo Ríos', 'Colombia', 'COP')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO wallets (user_id, primary_currency)

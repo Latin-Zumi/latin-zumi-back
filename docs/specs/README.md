@@ -124,6 +124,7 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 024 | [Revisión completa del proyecto](./2026-10-27-revision-completa-proyecto.md) | Auditoría estática de arquitectura, endpoints, seguridad, base de datos y documentación; actualiza el estado real del proyecto. |
 | 025 | [Mínimo funcional de autenticación](./2026-10-27-minimo-funcional-auth-front-back.md) | Cambios 4, 6 y 8: migración 008, `POST /auth/register` y front contra el contrato mínimo. Depende del spec 026 para el login. |
 | 026 | [Contrato de sesión y login `{ token, user }`](./2026-10-27-contrato-sesion-login.md) | Implementa D1: `toAuthUser`, `createSessionForUser` y login `{ token, user }`. Requiere la migración 008 del spec 025. |
+| 027 | [Migración 008 de perfil y acceso Google](./2026-10-27-migracion-008-perfil-acceso-google.md) | Aplica al inicializador y documenta la migración de perfil, roles y método de acceso; completa los datos de perfil de los seeds demo. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
