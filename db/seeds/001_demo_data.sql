@@ -7,8 +7,17 @@ INSERT INTO users (id, username, email, password_hash) VALUES
     ('20000000-0000-4000-8000-000000000006', 'mateo.rios', 'mateo@example.com', 'seed-only-not-for-authentication')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO accounts (id, user_id, currency, account_type)
-SELECT seed.account_id, owner.id, seed.currency, seed.account_type
+INSERT INTO wallets (user_id, primary_currency)
+SELECT u.id, seed.currency
+  FROM (VALUES
+    ('demo-user', 'USD'), ('ana.perez', 'ARS'),
+    ('luca.fernandez', 'EUR'), ('sofia.gomez', 'USD'), ('mateo.rios', 'COP')
+  ) AS seed(username, currency)
+  JOIN users u ON u.username = seed.username
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO accounts (id, user_id, wallet_id, currency, account_type)
+SELECT seed.account_id, owner.id, wallet.id, seed.currency, seed.account_type
   FROM (VALUES
     ('10000000-0000-4000-8000-000000000001'::UUID, 'demo-user', 'USD', 'user'),
     ('10000000-0000-4000-8000-000000000002'::UUID, NULL, 'USD', 'external'),
@@ -21,6 +30,7 @@ SELECT seed.account_id, owner.id, seed.currency, seed.account_type
     ('10000000-0000-4000-8000-000000000010'::UUID, NULL, 'EUR', 'external')
   ) AS seed(account_id, username, currency, account_type)
   LEFT JOIN users owner ON owner.username = seed.username
+  LEFT JOIN wallets wallet ON wallet.user_id = owner.id
  WHERE seed.account_type <> 'user' OR owner.id IS NOT NULL
 ON CONFLICT DO NOTHING;
 

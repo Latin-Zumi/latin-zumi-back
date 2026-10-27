@@ -59,6 +59,18 @@ try {
   );
   await client.query(singleUserAccountMigration);
 
+  const walletContainerMigration = await readFile(
+    new URL('../migrations/006_wallet_container.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(walletContainerMigration);
+
+  const currencyConversionsMigration = await readFile(
+    new URL('../migrations/007_currency_conversions.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(currencyConversionsMigration);
+
   await client.query('COMMIT');
   console.log('Schema y migraciones aplicados');
 } catch (err: unknown) {

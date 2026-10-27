@@ -21,6 +21,7 @@ export interface RegisteredUser {
     allow_negative: boolean;
     balance: string;
   };
+  wallet_id: string;
 }
 
 interface UserRow {
@@ -37,6 +38,8 @@ interface AccountRow {
   allow_negative: boolean;
 }
 
+interface WalletRow { id: string }
+
 export async function registerUser(input: NewUser): Promise<RegisteredUser> {
   const client = await pool.connect();
   try {
@@ -49,12 +52,19 @@ export async function registerUser(input: NewUser): Promise<RegisteredUser> {
     );
     const user = userResult.rows[0];
 
+    const walletResult = await client.query<WalletRow>(
+      `INSERT INTO wallets (user_id, primary_currency)
+       VALUES ($1, $2) RETURNING id`,
+      [user.id, input.currency],
+    );
+    const wallet = walletResult.rows[0];
+
     const accountResult = await client.query<AccountRow>(
-      `INSERT INTO accounts (user_id, currency, account_type, allow_negative)
-       VALUES ($1, $2, 'user', false)
+      `INSERT INTO accounts (user_id, wallet_id, currency, account_type, allow_negative)
+       VALUES ($1, $2, $3, 'user', false)
        RETURNING id, user_id, RTRIM(currency) AS currency,
                  account_type, allow_negative`,
-      [user.id, input.currency],
+      [user.id, wallet.id, input.currency],
     );
     const account = accountResult.rows[0];
 
@@ -62,6 +72,7 @@ export async function registerUser(input: NewUser): Promise<RegisteredUser> {
     return {
       user,
       account: { ...account, balance: '0' },
+      wallet_id: wallet.id,
     };
   } catch (error) {
     await client.query('ROLLBACK');

@@ -77,6 +77,8 @@ Configura estas variables:
 | `DB_USER` | Usuario de PostgreSQL | — |
 | `DB_PASSWORD` | Contraseña de PostgreSQL | — |
 | `DB_MAX` | Máximo de conexiones del pool | `20` |
+| `EXCHANGE_RATE_TIMEOUT_MS` | Timeout por proveedor de tasas | `3000` |
+| `EXCHANGE_RATE_MAX_AGE_HOURS` | Antigüedad máxima aceptada para tasas | `24` |
 | `PORT` | Puerto HTTP de Express | `3000` |
 
 ## Inicializar el esquema
@@ -101,9 +103,12 @@ limita las nuevas cuentas y entries a USD, COP, ARS y EUR y exige que la moneda
 de cada entry coincida con la de su cuenta. En bases existentes, las
 restricciones se agregan como `NOT VALID`: preservan filas históricas y se
 aplican a filas nuevas. [`migrations/005_single_user_account.sql`](./migrations/005_single_user_account.sql)
-garantiza una sola cuenta `user` activa por usuario; si una base histórica
-tiene varias, conserva las filas y cierra las cuentas adicionales sin borrar
-sus entries.
+consolida el saldo activo inicial por usuario. Las migraciones
+[`006_wallet_container.sql`](./migrations/006_wallet_container.sql) y
+[`007_currency_conversions.sql`](./migrations/007_currency_conversions.sql)
+crean el contenedor lógico de wallet, enlazan las cuentas existentes sin
+cambiar IDs ni entries, permiten una cuenta activa por moneda y almacenan el
+detalle auditable de cada ingreso convertido.
 
 ## Cargar datos de demostración
 
@@ -114,8 +119,8 @@ npm run db:seed
 ```
 
 El ejecutor aplica en orden alfabético los archivos `.sql` de `seeds/` dentro
-de una transacción. Los seeds incluidos crean una sola cuenta por usuario,
-distribuidas entre USD, COP, ARS y EUR, con tres movimientos por cuenta y
+de una transacción. Los seeds incluidos crean una wallet por usuario con
+cuentas de saldo por moneda, distribuidas entre USD, COP, ARS y EUR, con tres movimientos por cuenta y
 entries balanceadas. Se pueden ejecutar varias veces:
 conservan los registros existentes y no duplican los movimientos demo.
 Las identidades sembradas usan valores de hash que no sirven para iniciar
@@ -134,13 +139,11 @@ cuenta `...0001`, `200.00 USD`; `...0005`, `170000.00 ARS`; `...0006`,
 `155.00 EUR`; `...0007`, `125.00 USD`; y `...0008`, `230000.00 COP`. Las
 cuentas externas tienen los valores negativos correspondientes.
 
-En una base existente, la migración puede conservar como activa una cuenta
-creada previamente si su moneda tiene prioridad. Por ejemplo, si Ana ya tenía
-una cuenta COP creada por registro y además existe la cuenta seeded ARS
-`...0005`, la cuenta COP permanece activa y la ARS queda cerrada; sus entries y
-su saldo histórico se conservan, pero la cuenta ARS no se muestra como wallet
-activa. Por eso los UUIDs y saldos activos pueden diferir entre una base limpia
-y una base histórica sin que existan huérfanos.
+En una base existente, la cuenta activa existente define la moneda principal
+de la wallet. Si el seed agrega otra cuenta user en otra moneda, queda como un
+saldo secundario dentro de esa misma wallet; no se convierten ni fusionan sus
+saldos. Por eso los UUIDs y saldos pueden diferir entre una base limpia y una
+base histórica sin que existan huérfanos.
 
 ## Archivos de base de datos
 
@@ -151,6 +154,8 @@ db/
 ├── migrations/003_auth_sessions.sql sesiones revocables
 ├── migrations/004_supported_currencies.sql monedas admitidas e integridad
 ├── migrations/005_single_user_account.sql una cuenta user activa por usuario
+├── migrations/006_wallet_container.sql wallet lógica y saldos por moneda
+├── migrations/007_currency_conversions.sql auditoría de conversiones
 ├── seeds/001_demo_data.sql    cuentas únicas y movimientos demo
 ├── scripts/init-db.ts         ejecuta esquema/migraciones
 └── scripts/seed-db.ts         ejecuta los seeds en orden
@@ -159,6 +164,7 @@ db/
 Los comandos deben ejecutarse desde la raíz del repositorio. La inicialización
 del esquema se ejecuta dentro de una transacción. En una base existente,
 `npm run db:init` omite la creación inicial y aplica las migraciones
-incrementales `002_users.sql`, `003_auth_sessions.sql` y
-`004_supported_currencies.sql`, `005_single_user_account.sql`; después puedes
+incrementales `002_users.sql`, `003_auth_sessions.sql`,
+`004_supported_currencies.sql`, `005_single_user_account.sql`,
+`006_wallet_container.sql` y `007_currency_conversions.sql`; después puedes
 ejecutar `npm run db:seed`.

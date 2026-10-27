@@ -11,6 +11,8 @@ const envSchema = z.object({
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
   DB_MAX: z.coerce.number().int().positive().default(20),
+  EXCHANGE_RATE_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
+  EXCHANGE_RATE_MAX_AGE_HOURS: z.coerce.number().positive().default(24),
 
 });
 
