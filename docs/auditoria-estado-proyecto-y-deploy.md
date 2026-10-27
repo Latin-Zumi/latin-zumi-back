@@ -57,7 +57,7 @@ definidos. No se recomienda agregar rutas solo para completar una lista.
 
 | Capacidad no cubierta | Estado | Cuándo sería necesaria |
 | --- | --- | --- |
-| `GET /health` o `/health/ready` | Ausente; bloqueo práctico para configurar el health check de Railway. | Antes del primer deploy con health check. Definir si solo comprueba proceso o también DB. |
+| `GET /health`, `GET /health/ready` | Implementados: `/health` confirma que responde el proceso y `/health/ready` también ejecuta `SELECT 1` contra PostgreSQL. | Configurar Railway con `/health/ready`; validar en el servicio desplegado. |
 | `GET /accounts` o `GET /wallet` | Ausente; solo se consulta una cuenta conociendo su ID. | Si el cliente debe descubrir las cuentas/monedas del usuario sin conservar IDs de registro. |
 | `GET /transactions` o historial paginado | Ausente; solo existe consulta por ID. | Si la app debe mostrar actividad reciente. Debe definirse paginación y filtros. |
 | Retiro (`POST /accounts/:id/withdraw`) | Ausente. | Solo si el producto permite salida de fondos; exige saldo disponible, concurrencia, autorización e idempotencia. |
@@ -80,9 +80,9 @@ recuperación de contraseña.
   - Start: `npm start` (ejecuta `node dist/index.js`)
 - El servidor lee `PORT`; Railway inyecta esa variable. No fijar un puerto
   distinto en el servicio.
-- No existe `/health`. Añadirlo y probar que responda `2xx`; luego configurar
-  `Healthcheck Path` con `/health`. Railway usa el health check para decidir si
-  activa el nuevo deploy, pero no lo consulta continuamente después.
+- Configurar `Healthcheck Path` con `/health/ready` para que la comprobación
+  incluya PostgreSQL; `/health` solo confirma que responde el proceso. Validar
+  el comportamiento en el servicio desplegado.
 - Definir una versión Node LTS compatible como política de equipo. El repo no
   fija `engines` ni `.nvmrc`; esta auditoría no selecciona un número de versión.
 - La aplicación no configura CORS. Si un frontend de navegador vive en otro

@@ -113,6 +113,7 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 015 | [Conversión de ingresos a la moneda de la wallet](./2026-10-26-conversion-tasas-exchange-rate.md) | Depende de la decisión de cuenta única y su moneda de liquidación. |
 | 016 | [Ingresos convertidos a la moneda principal de la wallet](./2026-10-26-ingresos-multimoneda-wallet.md) | Evolución posterior del modelo de wallet; revisar junto con 014–015 porque amplía el modelo a saldos secundarios. |
 | 017 | [Auditoría de estado del proyecto y preparación para deploy](./2026-10-26-auditoria-estado-y-deploy.md) | Inventario de endpoints, brechas funcionales y checklist verificable de preparación para despliegue. |
+| 018 | [Health check con disponibilidad de base de datos](./2026-10-26-health-check-db.md) | Separa proceso vivo de readiness y comprueba PostgreSQL para configurar Railway. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
