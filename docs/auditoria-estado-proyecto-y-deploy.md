@@ -8,16 +8,16 @@ deploy real.
 ## Resumen
 
 El backend compila y sus pruebas actuales pasan. Hay rutas para registro,
-autenticación, consultas autenticadas y registrar ingresos convertidos. No hay
-ruta de salud, ni listado de cuentas o movimientos. Retiros, transferencias y
+autenticación, consultas autenticadas, listado de cuentas y registrar ingresos
+convertidos. No hay listado de movimientos. Retiros, transferencias y
 recuperación de contraseña tampoco están implementados; deben priorizarse solo
 si forman parte del producto requerido.
 
 El repositorio tiene scripts suficientes para compilar, iniciar y aplicar el
 esquema en Railway, pero el servicio aún no está configurado. Hay que enlazar
 la base PostgreSQL, mapear variables `PG*` a `DB_*`, definir el comando de
-migración previo al deploy, configurar el health check (después de agregar su
-ruta) y validar conexión y recuperación de backups en el entorno desplegado.
+migración previo al deploy, configurar el health check y validar conexión y
+recuperación de backups en el entorno desplegado.
 
 ## Comprobaciones locales
 
@@ -25,7 +25,7 @@ ruta) y validar conexión y recuperación de backups en el entorno desplegado.
 | --- | --- |
 | `npm ci` | Correcto al repetir fuera del sandbox; 0 vulnerabilidades reportadas. |
 | `npm run build` | Correcto (`tsc -p tsconfig.json`). |
-| `npm test` | 3 archivos y 8 pruebas pasaron. |
+| `npm test` | 4 archivos y 10 pruebas pasaron. |
 | Inicialización PostgreSQL | No ejecutada; no se validó acceso a una base de datos. |
 | Deploy/health check Railway | No ejecutado; no hay servicio Railway configurado para este repo. |
 
@@ -48,6 +48,7 @@ Las rutas se contrastaron con `src/routes/` y la definición OpenAPI en
 | `GET /accounts/:id/balance` | Bearer y titular | Consultar saldo propio. |
 | `POST /accounts/:id/incoming` | Bearer y titular | Registrar un ingreso convertido con idempotencia. |
 | `GET /transactions/:id` | Bearer y titular | Consultar una transacción propia. |
+| `GET /accounts` | Protegido | Listar cuentas activas y saldos del titular autenticado. |
 | `GET /api-docs` | Público | Swagger UI/OpenAPI. |
 
 ## Endpoints que no existen y decisiones funcionales
@@ -58,7 +59,7 @@ definidos. No se recomienda agregar rutas solo para completar una lista.
 | Capacidad no cubierta | Estado | Cuándo sería necesaria |
 | --- | --- | --- |
 | `GET /health`, `GET /health/ready` | Implementados: `/health` confirma que responde el proceso y `/health/ready` también ejecuta `SELECT 1` contra PostgreSQL. | Configurar Railway con `/health/ready`; validar en el servicio desplegado. |
-| `GET /accounts` o `GET /wallet` | Ausente; solo se consulta una cuenta conociendo su ID. | Si el cliente debe descubrir las cuentas/monedas del usuario sin conservar IDs de registro. |
+| `GET /accounts` | Implementado; lista las cuentas activas del titular y el saldo por moneda sin exigir IDs al cliente. | Permite descubrir las cuentas/monedas del usuario tras autenticarse. |
 | `GET /transactions` o historial paginado | Ausente; solo existe consulta por ID. | Si la app debe mostrar actividad reciente. Debe definirse paginación y filtros. |
 | Retiro (`POST /accounts/:id/withdraw`) | Ausente. | Solo si el producto permite salida de fondos; exige saldo disponible, concurrencia, autorización e idempotencia. |
 | Transferencia (`POST /transfers`) | Ausente. | Solo si se permiten movimientos entre usuarios/cuentas; definir atomicidad, destinatario y reversas. |

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import {
+  getAccountsByUserId,
   getAccountById,
   getBalanceByAccountId,
 } from '../services/accounts.service.js';
@@ -23,6 +24,11 @@ function parseAccountId(value: string | string[] | undefined): string {
   }
 
   return parsedId.data;
+}
+
+export async function getAccounts(req: Request, res: Response) {
+  const accounts = await getAccountsByUserId(getAuthContext(req).userId);
+  return res.status(200).json({ data: accounts });
 }
 
 export async function getAccount(req: Request, res: Response) {

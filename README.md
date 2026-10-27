@@ -130,6 +130,35 @@ curl -i -X POST http://localhost:3000/auth/logout \
 
 ### Wallet e ingresos
 
+#### Listar las cuentas
+
+`GET /accounts`
+
+Devuelve las cuentas activas de la wallet del usuario autenticado y sus saldos
+por moneda. No requiere que el cliente conozca o conserve los IDs de las
+cuentas; cada resultado incluye su `id` para las operaciones que lo necesiten.
+Si el usuario no tiene cuentas activas, `data` es un arreglo vacío.
+
+```sh
+curl -i http://localhost:3000/accounts \
+  -H 'Authorization: Bearer <access_token>'
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "user_id": "20000000-0000-4000-8000-000000000001",
+      "currency": "USD",
+      "account_type": "user",
+      "allow_negative": false,
+      "balance": "325.00000000"
+    }
+  ]
+}
+```
+
 #### Consultar una cuenta
 
 `GET /accounts/:id`

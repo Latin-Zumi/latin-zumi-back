@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  getAccounts,
   getAccount,
   getAccountBalance,
   createIncoming,
@@ -8,6 +9,12 @@ import { asyncHandler } from '../handlers/asyncHandler.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 
 export const accountsRouter = Router();
+
+accountsRouter.get(
+  '/accounts',
+  asyncHandler(requireAuth),
+  asyncHandler(getAccounts),
+);
 
 // Debe registrarse después de la ruta específica para que "balance" no se
 // interprete como un UUID dentro de /accounts/:id.
