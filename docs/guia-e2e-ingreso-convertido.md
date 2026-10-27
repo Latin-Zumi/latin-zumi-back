@@ -1,7 +1,7 @@
-# Prueba de extremo a extremo: ingreso convertido
+# Prueba de extremo a extremo: ingreso convertido y retiro
 
 Esta guía verifica registro, autenticación, conversión de un ingreso,
-idempotencia y contabilización en el ledger usando la API y PostgreSQL.
+idempotencia, retiro y contabilización en el ledger usando la API y PostgreSQL.
 
 ## Requisitos
 
@@ -141,9 +141,80 @@ Para EUR→ARS deben aparecer cuatro entries: débito de `external` y crédito d
 `treasury` en EUR; débito de `treasury` y crédito de `user` en ARS. Débitos y
 créditos deben sumar lo mismo por cada moneda.
 
-## Limitación de la prueba
+## Limitación del ingreso
 
 La solicitud escribe un crédito contable en el ledger, pero no está conectada
+a un banco o procesador de pagos y no prueba la recepción real de fondos. Las
+tasas de los proveedores son referencias indicativas, no precios bancarios
+garantizados.
+
+## 9. Retirar saldo de la wallet
+
+Elige un importe menor al saldo ARS acreditado. Este ejemplo retira ARS 1.00;
+el retiro usa su propia clave idempotente, distinta a la del ingreso:
+
+```sh
+WITHDRAWAL_IDEMPOTENCY_KEY='e2e-retiro-ars-001'
+
+curl -i -X POST "$API_URL/accounts/$ACCOUNT_ID/withdraw" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: $WITHDRAWAL_IDEMPOTENCY_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"amount":"1.00"}'
+```
+
+La respuesta `200` informa `transaction_id`, `account_id` e importe/moneda.
+Guarda el `transaction_id` para revisar los asientos del retiro. El endpoint
+solo puede operar sobre una cuenta activa del titular autenticado; no solicita
+ni permite al cliente elegir la moneda.
+
+## 10. Comprobar el resultado, idempotencia y saldo insuficiente
+
+Repite exactamente la solicitud con la misma clave: debe responder `200` con
+el mismo `transaction_id`, sin otro débito. Un importe diferente con esa misma
+clave, o reutilizar la clave del ingreso, debe responder `409`.
+
+Prueba también fondos insuficientes usando una clave nueva; el importe
+deliberadamente alto debe devolver `422` y no crear una transacción:
+
+```sh
+curl -i -X POST "$API_URL/accounts/$ACCOUNT_ID/withdraw" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: e2e-retiro-insuficiente-001" \
+  -H 'Content-Type: application/json' \
+  -d '{"amount":"999999999999.00"}'
+
+curl -sS "$API_URL/accounts/$ACCOUNT_ID/balance" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+El balance posterior al retiro exitoso debe ser el saldo anterior menos ARS
+1.00; la solicitud insuficiente no debe modificarlo. Para comprobar la
+serialización en PostgreSQL, también se pueden enviar dos retiros concurrentes
+cuyas sumas superen el saldo: como máximo uno debe tener éxito y el saldo nunca
+debe quedar negativo.
+
+## 11. Verificar los asientos del retiro en PostgreSQL
+
+Consulta las entries del `transaction_id` devuelto por el retiro:
+
+```sql
+SELECT RTRIM(e.currency) AS currency, e.direction, e.amount::text AS amount,
+       a.account_type, e.account_id
+  FROM entries e
+  JOIN accounts a ON a.id = e.account_id
+ WHERE e.transaction_id = '<withdrawal_transaction_id>'
+ ORDER BY e.id;
+```
+
+Debe haber dos entries en la moneda de la cuenta: un débito a la cuenta
+`user` y un crédito del mismo importe a `external`. El saldo de la cuenta no
+debe ser negativo. Repetir el retiro no debe aumentar el número de entries.
+
+## Limitación del retiro
+
+El retiro registra la salida contable contra una cuenta `external`, pero no
+envía fondos a un banco o proveedor externo. El ingreso tampoco está conectado
 a un banco o procesador de pagos y no prueba la recepción real de fondos. Las
 tasas de los proveedores son referencias indicativas, no precios bancarios
 garantizados.

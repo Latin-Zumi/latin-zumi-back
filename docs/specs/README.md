@@ -118,6 +118,7 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 018 | [Health check con disponibilidad de base de datos](./2026-10-26-health-check-db.md) | Separa proceso vivo de readiness y comprueba PostgreSQL para configurar Railway. |
 | 019 | [Listado de cuentas del usuario](./2026-10-26-listado-cuentas-usuario.md) | Permite descubrir las cuentas activas y sus saldos mediante la sesión autenticada. |
 | 020 | [Historial paginado de transactions](./2026-10-26-transactions-historial-paginado.md) | Añade actividad reciente con paginación, filtros y aislamiento por titular. |
+| 021 | [Retiro desde cuenta](./2026-10-26-retiro-cuenta.md) | Registra retiros autenticados con saldo suficiente, serialización por wallet e idempotencia. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de

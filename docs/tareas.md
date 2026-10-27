@@ -146,6 +146,38 @@ Spec: [listado de cuentas del usuario](./specs/2026-10-26-listado-cuentas-usuari
 - [x] Documentar la ruta y su contrato en Swagger, README y la auditoría.
 - [x] Ejecutar `npm test` (4 archivos, 10 pruebas) y `npm run build`.
 
+### Orden 020 — Historial paginado de transactions
+
+Spec: [historial paginado](./specs/2026-10-26-transactions-historial-paginado.md).
+
+- [ ] Probar por HTTP la primera página, filtros de cuenta/fechas y metadatos
+  con datos de PostgreSQL.
+- [ ] Verificar por HTTP parámetros inválidos (`400`) y una cuenta ajena,
+  inexistente o cerrada (`404`).
+- [x] Ejecutar la suite de Vitest y confirmar Swagger para el historial
+  paginado.
+
+### Orden 021 — Retiro desde cuenta
+
+Spec: [retiro desde cuenta](./specs/2026-10-26-retiro-cuenta.md).
+
+- [ ] Retirar por HTTP desde una cuenta propia activa y confirmar que una
+  sesión ausente o una cuenta ajena/inexistente no produce cambios.
+- [ ] Probar importe inválido (`400`) y fondos insuficientes (`422`), y
+  verificar que no se crean transacciones ni entries al fallar.
+- [ ] Repetir la misma solicitud y clave idempotente; confirmar que devuelve
+  el mismo `transaction_id` sin duplicar movimientos. Reutilizar la clave con
+  otro importe o para un ingreso y confirmar `409`.
+- [ ] Ejecutar dos retiros concurrentes contra PostgreSQL con saldo conjunto
+  insuficiente y confirmar que como máximo uno se contabiliza y el saldo nunca
+  queda negativo.
+- [ ] Comprobar en PostgreSQL el débito a la cuenta `user`, el crédito
+  equivalente a `external` y la reversión completa ante un fallo.
+- [x] Ejecutar `npm run test:vit` (36 pruebas), `npm run build` y comprobar el
+  contrato documentado en Swagger.
+- [ ] Ejecutar la [guía E2E de ingreso y retiro](./guia-e2e-ingreso-convertido.md)
+  completa; el retiro es contable y no representa un desembolso bancario real.
+
 ## Criterio de cierre
 
 - [ ] Actualizar los checkboxes de los specs únicamente después de ejecutar y
