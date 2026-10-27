@@ -122,6 +122,10 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 022 | [Configuración de Neon para Codex](./2026-10-27-configuracion-neon-codex.md) | Verifica la skill existente y configura el MCP oficial de Neon mediante OAuth para Codex. |
 | 023 | [Conectar el backend a Neon](./2026-10-27-conexion-backend-neon.md) | Hace que el pool de PostgreSQL use `DATABASE_URL` de Neon, manteniendo el modo local con `DB_*`. |
 | 024 | [Revisión completa del proyecto](./2026-10-27-revision-completa-proyecto.md) | Auditoría estática de arquitectura, endpoints, seguridad, base de datos y documentación; actualiza el estado real del proyecto. |
+| 025 | [Mínimo funcional de autenticación](./2026-10-27-minimo-funcional-auth-front-back.md) | Cambios 4, 6 y 8: migración 008, `POST /auth/register` y front contra el contrato mínimo. Depende del spec 026 para el login. |
+| 026 | [Contrato de sesión y login `{ token, user }`](./2026-10-27-contrato-sesion-login.md) | Implementa D1: `toAuthUser`, `createSessionForUser` y login `{ token, user }`. Requiere la migración 008 del spec 025. |
+| 027 | [Migración 008 de perfil y acceso Google](./2026-10-27-migracion-008-perfil-acceso-google.md) | Aplica al inicializador y documenta la migración de perfil, roles y método de acceso; completa los datos de perfil de los seeds demo. |
+| 028 | [Registro transaccional con `POST /auth/register`](./2026-10-27-registro-auth-register-f8.md) | Extrae el cambio 6/F8 del spec 025: crea usuario, wallet, cuenta y sesión en una transacción; conserva `/users` legado. Depende de los specs 026 y 027. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
