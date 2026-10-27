@@ -116,20 +116,39 @@ curl -i -X POST http://localhost:3000/auth/login \
   -d '{"identifier":"usuario.prueba","password":"una-frase-de-acceso-larga"}'
 ```
 
-Usa el `access_token` devuelto como Bearer token en las rutas de cuenta,
-saldo y transacciones:
+La respuesta `200` tiene el envelope `{ token, user }`:
+
+```json
+{
+  "token": "<token-bearer>",
+  "user": {
+    "id": "20000000-0000-4000-8000-000000000001",
+    "nombre": "usuario.prueba",
+    "email": "usuario@example.com",
+    "pais": null,
+    "moneda_preferida": "COP",
+    "roles": ["user"],
+    "estado": "activo",
+    "foto_url": null
+  }
+}
+```
+
+Usa el `token` devuelto como Bearer token en las rutas de cuenta, saldo y
+transacciones:
 
 ```sh
 curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
-  -H 'Authorization: Bearer <access_token>'
+  -H 'Authorization: Bearer <token>'
 ```
 
 Las sesiones vencen en una hora. Si una cuenta existente inicia sesión con
-una contraseña menor a 15 caracteres, primero debe actualizarla:
+una contraseña menor a 15 caracteres, el login responde `200` pero las rutas
+protegidas responden `403` hasta que la actualice:
 
 ```sh
 curl -i -X POST http://localhost:3000/auth/change-password \
-  -H 'Authorization: Bearer <access_token>' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"current_password":"clave-anterior","new_password":"una-frase-de-acceso-de-quince-o-mas"}'
 ```
@@ -138,7 +157,7 @@ Para revocar la sesión actual:
 
 ```sh
 curl -i -X POST http://localhost:3000/auth/logout \
-  -H 'Authorization: Bearer <access_token>'
+  -H 'Authorization: Bearer <token>'
 ```
 
 ### Wallet e ingresos
@@ -154,7 +173,7 @@ Si el usuario no tiene cuentas activas, `data` es un arreglo vacío.
 
 ```sh
 curl -i http://localhost:3000/accounts \
-  -H 'Authorization: Bearer <access_token>'
+  -H 'Authorization: Bearer <token>'
 ```
 
 ```json
@@ -180,7 +199,7 @@ Devuelve los datos de la cuenta y su saldo. El `id` debe ser un UUID válido.
 
 ```sh
 curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
-  -H 'Authorization: Bearer <access_token>'
+  -H 'Authorization: Bearer <token>'
 ```
 
 ```json
@@ -204,7 +223,7 @@ Devuelve únicamente el saldo y la moneda de una cuenta:
 
 ```sh
 curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/balance \
-  -H 'Authorization: Bearer <access_token>'
+  -H 'Authorization: Bearer <token>'
 ```
 
 ```json
@@ -226,7 +245,7 @@ opcional y, si se envía, debe coincidir con esa moneda.
 
 ```sh
 curl -X POST http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/incoming \
-  -H 'Authorization: Bearer <access_token>' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Idempotency-Key: ingreso-externo-123' \
   -H 'Content-Type: application/json' \
   -d '{"source_currency":"EUR","source_amount":"100.00"}'
@@ -257,7 +276,7 @@ cuenta interna `external`; no ejecuta un desembolso bancario real.
 
 ```sh
 curl -X POST http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/withdraw \
-  -H 'Authorization: Bearer <access_token>' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Idempotency-Key: retiro-123' \
   -H 'Content-Type: application/json' \
   -d '{"amount":"50.00"}'
@@ -288,7 +307,7 @@ del usuario autenticado. Parámetros opcionales:
 
 ```sh
 curl -i 'http://localhost:3000/transactions?page=1&limit=20' \
-  -H 'Authorization: Bearer <access_token>'
+  -H 'Authorization: Bearer <token>'
 ```
 
 La respuesta usa `{ "data": [...], "meta": {...} }` directamente, sin el sobre
@@ -330,7 +349,7 @@ Devuelve solo los asientos asociados a las cuentas del usuario autenticado:
 
 ```sh
 curl -i http://localhost:3000/transactions/30000000-0000-4000-8000-000000000101 \
-  -H 'Authorization: Bearer <access_token>'
+  -H 'Authorization: Bearer <token>'
 ```
 
 ### Swagger

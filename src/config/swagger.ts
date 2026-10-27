@@ -76,6 +76,8 @@ export const openApiSpec = {
     '/auth/login': {
       post: {
         summary: 'Iniciar sesión',
+        description:
+          'Devuelve un token opaco y el usuario. El 403 por cambio de contraseña lo devuelven las rutas protegidas, no este endpoint.',
         operationId: 'login',
         requestBody: {
           required: true,
@@ -94,28 +96,28 @@ export const openApiSpec = {
         },
         responses: {
           '200': {
-            description: 'Sesión creada. El token se muestra una sola vez.',
+            description:
+              'Sesión creada. El token es opaco, se muestra una sola vez y vence en una hora.',
             content: {
               'application/json': {
                 schema: {
                   type: 'object',
-                  example: {
-                    data: {
-                      access_token: '<token-bearer>',
-                      token_type: 'Bearer',
-                      expires_at: '2026-10-26T19:00:00.000Z',
-                      password_change_required: false,
-                    },
-                  },
+                  required: ['token', 'user'],
                   properties: {
-                    data: {
-                      type: 'object',
-                      properties: {
-                        access_token: { type: 'string' },
-                        token_type: { type: 'string', example: 'Bearer' },
-                        expires_at: { type: 'string', format: 'date-time' },
-                        password_change_required: { type: 'boolean' },
-                      },
+                    token: { type: 'string' },
+                    user: { $ref: '#/components/schemas/AuthUser' },
+                  },
+                  example: {
+                    token: '<token-bearer>',
+                    user: {
+                      id: '20000000-0000-4000-8000-000000000001',
+                      nombre: 'Ana Pérez',
+                      email: 'ana@example.com',
+                      pais: 'Argentina',
+                      moneda_preferida: 'ARS',
+                      roles: ['user'],
+                      estado: 'activo',
+                      foto_url: null,
                     },
                   },
                 },
@@ -1055,6 +1057,45 @@ export const openApiSpec = {
     },
   },
   components: {
+    schemas: {
+      AuthUser: {
+        type: 'object',
+        required: [
+          'id',
+          'nombre',
+          'email',
+          'pais',
+          'moneda_preferida',
+          'roles',
+          'estado',
+          'foto_url',
+        ],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          nombre: { type: 'string' },
+          email: { type: 'string', format: 'email' },
+          pais: {
+            type: 'string',
+            nullable: true,
+            enum: ['Argentina', 'Colombia', 'Otro'],
+          },
+          moneda_preferida: {
+            type: 'string',
+            enum: ['USD', 'COP', 'ARS', 'EUR'],
+          },
+          roles: {
+            type: 'array',
+            items: { type: 'string' },
+            example: ['user'],
+          },
+          estado: {
+            type: 'string',
+            enum: ['activo', 'inactivo', 'bloqueado'],
+          },
+          foto_url: { type: 'string', nullable: true },
+        },
+      },
+    },
     securitySchemes: {
       bearerAuth: {
         type: 'http',
