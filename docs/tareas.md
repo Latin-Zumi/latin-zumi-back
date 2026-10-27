@@ -178,6 +178,24 @@ Spec: [retiro desde cuenta](./specs/2026-10-26-retiro-cuenta.md).
 - [ ] Ejecutar la [guía E2E de ingreso y retiro](./guia-e2e-ingreso-convertido.md)
   completa; el retiro es contable y no representa un desembolso bancario real.
 
+### Orden 024 — Revisión completa del proyecto
+
+Spec: [revisión completa](./specs/2026-10-27-revision-completa-proyecto.md).
+
+- [x] Revisar arquitectura, capas, endpoints, seguridad, migraciones y
+  documentación.
+- [x] Ejecutar `npm run build` y `npm run test:vit` (8 archivos, 37 pruebas).
+- [x] Actualizar `docs/tareas.md`, la auditoría, el índice de specs y el README
+  con el estado real del proyecto.
+- [ ] Retirar `idempotency_key` de las respuestas públicas de transacciones,
+  como pedía el spec de autenticación (orden 011), y ajustar Swagger y pruebas.
+- [ ] Adaptar `db:init` y `db:seed` para aceptar `DATABASE_URL`, o documentar y
+  validar el uso conjunto con `DB_*` en el entorno de deploy.
+- [ ] Unificar el comando de pruebas (`npm test` solo ejecuta `AppError`) o
+  documentar `npm run test:vit` como suite principal en CI.
+- [ ] Evaluar CORS y un almacenamiento compartido de rate limiting antes de
+  exponer la API a un frontend en otro origen o a varias réplicas.
+
 ## Criterio de cierre
 
 - [ ] Actualizar los checkboxes de los specs únicamente después de ejecutar y
