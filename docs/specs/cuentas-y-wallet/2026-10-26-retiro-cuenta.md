@@ -107,7 +107,7 @@ ese mismo resultado.
 - src/config/swagger.ts
 - docs/auditoria-estado-proyecto-y-deploy.md
 - docs/specs/README.md
-- docs/specs/2026-10-26-retiro-cuenta.md
+- docs/specs/cuentas-y-wallet/2026-10-26-retiro-cuenta.md
 
 ## Pasos
 1. Añadir la ruta autenticada y validar el UUID, importe y clave idempotente.

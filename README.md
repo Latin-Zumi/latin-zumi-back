@@ -417,17 +417,17 @@ La validación manual de integración con PostgreSQL está descrita en la
 - [`docs/guia-e2e-ingreso-convertido.md`](./docs/guia-e2e-ingreso-convertido.md): registro, login, ingreso, idempotencia y verificación del ledger.
 - [`db/README.md`](./db/README.md): PostgreSQL, migraciones y seeds.
 - [`docs/specs/README.md`](./docs/specs/README.md): guía y reglas para crear specs.
-- [`docs/specs/2026-10-21-ledger-append-only.md`](./docs/specs/2026-10-21-ledger-append-only.md): diseño del ledger inmutable.
-- [`docs/specs/2026-10-23-seeds-db.md`](./docs/specs/2026-10-23-seeds-db.md): datos de demostración e idempotencia.
-- [`docs/specs/2026-10-24-ledger-balance-route.md`](./docs/specs/2026-10-24-ledger-balance-route.md): endpoint de consulta de saldo.
-- [`docs/specs/2026-10-24-accounts-endpoints.md`](./docs/specs/2026-10-24-accounts-endpoints.md): endpoints de consulta de cuentas y separación por capas.
-- [`docs/specs/2026-10-24-swagger-api-docs.md`](./docs/specs/2026-10-24-swagger-api-docs.md): documentación OpenAPI.
-- [`docs/specs/2026-10-24-swagger-account-examples.md`](./docs/specs/2026-10-24-swagger-account-examples.md): ejemplos demo usados en Swagger.
-- [`docs/specs/2026-10-26-autenticacion-y-acceso-por-titular.md`](./docs/specs/2026-10-26-autenticacion-y-acceso-por-titular.md): autenticación y autorización por titular.
-- [`docs/specs/2026-10-26-transactions-historial-paginado.md`](./docs/specs/2026-10-26-transactions-historial-paginado.md): historial paginado y filtros.
-- [`docs/specs/2026-10-26-retiro-cuenta.md`](./docs/specs/2026-10-26-retiro-cuenta.md): retiro idempotente y serializado por wallet.
-- [`docs/specs/2026-10-26-health-check-db.md`](./docs/specs/2026-10-26-health-check-db.md): health checks de proceso y base de datos.
-- [`docs/specs/2026-10-27-conexion-backend-neon.md`](./docs/specs/2026-10-27-conexion-backend-neon.md): conexión del pool con `DATABASE_URL`.
+- [`docs/specs/ledger-y-transacciones/2026-10-21-ledger-append-only.md`](./docs/specs/ledger-y-transacciones/2026-10-21-ledger-append-only.md): diseño del ledger inmutable.
+- [`docs/specs/ledger-y-transacciones/2026-10-23-seeds-db.md`](./docs/specs/ledger-y-transacciones/2026-10-23-seeds-db.md): datos de demostración e idempotencia.
+- [`docs/specs/ledger-y-transacciones/2026-10-24-ledger-balance-route.md`](./docs/specs/ledger-y-transacciones/2026-10-24-ledger-balance-route.md): endpoint de consulta de saldo.
+- [`docs/specs/cuentas-y-wallet/2026-10-24-accounts-endpoints.md`](./docs/specs/cuentas-y-wallet/2026-10-24-accounts-endpoints.md): endpoints de consulta de cuentas y separación por capas.
+- [`docs/specs/plataforma-y-documentacion/2026-10-24-swagger-api-docs.md`](./docs/specs/plataforma-y-documentacion/2026-10-24-swagger-api-docs.md): documentación OpenAPI.
+- [`docs/specs/cuentas-y-wallet/2026-10-24-swagger-account-examples.md`](./docs/specs/cuentas-y-wallet/2026-10-24-swagger-account-examples.md): ejemplos demo usados en Swagger.
+- [`docs/specs/autenticacion/2026-10-26-autenticacion-y-acceso-por-titular.md`](./docs/specs/autenticacion/2026-10-26-autenticacion-y-acceso-por-titular.md): autenticación y autorización por titular.
+- [`docs/specs/ledger-y-transacciones/2026-10-26-transactions-historial-paginado.md`](./docs/specs/ledger-y-transacciones/2026-10-26-transactions-historial-paginado.md): historial paginado y filtros.
+- [`docs/specs/cuentas-y-wallet/2026-10-26-retiro-cuenta.md`](./docs/specs/cuentas-y-wallet/2026-10-26-retiro-cuenta.md): retiro idempotente y serializado por wallet.
+- [`docs/specs/plataforma-y-documentacion/2026-10-26-health-check-db.md`](./docs/specs/plataforma-y-documentacion/2026-10-26-health-check-db.md): health checks de proceso y base de datos.
+- [`docs/specs/plataforma-y-documentacion/2026-10-27-conexion-backend-neon.md`](./docs/specs/plataforma-y-documentacion/2026-10-27-conexion-backend-neon.md): conexión del pool con `DATABASE_URL`.
 - [`docs/auditoria-estado-proyecto-y-deploy.md`](./docs/auditoria-estado-proyecto-y-deploy.md): estado actual, brechas y preparación de deploy.
 
 Cada cambio funcional debe estar acompañado por un spec nuevo en `docs/specs/`,

@@ -156,8 +156,8 @@ fecha propias; no alterará el ledger ni los saldos.
 - package.json
 - README.md
 - db/README.md
-- docs/specs/2026-10-26-conversion-tasas-exchange-rate.md
-- docs/specs/2026-10-26-ingresos-multimoneda-wallet.md
+- docs/specs/cuentas-y-wallet/2026-10-26-conversion-tasas-exchange-rate.md
+- docs/specs/cuentas-y-wallet/2026-10-26-ingresos-multimoneda-wallet.md
 
 ## Pasos
 1. Crear la migración de wallet lógica, moneda principal y relación de las

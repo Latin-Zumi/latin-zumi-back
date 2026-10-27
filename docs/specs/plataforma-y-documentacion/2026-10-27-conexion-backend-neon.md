@@ -62,7 +62,7 @@ El endpoint `GET /health/ready` ya ejecuta esta consulta mediante el pool. Al us
 - src/config/db.ts
 - .env.example
 - db/README.md
-- docs/specs/2026-10-27-conexion-backend-neon.md
+- docs/specs/plataforma-y-documentacion/2026-10-27-conexion-backend-neon.md
 - docs/specs/README.md
 
 ## Pasos

@@ -65,7 +65,7 @@ flujo de ingresos y de las cuentas internas.
 - tests/ o src/**/*.test.ts
 - package.json
 - README.md
-- docs/specs/2026-10-26-conversion-tasas-exchange-rate.md
+- docs/specs/cuentas-y-wallet/2026-10-26-conversion-tasas-exchange-rate.md
 
 ## Pasos
 1. Confirmar moneda predeterminada, monedas soportadas y si el cliente puede

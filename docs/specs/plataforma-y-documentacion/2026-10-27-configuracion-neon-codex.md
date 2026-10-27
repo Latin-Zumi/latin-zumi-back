@@ -25,7 +25,7 @@ neon mcp --oauth --agent codex -y
 Este comando lo ejecuta quien configura Codex. Registra el servidor MCP oficial `https://mcp.neon.tech/mcp` en la configuración global de Codex usando OAuth. Codex solicita autenticación al usar el servidor; el comando no guarda una clave API en el repositorio.
 
 ## Archivos afectados
-- docs/specs/2026-10-27-configuracion-neon-codex.md
+- docs/specs/plataforma-y-documentacion/2026-10-27-configuracion-neon-codex.md
 - docs/specs/README.md
 - ~/.codex/config.toml (configuración global de Codex, fuera del repositorio)
 

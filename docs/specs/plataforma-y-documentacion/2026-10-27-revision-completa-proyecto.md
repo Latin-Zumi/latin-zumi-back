@@ -19,10 +19,10 @@ Esta revisión no modifica código de aplicación: los cambios funcionales
 detectados se proponen como tareas separadas.
 
 ## Archivos afectados
-- `docs/specs/2026-10-27-revision-completa-proyecto.md` (nuevo)
+- `docs/specs/plataforma-y-documentacion/2026-10-27-revision-completa-proyecto.md` (nuevo)
 - `docs/tareas.md`
 - `docs/auditoria-estado-proyecto-y-deploy.md`
-- `docs/specs/README.md` (índice)
+- `docs/specs/index-specs.md` (índice)
 - `README.md` (estado, endpoints, pruebas y arquitectura)
 - `db/README.md` (aclaración sobre `DATABASE_URL` y scripts de base de datos)
 

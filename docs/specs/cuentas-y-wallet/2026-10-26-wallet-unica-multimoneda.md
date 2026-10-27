@@ -67,7 +67,7 @@ en [el spec de conversión al recibir fondos](./2026-10-26-conversion-tasas-exch
 - db/README.md
 - tests/ o src/**/*.test.ts
 - package.json
-- docs/specs/2026-10-26-wallet-unica-multimoneda.md
+- docs/specs/cuentas-y-wallet/2026-10-26-wallet-unica-multimoneda.md
 
 ## Pasos
 1. Confirmar la moneda predeterminada y si el usuario puede cambiarla antes

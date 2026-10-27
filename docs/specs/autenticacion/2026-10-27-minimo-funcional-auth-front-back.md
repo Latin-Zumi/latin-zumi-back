@@ -6,7 +6,7 @@
 
 ## Orden de ejecución
 
-**025.** Registrado en el índice de `docs/specs/README.md`. No reutilizar
+**025.** Registrado en el índice de `docs/specs/index-specs.md`. No reutilizar
 números ya asignados.
 
 ## Alcance
@@ -14,7 +14,7 @@ números ya asignados.
 Este spec agrupa los cambios 4, 6 y 8 de la tabla **Los ocho cambios del
 mínimo** (`~/.opencode/plan/2026-10-27-Checklist-Integrada-Front-Back.md`,
 línea 66). El cambio 5 (contrato de sesión y login, decisión D1) se extrajo al
-spec 026 (`docs/specs/2026-10-27-contrato-sesion-login.md`), que se implementa
+spec 026 (`docs/specs/autenticacion/2026-10-27-contrato-sesion-login.md`), que se implementa
 después de la migración 008 y antes del registro y del front.
 
 | # | Cambio | Fase | Qué incluye |
@@ -1048,7 +1048,7 @@ envelope y `createSessionForUser` del 026.
 
 ## Dependencias externas y specs relacionados
 
-- **Spec 026:** `docs/specs/2026-10-27-contrato-sesion-login.md`. Define D1
+- **Spec 026:** `docs/specs/autenticacion/2026-10-27-contrato-sesion-login.md`. Define D1
   (`{ token, user }`), `toAuthUser`, `createSessionForUser` y el login. Se
   implementa después de la migración 008 y antes del registro y el front.
 - **F3:** `db:init` y `db:seed` deben aceptar solo `DATABASE_URL` para probar

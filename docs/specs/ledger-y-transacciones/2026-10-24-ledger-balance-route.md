@@ -101,7 +101,7 @@ La consulta usa parámetros (`$1`), inicia desde `accounts` para reconocer cuent
 - src/routes/accounts.route.ts
 - src/controllers/accounts.controller.ts
 - src/services/accounts.service.ts
-- docs/specs/2026-10-24-ledger-balance-route.md
+- docs/specs/ledger-y-transacciones/2026-10-24-ledger-balance-route.md
 
 ## Pasos
 1. Verificar las relaciones, restricciones, trigger de balance, vista de saldos y comportamiento de repetición de los seeds.

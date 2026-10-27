@@ -7,7 +7,7 @@
 ## Orden de ejecución: 026
 
 Requiere la migración 008 del spec 025
-(`docs/specs/2026-10-27-minimo-funcional-auth-front-back.md`). Se implementa
+(`docs/specs/autenticacion/2026-10-27-minimo-funcional-auth-front-back.md`). Se implementa
 después de aplicar esa migración y antes del registro (`POST /auth/register`) y
 del front del spec 025.
 

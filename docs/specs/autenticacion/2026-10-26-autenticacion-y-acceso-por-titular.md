@@ -249,7 +249,7 @@ vista global del asiento doble.
 - package-lock.json
 - src/config/swagger.ts
 - README.md
-- docs/specs/2026-10-26-autenticacion-y-acceso-por-titular.md
+- docs/specs/autenticacion/2026-10-26-autenticacion-y-acceso-por-titular.md
 
 ## Pasos
 1. Agregar `auth_sessions` con hash único de token, vencimiento, revocación e

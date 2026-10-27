@@ -150,7 +150,7 @@ fallo antes del `COMMIT` revierte ambas inserciones.
 - src/config/swagger.ts
 - README.md
 - db/README.md
-- docs/specs/2026-10-26-registro-usuario-billetera.md
+- docs/specs/autenticacion/2026-10-26-registro-usuario-billetera.md
 
 ## Pasos
 1. Crear la tabla `users` con identificador, username único, email único,

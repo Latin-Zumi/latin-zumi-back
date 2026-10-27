@@ -136,7 +136,7 @@ tamaño del resultado filtrado.
 - src/controllers/transactions.controller.test.ts
 - docs/auditoria-estado-proyecto-y-deploy.md
 - docs/specs/README.md
-- docs/specs/2026-10-26-transactions-historial-paginado.md
+- docs/specs/ledger-y-transacciones/2026-10-26-transactions-historial-paginado.md
 
 ## Pasos
 1. Añadir al service la consulta paginada con filtros parametrizados, conteo

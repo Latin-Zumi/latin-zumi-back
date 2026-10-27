@@ -177,7 +177,7 @@ esquemas de cada campo de respuesta.
 - src/routes/transactions.route.ts
 - src/server.ts
 - src/config/swagger.ts
-- docs/specs/2026-10-25-transactions-read-endpoint.md
+- docs/specs/ledger-y-transacciones/2026-10-25-transactions-read-endpoint.md
 
 ## Pasos
 1. Definir tipos de respuesta para transacción y sus asientos.

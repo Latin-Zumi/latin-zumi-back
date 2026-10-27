@@ -181,7 +181,7 @@ opciones hasta decidir qué significa "una billetera" para el producto.
   y soporte de líneas Node.
 
 ## Archivos afectados
-- docs/specs/2026-10-26-revision-practicas-wallet.md
+- docs/specs/cuentas-y-wallet/2026-10-26-revision-practicas-wallet.md
 
 ## Pasos
 1. Inspeccionar routes, controllers, services, middleware, configuración,

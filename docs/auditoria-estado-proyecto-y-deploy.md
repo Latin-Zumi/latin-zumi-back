@@ -19,7 +19,7 @@ decisiones operativas: CORS, almacenamiento compartido para rate limiting,
 versionado de migraciones y validación de un deploy real.
 
 La revisión completa está documentada en
-[`docs/specs/2026-10-27-revision-completa-proyecto.md`](./specs/2026-10-27-revision-completa-proyecto.md).
+[`docs/specs/plataforma-y-documentacion/2026-10-27-revision-completa-proyecto.md`](./specs/plataforma-y-documentacion/2026-10-27-revision-completa-proyecto.md).
 
 ## Comprobaciones locales
 
@@ -158,7 +158,7 @@ paso no se ejecute simultáneamente y planear una herramienta con versionado.
   fallar antes de que la API arranque.
 - **`GET /transactions` y `GET /transactions/:id` exponen `idempotency_key`.**
   El spec de autenticación
-  ([orden 011](./specs/2026-10-26-autenticacion-y-acceso-por-titular.md))
+  ([orden 011](./specs/autenticacion/2026-10-26-autenticacion-y-acceso-por-titular.md))
   pedía retirarla de la respuesta pública. No es un secreto de autenticación,
   pero sí una desviación de contrato que conviene corregir en un cambio
   independiente, junto con Swagger y las pruebas.

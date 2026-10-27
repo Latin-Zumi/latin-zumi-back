@@ -95,7 +95,7 @@ que ahora requiere el contrato público.
 - `db/seeds/001_demo_data.sql`
 - `db/README.md`
 - `docs/specs/README.md`
-- `docs/specs/2026-10-27-migracion-008-perfil-acceso-google.md`
+- `docs/specs/autenticacion/2026-10-27-migracion-008-perfil-acceso-google.md`
 
 ## Pasos
 

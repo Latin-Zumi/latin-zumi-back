@@ -42,7 +42,7 @@ example: {
 
 ## Archivos afectados
 - src/config/swagger.ts
-- docs/specs/2026-10-24-swagger-account-examples.md
+- docs/specs/cuentas-y-wallet/2026-10-24-swagger-account-examples.md
 
 ## Pasos
 1. Añadir el ejemplo de ID existente a los parámetros de ambos endpoints de
