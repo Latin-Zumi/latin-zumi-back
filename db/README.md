@@ -95,8 +95,13 @@ la URL tiene prioridad.
 
 ## Inicializar el esquema
 
-Configura `DATABASE_URL` o todos los campos `DB_*` en el archivo `.env`, y
-ejecuta:
+La aplicación y el pool aceptan `DATABASE_URL`, pero **los scripts
+`db:init` y `db:seed` todavía exigen `DB_HOST`, `DB_PORT`, `DB_NAME`,
+`DB_USER` y `DB_PASSWORD`**. Si solo configuraste `DATABASE_URL`, el comando de
+inicialización fallará: define también los campos `DB_*` o adapta los scripts
+antes de desplegar con Neon.
+
+Con los campos `DB_*` configurados en el archivo `.env`, ejecuta:
 
 ```sh
 npm run db:init

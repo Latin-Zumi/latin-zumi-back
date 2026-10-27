@@ -10,9 +10,11 @@ Actualmente el proyecto incluye:
 
 - Persistencia PostgreSQL basada en un ledger contable append-only.
 - Wallets con una moneda principal y cuentas de saldo por moneda.
-- Registro de usuario, login y logout con sesiones Bearer.
+- Registro de usuario, login, cambio de contraseña y logout con sesiones Bearer.
 - Consultas autenticadas de cuentas, saldos y transacciones propias.
-- Ingresos convertidos y registrados de forma idempotente en el ledger.
+- Listado de cuentas e historial paginado de transacciones con filtros.
+- Ingresos convertidos y retiros registrados de forma idempotente en el ledger.
+- Health checks de proceso (`/health`) y readiness con PostgreSQL (`/health/ready`).
 - Documentación interactiva OpenAPI/Swagger en `/api-docs`.
 - Middleware centralizado para errores HTTP y de PostgreSQL.
 
@@ -67,10 +69,21 @@ npm start
 Con la configuración predeterminada, la API queda disponible en
 `http://localhost:3000`.
 
+### Health checks
+
+- `GET /health`: responde `200` con `{ "status": "ok" }` si el proceso está vivo.
+- `GET /health/ready`: ejecuta `SELECT 1` contra PostgreSQL y responde `200` con
+  `{ "status": "ok", "db": "ok" }`; si la base no responde, devuelve `503`.
+
+Para un deploy, usa `/health/ready` como health check si la plataforma debe
+esperar también la disponibilidad de la base de datos.
+
 ## API
 
-Todas las respuestas exitosas usan el formato `{ "data": ... }`. Los saldos
-se serializan como texto para conservar la precisión decimal de PostgreSQL.
+La mayoría de las respuestas exitosas usan el formato `{ "data": ... }`. El
+historial paginado devuelve `{ "data": [...], "meta": {...} }` y los endpoints
+de logout/cambio de contraseña responden `204`. Los saldos se serializan como
+texto para conservar la precisión decimal de PostgreSQL.
 
 ### Usuario y sesión
 
@@ -79,9 +92,9 @@ se serializan como texto para conservar la precisión decimal de PostgreSQL.
 `POST /users`
 
 Registra un username y email, almacena un hash de la contraseña y crea una
-Crea una wallet lógica y su cuenta inicial en la moneda principal. La
-contraseña debe tener entre 15 y 128 caracteres; `currency` es opcional,
-acepta `USD`, `COP`, `ARS` o `EUR` y usa `COP` por defecto.
+wallet lógica y su cuenta inicial en la moneda principal. La contraseña debe
+tener entre 15 y 128 caracteres; `currency` es opcional, acepta `USD`, `COP`,
+`ARS` o `EUR` y usa `COP` por defecto.
 
 ```sh
 curl -X POST http://localhost:3000/users \
@@ -236,7 +249,78 @@ no existe o no pertenece al usuario, `409` si se reutiliza una clave con otra
 solicitud, `422` si el importe convertido redondea a cero y `503` si no hay
 una tasa vigente. Los errores internos no controlados responden `500`.
 
+#### Registrar un retiro
+
+`POST /accounts/:id/withdraw` requiere sesión Bearer y una clave
+`Idempotency-Key`. Debita la cuenta indicada y registra el contrapeso en una
+cuenta interna `external`; no ejecuta un desembolso bancario real.
+
+```sh
+curl -X POST http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/withdraw \
+  -H 'Authorization: Bearer <access_token>' \
+  -H 'Idempotency-Key: retiro-123' \
+  -H 'Content-Type: application/json' \
+  -d '{"amount":"50.00"}'
+```
+
+La respuesta incluye `transaction_id`, `account_id` y el importe retirado. Si el
+saldo es insuficiente responde `422` sin crear la transacción. Repetir la misma
+clave con el mismo importe devuelve el resultado original; reutilizarla con otro
+importe u otra operación responde `409`. El retiro queda serializado por wallet
+para evitar saldos negativos con solicitudes concurrentes.
+
 ### Actividad del ledger
+
+#### Listar transacciones
+
+`GET /transactions`
+
+Devuelve el historial paginado de transacciones con asientos en cuentas activas
+del usuario autenticado. Parámetros opcionales:
+
+| Parámetro | Descripción |
+| --- | --- |
+| `page` | Página solicitada; default `1`. |
+| `limit` | Resultados por página; default `20`, máximo `100`. |
+| `account_id` | UUID de una cuenta propia para filtrar sus movimientos. |
+| `from` | Fecha/hora ISO 8601 mínima (`occurred_at >= from`). |
+| `to` | Fecha/hora ISO 8601 máxima (`occurred_at <= to`). |
+
+```sh
+curl -i 'http://localhost:3000/transactions?page=1&limit=20' \
+  -H 'Authorization: Bearer <access_token>'
+```
+
+La respuesta usa `{ "data": [...], "meta": {...} }` directamente, sin el sobre
+`data` adicional:
+
+```json
+{
+  "data": [
+    {
+      "id": "30000000-0000-4000-8000-000000000101",
+      "description": "Movimiento demo USD 1",
+      "occurred_at": "2026-02-01T12:00:00.000Z",
+      "entries": [
+        {
+          "id": "2",
+          "account_id": "10000000-0000-4000-8000-000000000001",
+          "amount": "125.00000000",
+          "direction": "credit",
+          "currency": "USD",
+          "created_at": "2026-02-01T12:00:00.000Z"
+        }
+      ]
+    }
+  ],
+  "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+}
+```
+
+Solo se incluyen asientos de cuentas activas del titular. Una cuenta ajena,
+inexistente o cerrada responde `404`; filtros inválidos responden `400`.
+Actualmente la respuesta también incluye `idempotency_key`, aunque el spec de
+autenticación prevé retirarla de la representación pública.
 
 #### Consultar una transacción
 
@@ -261,28 +345,32 @@ src/
 ├── config/       configuración de entorno, PostgreSQL y OpenAPI
 ├── controllers/  validación de parámetros y respuestas HTTP
 ├── handlers/     adaptadores para handlers asíncronos
-├── middleware/   manejo centralizado de errores
+├── middleware/   autenticación, rate limiting y manejo de errores
 ├── routes/       definición y conexión de rutas
 ├── services/     consultas SQL parametrizadas, ledger y tasas externas
-└── utils/        errores de aplicación
+└── utils/        errores, decimales y contraseñas
 ```
 
 El flujo de una consulta es:
 
 ```text
-route → asyncHandler → controller → service → PostgreSQL
+route → asyncHandler/requireAuth → controller → service → PostgreSQL
 ```
 
 Las rutas no contienen SQL y los controllers no acceden directamente al pool
-de PostgreSQL. Las rutas específicas `/accounts/:id/balance` y
-`/accounts/:id/incoming` se registran antes de `/accounts/:id`.
+de PostgreSQL. Las rutas específicas `/accounts/:id/balance`,
+`/accounts/:id/incoming` y `/accounts/:id/withdraw` se registran antes de
+`/accounts/:id`.
 
 ## Pruebas y validación
 
 ```sh
 npm run build
-npm test
+npm run test:vit
 ```
+
+`npm run test:vit` ejecuta la suite completa con Vitest. `npm test` solo ejecuta
+la prueba básica de `AppError` mediante `node --test`.
 
 La validación manual de integración con PostgreSQL está descrita en la
 [guía de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).
@@ -299,6 +387,11 @@ La validación manual de integración con PostgreSQL está descrita en la
 - [`docs/specs/2026-10-24-swagger-api-docs.md`](./docs/specs/2026-10-24-swagger-api-docs.md): documentación OpenAPI.
 - [`docs/specs/2026-10-24-swagger-account-examples.md`](./docs/specs/2026-10-24-swagger-account-examples.md): ejemplos demo usados en Swagger.
 - [`docs/specs/2026-10-26-autenticacion-y-acceso-por-titular.md`](./docs/specs/2026-10-26-autenticacion-y-acceso-por-titular.md): autenticación y autorización por titular.
+- [`docs/specs/2026-10-26-transactions-historial-paginado.md`](./docs/specs/2026-10-26-transactions-historial-paginado.md): historial paginado y filtros.
+- [`docs/specs/2026-10-26-retiro-cuenta.md`](./docs/specs/2026-10-26-retiro-cuenta.md): retiro idempotente y serializado por wallet.
+- [`docs/specs/2026-10-26-health-check-db.md`](./docs/specs/2026-10-26-health-check-db.md): health checks de proceso y base de datos.
+- [`docs/specs/2026-10-27-conexion-backend-neon.md`](./docs/specs/2026-10-27-conexion-backend-neon.md): conexión del pool con `DATABASE_URL`.
+- [`docs/auditoria-estado-proyecto-y-deploy.md`](./docs/auditoria-estado-proyecto-y-deploy.md): estado actual, brechas y preparación de deploy.
 
 Cada cambio funcional debe estar acompañado por un spec nuevo en `docs/specs/`,
 siguiendo la convención `YYYY-MM-DD-titulo-corto.md`.
