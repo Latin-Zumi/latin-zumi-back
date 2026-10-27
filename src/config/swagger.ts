@@ -268,6 +268,91 @@ export const openApiSpec = {
         },
       },
     },
+    '/accounts': {
+      get: {
+        summary: 'Listar las cuentas activas del usuario autenticado',
+        operationId: 'getAccounts',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description:
+              'Cuentas user activas del titular autenticado. El arreglo está vacío si no tiene cuentas; el saldo de una cuenta sin movimientos es "0".',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['data'],
+                  example: {
+                    data: [
+                      {
+                        id: '10000000-0000-4000-8000-000000000001',
+                        user_id: '20000000-0000-4000-8000-000000000001',
+                        currency: 'USD',
+                        account_type: 'user',
+                        allow_negative: false,
+                        balance: '325.00000000',
+                      },
+                    ],
+                  },
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        required: [
+                          'id',
+                          'user_id',
+                          'currency',
+                          'account_type',
+                          'allow_negative',
+                          'balance',
+                        ],
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          user_id: { type: 'string', format: 'uuid' },
+                          currency: {
+                            type: 'string',
+                            enum: ['USD', 'COP', 'ARS', 'EUR'],
+                          },
+                          account_type: { type: 'string', example: 'user' },
+                          allow_negative: { type: 'boolean', example: false },
+                          balance: {
+                            type: 'string',
+                            description:
+                              'Saldo decimal serializado como texto; es "0" cuando la cuenta aún no tiene movimientos.',
+                            example: '325.00000000',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': {
+            description: 'Debes actualizar tu contraseña antes de consultar datos.',
+          },
+          '500': {
+            description: 'Error interno del servidor.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    error: {
+                      type: 'string',
+                      example: 'Error interno del servidor',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/accounts/{id}': {
       get: {
         summary: 'Consultar la wallet única del usuario',

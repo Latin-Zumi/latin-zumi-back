@@ -15,6 +15,27 @@ export interface AccountBalance {
   balance: string;
 }
 
+export async function getAccountsByUserId(userId: string): Promise<Account[]> {
+  const result = await pool.query<Account>(
+    `SELECT a.id,
+            a.user_id,
+            RTRIM(a.currency) AS currency,
+            a.account_type,
+            a.allow_negative,
+            COALESCE(b.balance, 0)::text AS balance
+       FROM accounts a
+       LEFT JOIN account_balances b
+         ON b.account_id = a.id AND b.currency = a.currency
+      WHERE a.user_id = $1
+        AND a.account_type = 'user'
+        AND a.closed_at IS NULL
+      ORDER BY RTRIM(a.currency), a.id`,
+    [userId],
+  );
+
+  return result.rows;
+}
+
 export async function getAccountById(
   accountId: string,
   userId: string,

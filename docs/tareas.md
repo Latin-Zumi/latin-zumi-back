@@ -135,6 +135,17 @@ en toda la wallet.
 - [ ] Ejecutar la [guía E2E de ingreso](./guia-e2e-ingreso-convertido.md)
   completa, incluyendo consulta posterior del saldo y la transacción.
 
+### Orden 019 — Listado de cuentas
+
+Spec: [listado de cuentas del usuario](./specs/2026-10-26-listado-cuentas-usuario.md).
+
+- [ ] Probar por HTTP que `GET /accounts` requiere sesión válida y devuelve solo
+  las cuentas `user` activas del titular autenticado.
+- [ ] Confirmar en PostgreSQL los saldos, el saldo `"0"` sin movimientos, la
+  exclusión de cuentas internas/cerradas y el arreglo vacío sin cuentas.
+- [x] Documentar la ruta y su contrato en Swagger, README y la auditoría.
+- [x] Ejecutar `npm test` (4 archivos, 10 pruebas) y `npm run build`.
+
 ## Criterio de cierre
 
 - [ ] Actualizar los checkboxes de los specs únicamente después de ejecutar y
