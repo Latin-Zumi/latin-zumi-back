@@ -1,4 +1,4 @@
-# Spec: mínimo funcional de autenticación (cambios 4, 5, 6 y 8)
+# Spec: mínimo funcional de autenticación (cambios 4, 6 y 8)
 
 ## Fecha
 
@@ -11,19 +11,20 @@ números ya asignados.
 
 ## Alcance
 
-Este spec agrupa los cambios 4, 5, 6 y 8 de la tabla **Los ocho cambios del
+Este spec agrupa los cambios 4, 6 y 8 de la tabla **Los ocho cambios del
 mínimo** (`~/.opencode/plan/2026-10-27-Checklist-Integrada-Front-Back.md`,
-línea 66). Los cuatro comparten un único contrato y se implementan en una sola
-entrega:
+línea 66). El cambio 5 (contrato de sesión y login, decisión D1) se extrajo al
+spec 026 (`docs/specs/2026-10-27-contrato-sesion-login.md`), que se implementa
+después de la migración 008 y antes del registro y del front.
 
 | # | Cambio | Fase | Qué incluye |
 | --- | --- | --- | --- |
 | 4 | Migración 008 completa | F7 | `nombre`, `pais`, `moneda_preferida`, `roles`, `estado`, `foto_url`, `google_uid`, `password_hash` nullable, checks e índices. |
-| 5 | `toAuthUser` + `createSessionForUser` + login `{ token, user }` | F8 | Serializador único, sesión reutilizable y login por contraseña con el envelope nuevo. |
 | 6 | `POST /auth/register` | F8 | Registro con usuario + wallet + cuenta + sesión en una transacción. |
 | 8 | Front contra el contrato mínimo | F13 (subconjunto) | Tipos UUID, payloads, balances con `GET /accounts`, `VITE_API_URL`, mock off, logout real y Google oculto. |
 
-**Fuera de alcance:** Google (`POST /auth/google`, F9), perfil
+**Fuera de alcance:** el contrato de sesión y login (cambio 5, D1), que vive en
+el spec 026; Google (`POST /auth/google`, F9), perfil
 (`PATCH /users/me`, F10), `GET /auth/me` (D14 = B), pantalla de cambio de
 contraseña (D4 = B), CORS (F6), `DATABASE_URL` en scripts de DB (F3), Node y
 `railway.json` (F4), CI (F2), versionado de migraciones (F12),
@@ -33,7 +34,6 @@ contraseña (D4 = B), CORS (F6), `DATABASE_URL` en scripts de DB (F3), Node y
 
 | ID | Decisión | Valor asumido |
 | --- | --- | --- |
-| D1 | Envelope | A: `{ token, user }` en auth; `{ data }` en el resto. |
 | D2 | Registro | A: `POST /auth/register` nuevo; `POST /users` queda legado. |
 | D3 | Mínimo de contraseña | A: 15–128 en front y back. |
 | D4 | Cambio obligatorio | B: se pospone; no hay pantalla en el mínimo. |
@@ -44,6 +44,9 @@ contraseña (D4 = B), CORS (F6), `DATABASE_URL` en scripts de DB (F3), Node y
 | D16 | CORS | Allowlist con `http://localhost:5173` y el dominio de Vercel (F6). |
 | D18 | Repo del front | `latin-zumi-front/latin-zumi-react` es la fuente de verdad. |
 
+**D1 (envelope `{ token, user }`)** se define en el spec 026. Este spec lo
+asume para el registro y para el front, pero no repite su implementación.
+
 Si alguna decisión cambia antes de implementar, ajustar este spec. En
 particular, D4 = A agregaría una pantalla de cambio de contraseña y D14 = A
 agregaría `GET /auth/me`; ninguno de los dos es necesario para el mínimo.
@@ -53,9 +56,9 @@ agregaría `GET /auth/me`; ninguno de los dos es necesario para el mínimo.
 El flujo **registro → Dashboard → recarga → logout → login** no funciona hoy
 con `VITE_USE_MOCK=false`:
 
-- `POST /auth/login` responde `{ data: { access_token, token_type, expires_at,
-  password_change_required } }` y no devuelve `user`. El front espera
-  `{ token, user }`, guarda una sesión incompleta y vuelve al login.
+- El login todavía devuelve el envelope viejo y no incluye `user`. Eso se
+  resuelve en el spec 026; este spec asume `{ token, user }` para el registro y
+  el front.
 - No existe `POST /auth/register`. El front lo llama, pero el back solo tiene
   `POST /users`, que pide `{ username, email, password, currency }`, no crea
   sesión y devuelve `{ data: { user, account, wallet_id } }`.
@@ -76,11 +79,12 @@ con `VITE_USE_MOCK=false`:
 | Método | Ruta | Request | Respuesta | Errores |
 | --- | --- | --- | --- | --- |
 | `POST` | `/auth/register` | `{ nombre, email, pais, password }` | `201 { token, user }` | `400`, `409`, `429` |
-| `POST` | `/auth/login` | `{ identifier, password }` | `200 { token, user }` | `400`, `401`, `403`, `429` |
 | `POST` | `/auth/logout` | Bearer | `204` | `401` |
 | `GET` | `/accounts` (ya existe) | Bearer | `200 { data: Account[] }` | `401`, `403` |
 
-`user` debe tener siempre esta forma, sin `password_hash` ni `google_uid`:
+`POST /auth/login` y el shape canónico de `user` se definen en el spec 026
+(`toAuthUser`). El registro devuelve el mismo shape, sin `password_hash` ni
+`google_uid`:
 
 ```json
 {
@@ -103,11 +107,11 @@ Reglas:
 - `roles` siempre es un arreglo; `getSession()` del front depende de eso.
 - `moneda_preferida` se deriva de `pais`: Argentina → `ARS`, Colombia → `COP`,
   Otro → `USD`.
-- Las respuestas de autenticación usan `{ token, user }`; los endpoints de
-  datos existentes conservan `{ data: ... }`.
+- Las respuestas de autenticación usan `{ token, user }` (D1 = A, spec 026);
+  los endpoints de datos existentes conservan `{ data: ... }`.
 - El token es el Bearer opaco del backend, no un token de Firebase.
-- `POST /auth/login` acepta `identifier` (email o username). El front manda el
-  email como `identifier`; no se agrega un alias `email` en el back.
+- El login, su validación de `identifier` y la creación de sesión están en el
+  spec 026; este spec solo consume `toAuthUser` y `createSessionForUser`.
 
 ---
 
@@ -344,226 +348,16 @@ contrato.
 
 ---
 
-## Cambio 5 — Serialización, sesión y login (F8)
-
-### Objetivo
-
-Que el backend sea la fuente de verdad de la sesión y que login devuelva
-exactamente `{ token, user }`, reutilizando la misma creación de sesión en
-registro y, más adelante, en Google.
-
-### `toAuthUser(row)`
-
-Un único serializador, en `src/services/auth.service.ts`, que solo devuelve los
-campos del contrato:
-
-```ts
-export interface AuthUserRow {
-  id: string;
-  username: string;
-  email: string;
-  nombre: string | null;
-  pais: string | null;
-  moneda_preferida: string;
-  roles: string[];
-  estado: string;
-  foto_url: string | null;
-}
-
-export interface AuthUser {
-  id: string;
-  nombre: string;
-  email: string;
-  pais: string | null;
-  moneda_preferida: string;
-  roles: string[];
-  estado: string;
-  foto_url: string | null;
-}
-
-export function toAuthUser(row: AuthUserRow): AuthUser {
-  return {
-    id: row.id,
-    nombre: row.nombre?.trim() || row.username,
-    email: row.email,
-    pais: row.pais,
-    moneda_preferida: row.moneda_preferida,
-    roles: row.roles,
-    estado: row.estado,
-    foto_url: row.foto_url,
-  };
-}
-```
-
-Es una función pura: la llaman el login, el registro y (en F9) Google. El
-resultado nunca incluye `password_hash` ni `google_uid`. Si `nombre` es
-`NULL`, cae al `username` para que el front siempre reciba un string.
-
-### `createSessionForUser(userId, { passwordChangeRequired })`
-
-Extraer la creación del token y la fila de `auth_sessions` de
-`createLoginSession`:
-
-```ts
-type Queryable = Pick<PoolClient, 'query'>;
-
-export interface CreatedSession {
-  token: string;
-  expiresAt: Date;
-  passwordChangeRequired: boolean;
-}
-
-export async function createSessionForUser(
-  userId: string,
-  options: { passwordChangeRequired: boolean; client?: Queryable },
-): Promise<CreatedSession> {
-  const token = randomBytes(32).toString('base64url');
-  const queryable = options.client ?? pool;
-
-  const result = await queryable.query<{ expires_at: Date }>(
-    `INSERT INTO auth_sessions
-       (user_id, token_hash, expires_at, password_change_required)
-     VALUES ($1, $2, now() + interval '1 hour', $3)
-     RETURNING expires_at`,
-    [userId, tokenHash(token), options.passwordChangeRequired],
-  );
-
-  return {
-    token,
-    expiresAt: result.rows[0].expires_at,
-    passwordChangeRequired: options.passwordChangeRequired,
-  };
-}
-```
-
-Puntos clave:
-
-- **No abre su propia transacción.** El llamador decide si usa el `pool` o un
-  `PoolClient` que ya tiene `BEGIN`. Eso permite que registro cree usuario,
-  wallet, cuenta y sesión en una sola transacción.
-- Mantiene token aleatorio de 32 bytes, hash SHA-256, expiración de una hora y
-  revocación por `revoked_at`.
-- El login sigue haciendo su propia transacción para el rehash de contraseña y
-  la sesión.
-
-### Login por contraseña
-
-`POST /auth/login` acepta `{ identifier, password }`. `identifier` puede ser
-email o username; el front manda el email. La respuesta es `200 { token, user }`.
-
-```ts
-export async function loginWithPassword(identifier: string, password: string) {
-  const normalized = identifier.trim().toLowerCase();
-
-  const userResult = await pool.query<
-    AuthUserRow & { password_hash: string | null }
-  >(
-    `SELECT id, username, email, nombre, pais,
-            RTRIM(moneda_preferida) AS moneda_preferida,
-            roles, estado, foto_url, password_hash
-       FROM users
-      WHERE username = $1 OR email = $1
-      LIMIT 1`,
-    [normalized],
-  );
-
-  const user = userResult.rows[0];
-  const storedHash = user?.password_hash ?? DUMMY_PASSWORD_HASH;
-  const verification = await verifyPassword(password, storedHash);
-
-  if (!user || !verification.valid) {
-    throw new AppError('Credenciales inválidas', 401);
-  }
-
-  const passwordChangeRequired = Array.from(password).length < 15;
-  const client = await pool.connect();
-
-  try {
-    await client.query('BEGIN');
-
-    if (verification.needsRehash) {
-      const upgradedHash = await hashPassword(password);
-      await client.query(
-        'UPDATE users SET password_hash = $2 WHERE id = $1',
-        [user.id, upgradedHash],
-      );
-    }
-
-    const session = await createSessionForUser(user.id, {
-      passwordChangeRequired,
-      client,
-    });
-    await client.query('COMMIT');
-
-    return { token: session.token, user: toAuthUser(user) };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-```
-
-Comportamiento:
-
-- Usuario inexistente o contraseña incorrecta: `401` genérico, sin revelar si
-  el email existe.
-- Usuario solo-Google (`password_hash NULL`): se verifica contra
-  `DUMMY_PASSWORD_HASH` y responde `401`, sin romper el servicio.
-- `passwordChangeRequired` se calcula con la longitud de la contraseña. El
-  registro normal siempre crea sesiones con `false` porque exige 15.
-- La respuesta no incluye `access_token`, `token_type`, `expires_at` ni
-  `password_change_required`; el contrato mínimo es `{ token, user }`.
-
-### Ajustes de tipos y compatibilidad
-
-- `UserCredential.password_hash` pasa a `string | null`.
-- `changeUserPassword` debe cortar con `401` si `password_hash` es `NULL`, para
-  que un usuario solo-Google no pueda cambiar una contraseña que no tiene.
-- `POST /auth/change-password` y `POST /auth/logout` siguen existiendo. El
-  logout ya revoca la sesión; el cambio de contraseña queda fuera del mínimo
-  (D4 = B), pero no debe romperse por el tipo nullable.
-
-### Swagger y documentación
-
-- Actualizar `/auth/login` en `src/config/swagger.ts`: request
-  `{ identifier, password }`, respuesta `200 { token, user }` con el schema de
-  `AuthUser`, errores `400`, `401`, `403`, `429`.
-- Documentar que el token es opaco y vence en una hora.
-- Actualizar `README.md` con el contrato nuevo.
-
-### Archivos afectados
-
-- `src/services/auth.service.ts`
-- `src/controllers/auth.controller.ts`
-- `src/config/swagger.ts`
-- `README.md`
-- `src/services/auth.service.test.ts` (nuevo o ampliado)
-
-### Cómo probar
-
-- [ ] Login con email y contraseña correctos: `200 { token, user }` con los
-      ocho campos del contrato.
-- [ ] Login con username y contraseña correctos: mismo resultado.
-- [ ] Contraseña incorrecta: `401` genérico.
-- [ ] Email inexistente: `401` genérico.
-- [ ] Usuario con `password_hash NULL`: `401` genérico, sin error 500.
-- [ ] El token devuelto sirve en `GET /accounts`.
-- [ ] `POST /auth/logout` con ese token responde `204`; el mismo token vuelve a
-      dar `401` en `GET /accounts`.
-- [ ] `toAuthUser` no devuelve `password_hash` ni `google_uid` (test unitario).
-- [ ] `toAuthUser` usa `username` cuando `nombre` es `NULL`.
-- [ ] `/api-docs` muestra el nuevo envelope y no muestra `access_token`.
-
----
-
 ## Cambio 6 — `POST /auth/register` (F8)
 
 ### Objetivo
 
 Que el front tenga un registro que cree usuario, wallet, cuenta inicial y
 sesión, y que devuelva `201 { token, user }` sin pasos adicionales.
+
+Este cambio depende del spec 026: reutiliza `toAuthUser` y
+`createSessionForUser` para serializar el usuario y crear la sesión. La
+migración 008 de este spec debe estar aplicada antes de ejecutarlo.
 
 ### Contrato
 
@@ -693,7 +487,8 @@ sesión.
 ### Creación compartida de usuario + wallet + cuenta
 
 En `src/services/users.service.ts`, extraer una función que reciba un
-`PoolClient` y sirva para registro normal y, en F9, para Google:
+`PoolClient` y sirva para registro normal y, en F9, para Google. El tipo
+`AuthUserRow` se importa del spec 026 (`auth.service.ts`):
 
 ```ts
 export async function createUserWithWallet(
@@ -823,16 +618,20 @@ recibido, y luego mapear el resultado al shape legado.
 ### Archivos afectados
 
 - `src/routes/auth.route.ts`
-- `src/controllers/auth.controller.ts`
-- `src/services/auth.service.ts`
+- `src/controllers/auth.controller.ts` (solo `register`)
+- `src/services/auth.service.ts` (solo `registerAccount`; `toAuthUser` y
+  `createSessionForUser` son del spec 026)
 - `src/services/users.service.ts`
 - `src/utils/country.ts` (nuevo)
-- `src/config/swagger.ts`
+- `src/config/swagger.ts` (solo `/auth/register` y `/users` legado)
 - `README.md`
 - `src/controllers/auth.controller.test.ts` (nuevo o ampliado)
 - `src/services/users.service.test.ts` (nuevo o ampliado)
 
 ### Cómo probar
+
+Requiere el spec 026 implementado (`toAuthUser` y `createSessionForUser`) y la
+migración 008 aplicada.
 
 - [ ] Registro válido: `201 { token, user }`; la base tiene una fila en
       `users`, una en `wallets`, una cuenta `user` y una en `auth_sessions`.
@@ -857,6 +656,9 @@ recibido, y luego mapear el resultado al shape legado.
 Conectar el front al backend real, sin mocks, con los tipos y payloads del
 contrato, y hacer que el Dashboard muestre los balances de `GET /accounts`.
 
+El envelope `{ token, user }`, el shape de `user` y la creación de sesión se
+definen en el spec 026. Este cambio consume ese contrato y no lo reimplementa.
+
 ### 1. Tipos UUID
 
 En `src/services/authService.ts`:
@@ -870,7 +672,7 @@ export interface AuthUser {
   moneda_preferida: string;
   roles: string[];
   estado: string;
-  foto_url?: string | null;
+  foto_url: string | null;
 }
 ```
 
@@ -967,10 +769,11 @@ Alinear `LoginForm` y `RegisterForm` con D3 = A:
 - Mensajes de error alineados con el back: “La contraseña debe tener entre 15
   y 128 caracteres”.
 
-Si el back responde `403` por `password_change_required`, el front muestra el
-mensaje claro de arriba. La pantalla de cambio queda fuera del mínimo (D4 = B);
-si hay usuarios legacy con contraseña corta, hay que priorizar D4 antes de
-usuarios reales.
+El login no devuelve `403`: el `403` por `password_change_required` aparece en
+las rutas protegidas, como `GET /accounts`. El front lo maneja en balances con
+el mensaje de arriba y sin borrar la sesión. La pantalla de cambio queda fuera
+del mínimo (D4 = B); si hay usuarios legacy con contraseña corta, hay que
+priorizar D4 antes de usuarios reales.
 
 ### 4. Balances con `GET /accounts`
 
@@ -1228,7 +1031,8 @@ nota de que el logout ahora revoca en el backend.
    el navegador no puede llamar la API.
 2. **Cambio 4:** crear `008_google_auth_profile.sql`, agregarla a `init-db.ts`,
    actualizar seed y `db/README.md`. Verificar sobre base limpia y existente.
-3. **Cambio 5:** `toAuthUser`, `createSessionForUser`, login y Swagger.
+3. **Spec 026:** `toAuthUser`, `createSessionForUser`, login `{ token, user }` y
+   Swagger. Se implementa después de la migración 008.
 4. **Cambio 6:** `POST /auth/register`, `createUserWithWallet`, rate limit,
    Swagger y legado `/users`.
 5. **Cambio 8:** tipos, payloads, balances, Dashboard, logout, Google oculto y
@@ -1238,8 +1042,15 @@ nota de que el logout ahora revoca en el backend.
 7. **Documentación:** actualizar `docs/tareas.md`, `README.md`, `db/README.md`
    y el índice de specs. Marcar cada checkbox con evidencia.
 
-## Dependencias externas a este spec
+El orden real es **migración 008 → spec 026 → registro/front de este spec**.
+El spec 026 necesita las columnas nuevas; el registro y el front necesitan el
+envelope y `createSessionForUser` del 026.
 
+## Dependencias externas y specs relacionados
+
+- **Spec 026:** `docs/specs/2026-10-27-contrato-sesion-login.md`. Define D1
+  (`{ token, user }`), `toAuthUser`, `createSessionForUser` y el login. Se
+  implementa después de la migración 008 y antes del registro y el front.
 - **F3:** `db:init` y `db:seed` deben aceptar solo `DATABASE_URL` para probar
   contra Neon. Hoy siguen exigiendo `DB_*`; el spec de la migración 008 asume
   que F3 ya está resuelto o que se prueba con PostgreSQL local.
@@ -1259,15 +1070,16 @@ nota de que el logout ahora revoca en el backend.
 - `db/scripts/init-db.ts`
 - `db/seeds/001_demo_data.sql`
 - `db/README.md`
-- `src/services/auth.service.ts`
+- `src/services/auth.service.ts` (solo `registerAccount`; el resto es del spec
+  026)
 - `src/services/users.service.ts`
-- `src/services/auth.service.test.ts` (nuevo o ampliado)
+- `src/services/auth.service.test.ts` (nuevo o ampliado, solo registro)
 - `src/services/users.service.test.ts` (nuevo o ampliado)
-- `src/controllers/auth.controller.ts`
-- `src/controllers/auth.controller.test.ts` (nuevo o ampliado)
+- `src/controllers/auth.controller.ts` (solo `register`)
+- `src/controllers/auth.controller.test.ts` (nuevo o ampliado, solo registro)
 - `src/routes/auth.route.ts`
 - `src/utils/country.ts` (nuevo)
-- `src/config/swagger.ts`
+- `src/config/swagger.ts` (solo `/auth/register` y `/users` legado)
 - `README.md`
 
 ### Frontend (`latin-zumi-front/latin-zumi-react`)
@@ -1301,11 +1113,10 @@ nota de que el logout ahora revoca en el backend.
 - [ ] Registro: `201 { token, user }`, wallet y cuenta creadas, país y moneda
       correctos.
 - [ ] Duplicado de email: `409`; payload inválido: `400`; exceso: `429`.
-- [ ] Login correcto: `200 { token, user }`; clave incorrecta: `401` genérico.
-- [ ] Usuario solo-Google por contraseña: `401` genérico.
 - [ ] Logout: `204` y el token deja de servir (`401`).
-- [ ] `toAuthUser` no expone campos sensibles (test unitario).
-- [ ] `/api-docs` refleja el contrato nuevo y `/users` como deprecado.
+- [ ] `/api-docs` refleja `/auth/register` y `/users` como deprecado.
+- [ ] Login y `toAuthUser`: cubiertos por el spec 026; verificar que el token
+      del login sirve en `GET /accounts` después de este cambio.
 
 ### Frontend
 
@@ -1335,8 +1146,11 @@ nota de que el logout ahora revoca en el backend.
 ## Riesgos / notas
 
 - **F3/F4/F6 son precondiciones reales.** Si el deploy falla por
-  `DATABASE_URL`, Node o CORS, el problema no está en estos cuatro cambios;
-  verificar esas fases antes de diagnosticar el registro o el login.
+  `DATABASE_URL`, Node o CORS, el problema no está en estos tres cambios;
+  verificar esas fases antes de diagnosticar el registro o el front.
+- **Dependencia con el spec 026:** la migración 008 se aplica primero; el spec
+  026 define el envelope, `toAuthUser` y `createSessionForUser`; recién después
+  se implementan el registro y el front. No invertir ese orden.
 - **Emails duplicados por mayúsculas:** la migración 008 falla a propósito si
   encuentra duplicados. Hay que resolverlos a mano antes de aplicarla; no
   ignorar el error.
@@ -1372,6 +1186,7 @@ nota de que el logout ahora revoca en el backend.
 
 ## Fuera de alcance
 
+- El contrato de sesión y login (cambio 5, D1), que vive en el spec 026.
 - `POST /auth/google`, `firebase-admin`, variables `FIREBASE_*` y vinculación
   por email verificado (F9).
 - `PATCH /users/me`, pantalla de completar perfil y sincronización de moneda de

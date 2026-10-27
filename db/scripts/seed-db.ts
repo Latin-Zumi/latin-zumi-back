@@ -12,13 +12,15 @@ function getEnv(name: string): string {
   return value;
 }
 
-const client = new Client({
-  host: getEnv('DB_HOST'),
-  port: Number(getEnv('DB_PORT')),
-  database: getEnv('DB_NAME'),
-  user: getEnv('DB_USER'),
-  password: getEnv('DB_PASSWORD'),
-});
+const client = process.env.DATABASE_URL
+  ? new Client({ connectionString: process.env.DATABASE_URL })
+  : new Client({
+      host: getEnv('DB_HOST'),
+      port: Number(getEnv('DB_PORT')),
+      database: getEnv('DB_NAME'),
+      user: getEnv('DB_USER'),
+      password: getEnv('DB_PASSWORD'),
+    });
 
 try {
   await client.connect();

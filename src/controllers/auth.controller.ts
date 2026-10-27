@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import {
   changeUserPassword,
-  createLoginSession,
+  loginWithPassword,
   revokeSession,
 } from '../services/auth.service.js';
 import { getAuthContext } from '../middleware/requireAuth.js';
@@ -23,11 +23,11 @@ export async function login(req: Request, res: Response) {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError('Datos de login inválidos', 400);
 
-  const session = await createLoginSession(
+  const { token, user } = await loginWithPassword(
     parsed.data.identifier,
     parsed.data.password,
   );
-  return res.status(200).json({ data: session });
+  return res.status(200).json({ token, user });
 }
 
 export async function logout(req: Request, res: Response) {

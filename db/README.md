@@ -95,13 +95,9 @@ la URL tiene prioridad.
 
 ## Inicializar el esquema
 
-La aplicación y el pool aceptan `DATABASE_URL`, pero **los scripts
-`db:init` y `db:seed` todavía exigen `DB_HOST`, `DB_PORT`, `DB_NAME`,
-`DB_USER` y `DB_PASSWORD`**. Si solo configuraste `DATABASE_URL`, el comando de
-inicialización fallará: define también los campos `DB_*` o adapta los scripts
-antes de desplegar con Neon.
-
-Con los campos `DB_*` configurados en el archivo `.env`, ejecuta:
+La aplicación, el pool y los scripts `db:init` y `db:seed` aceptan
+`DATABASE_URL`. Si no está definida, los scripts usan los campos `DB_*` para
+PostgreSQL local. Con cualquiera de las dos configuraciones en `.env`, ejecuta:
 
 ```sh
 npm run db:init
@@ -125,7 +121,12 @@ consolida el saldo activo inicial por usuario. Las migraciones
 [`007_currency_conversions.sql`](./migrations/007_currency_conversions.sql)
 crean el contenedor lógico de wallet, enlazan las cuentas existentes sin
 cambiar IDs ni entries, permiten una cuenta activa por moneda y almacenan el
-detalle auditable de cada ingreso convertido.
+detalle auditable de cada ingreso convertido. La migración
+[`008_google_auth_profile.sql`](./migrations/008_google_auth_profile.sql)
+agrega el perfil (`nombre`, `pais`, `moneda_preferida`, `foto_url`), los roles
+y el estado del usuario, deja `password_hash` nullable para usuarios solo-Google
+y agrega los checks de país, moneda, estado y método de acceso, además de los
+índices únicos de `google_uid` y de email sin distinguir mayúsculas.
 
 ## Cargar datos de demostración
 
@@ -138,7 +139,8 @@ npm run db:seed
 El ejecutor aplica en orden alfabético los archivos `.sql` de `seeds/` dentro
 de una transacción. Los seeds incluidos crean una wallet por usuario con
 cuentas de saldo por moneda, distribuidas entre USD, COP, ARS y EUR, con tres movimientos por cuenta y
-entries balanceadas. Se pueden ejecutar varias veces:
+entries balanceadas. También completan `nombre`, `pais` y `moneda_preferida`
+para que el contrato de sesión sea coherente. Se pueden ejecutar varias veces:
 conservan los registros existentes y no duplican los movimientos demo.
 Las identidades sembradas usan valores de hash que no sirven para iniciar
 sesión; crea un usuario desde `POST /users` para probar autenticación.
@@ -173,6 +175,7 @@ db/
 ├── migrations/005_single_user_account.sql una cuenta user activa por usuario
 ├── migrations/006_wallet_container.sql wallet lógica y saldos por moneda
 ├── migrations/007_currency_conversions.sql auditoría de conversiones
+├── migrations/008_google_auth_profile.sql perfil, roles y acceso Google
 ├── seeds/001_demo_data.sql    cuentas únicas y movimientos demo
 ├── scripts/init-db.ts         ejecuta esquema/migraciones
 └── scripts/seed-db.ts         ejecuta los seeds en orden
@@ -183,5 +186,5 @@ del esquema se ejecuta dentro de una transacción. En una base existente,
 `npm run db:init` omite la creación inicial y aplica las migraciones
 incrementales `002_users.sql`, `003_auth_sessions.sql`,
 `004_supported_currencies.sql`, `005_single_user_account.sql`,
-`006_wallet_container.sql` y `007_currency_conversions.sql`; después puedes
-ejecutar `npm run db:seed`.
+`006_wallet_container.sql`, `007_currency_conversions.sql` y
+`008_google_auth_profile.sql`; después puedes ejecutar `npm run db:seed`.

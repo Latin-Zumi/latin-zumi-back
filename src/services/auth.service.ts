@@ -1,23 +1,35 @@
 import { createHash, randomBytes } from 'node:crypto';
+import type { PoolClient } from 'pg';
 import { pool } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../utils/password.js';
 
 interface UserCredential {
   id: string;
-  password_hash: string;
+  password_hash: string | null;
 }
 
-interface SessionRow {
+export interface AuthUserRow {
   id: string;
-  expires_at: Date;
+  username: string;
+  email: string;
+  nombre: string | null;
+  pais: string | null;
+  moneda_preferida: string;
+  roles: string[];
+  estado: string;
+  foto_url: string | null;
 }
 
-export interface LoginSession {
-  access_token: string;
-  token_type: 'Bearer';
-  expires_at: Date;
-  password_change_required: boolean;
+export interface AuthUser {
+  id: string;
+  nombre: string;
+  email: string;
+  pais: string | null;
+  moneda_preferida: string;
+  roles: string[];
+  estado: string;
+  foto_url: string | null;
 }
 
 export interface AuthContext {
@@ -26,22 +38,71 @@ export interface AuthContext {
   passwordChangeRequired: boolean;
 }
 
+export interface CreatedSession {
+  token: string;
+  expiresAt: Date;
+  passwordChangeRequired: boolean;
+}
+
+type Queryable = Pick<PoolClient, 'query'>;
+
 function tokenHash(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-export async function createLoginSession(
+export function toAuthUser(row: AuthUserRow): AuthUser {
+  return {
+    id: row.id,
+    nombre: row.nombre?.trim() || row.username,
+    email: row.email,
+    pais: row.pais,
+    moneda_preferida: row.moneda_preferida,
+    roles: row.roles,
+    estado: row.estado,
+    foto_url: row.foto_url,
+  };
+}
+
+export async function createSessionForUser(
+  userId: string,
+  options: { passwordChangeRequired: boolean; client?: Queryable },
+): Promise<CreatedSession> {
+  const token = randomBytes(32).toString('base64url');
+  const queryable = options.client ?? pool;
+
+  const result = await queryable.query<{ expires_at: Date }>(
+    `INSERT INTO auth_sessions
+       (user_id, token_hash, expires_at, password_change_required)
+     VALUES ($1, $2, now() + interval '1 hour', $3)
+     RETURNING expires_at`,
+    [userId, tokenHash(token), options.passwordChangeRequired],
+  );
+
+  return {
+    token,
+    expiresAt: result.rows[0].expires_at,
+    passwordChangeRequired: options.passwordChangeRequired,
+  };
+}
+
+export async function loginWithPassword(
   identifier: string,
   password: string,
-): Promise<LoginSession> {
-  const normalizedIdentifier = identifier.trim().toLowerCase();
-  const userResult = await pool.query<UserCredential>(
-    `SELECT id, password_hash
+): Promise<{ token: string; user: AuthUser }> {
+  const normalized = identifier.trim().toLowerCase();
+
+  const userResult = await pool.query<
+    AuthUserRow & { password_hash: string | null }
+  >(
+    `SELECT id, username, email, nombre, pais,
+            RTRIM(moneda_preferida) AS moneda_preferida,
+            roles, estado, foto_url, password_hash
        FROM users
       WHERE username = $1 OR email = $1
       LIMIT 1`,
-    [normalizedIdentifier],
+    [normalized],
   );
+
   const user = userResult.rows[0];
   const storedHash = user?.password_hash ?? DUMMY_PASSWORD_HASH;
   const verification = await verifyPassword(password, storedHash);
@@ -51,36 +112,30 @@ export async function createLoginSession(
   }
 
   const passwordChangeRequired = Array.from(password).length < 15;
+  // scrypt es costoso: se calcula antes de abrir la transacción para no
+  // retener una conexión mientras se hashea la contraseña.
   const upgradedHash = verification.needsRehash
     ? await hashPassword(password)
-    : user.password_hash;
-  const accessToken = randomBytes(32).toString('base64url');
+    : null;
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
-    if (verification.needsRehash) {
+
+    if (upgradedHash) {
       await client.query(
         'UPDATE users SET password_hash = $2 WHERE id = $1',
         [user.id, upgradedHash],
       );
     }
 
-    const sessionResult = await client.query<SessionRow>(
-      `INSERT INTO auth_sessions
-         (user_id, token_hash, expires_at, password_change_required)
-       VALUES ($1, $2, now() + interval '1 hour', $3)
-       RETURNING id, expires_at`,
-      [user.id, tokenHash(accessToken), passwordChangeRequired],
-    );
+    const session = await createSessionForUser(user.id, {
+      passwordChangeRequired,
+      client,
+    });
     await client.query('COMMIT');
 
-    return {
-      access_token: accessToken,
-      token_type: 'Bearer',
-      expires_at: sessionResult.rows[0].expires_at,
-      password_change_required: passwordChangeRequired,
-    };
+    return { token: session.token, user: toAuthUser(user) };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -125,7 +180,9 @@ export async function changeUserPassword(
     [context.userId],
   );
   const user = userResult.rows[0];
-  if (!user) throw new AppError('Credenciales inválidas', 401);
+  if (!user || !user.password_hash) {
+    throw new AppError('Credenciales inválidas', 401);
+  }
 
   const verification = await verifyPassword(currentPassword, user.password_hash);
   if (!verification.valid) throw new AppError('Credenciales inválidas', 401);
