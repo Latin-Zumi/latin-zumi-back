@@ -1,26 +1,13 @@
 import 'dotenv/config';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
+import { getClientConfig } from '../../src/config/db-connection.js';
 
 const { Client } = pg;
 
-function getEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Falta la variable de entorno ${name}`);
-  }
-  return value;
-}
-
-const client = process.env.DATABASE_URL
-  ? new Client({ connectionString: process.env.DATABASE_URL })
-  : new Client({
-      host: getEnv('DB_HOST'),
-      port: Number(getEnv('DB_PORT')),
-      database: getEnv('DB_NAME'),
-      user: getEnv('DB_USER'),
-      password: getEnv('DB_PASSWORD'),
-    });
+const client = new Client(getClientConfig());
+let transactionStarted = false;
+let transactionCommitted = false;
 
 try {
   await client.connect();
@@ -29,6 +16,7 @@ try {
   );
 
   await client.query('BEGIN');
+  transactionStarted = true;
   if (!existingSchema.rows[0]?.accounts_table) {
     const initialSchema = await readFile(
       new URL('../migrations/001_ledger.sql', import.meta.url),
@@ -80,15 +68,29 @@ try {
   await client.query(googleAuthProfileMigration);
 
   await client.query('COMMIT');
+  transactionCommitted = true;
   console.log('Schema y migraciones aplicados');
 } catch (err: unknown) {
-  try {
-    await client.query('ROLLBACK');
-  } catch {
-    // La conexión podría no haberse establecido o estar cerrada.
+  if (transactionStarted && !transactionCommitted) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError: unknown) {
+      console.error(
+        'No se pudo revertir la transacción:',
+        rollbackError instanceof Error ? rollbackError.message : rollbackError,
+      );
+    }
   }
   console.error(err instanceof Error ? err.message : err);
   process.exitCode = 1;
 } finally {
-  await client.end();
+  try {
+    await client.end();
+  } catch (closeError: unknown) {
+    console.error(
+      'No se pudo cerrar la conexión:',
+      closeError instanceof Error ? closeError.message : closeError,
+    );
+    process.exitCode = 1;
+  }
 }

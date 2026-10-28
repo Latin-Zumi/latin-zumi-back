@@ -67,18 +67,49 @@ Desde la raíz del proyecto, copia `.env.example` como `.env`:
 cp .env.example .env
 ```
 
-Configura `DATABASE_URL` con la cadena de conexión pooled de Neon (o de tu
-proveedor PostgreSQL) para conectar el backend usando una sola variable. La URL
-debe incluir TLS cuando el proveedor lo requiera. Si no usas una URL, configura
-los campos `DB_*` para PostgreSQL local:
+Configura `DATABASE_URL` con la URL entregada por tu proveedor PostgreSQL. La
+URL tiene prioridad sobre cualquier valor `DB_*`. Para conexiones con TLS,
+`sslmode=verify-full` es el modo recomendado: valida el certificado y el
+hostname. En la versión 2.x de `pg-connection-string` usada por `pg` 8 en este
+proyecto, `sslmode=require` actualmente se interpreta como `verify-full`; la
+aplicación lo normaliza explícitamente a ese modo. No se desactiva la
+validación del certificado.
+
+La aplicación admite estos valores de `sslmode`:
+
+| `sslmode` | Efecto |
+| --- | --- |
+| `verify-full` | Exige TLS y valida certificado y hostname; recomendado para proveedores remotos. |
+| `require` | Se normaliza a `verify-full` en esta aplicación, conservando el comportamiento verificado del parser actual. |
+| `disable` | Desactiva TLS; úsalo solo en entornos locales o redes de confianza. |
+
+Otros modos (`allow`, `prefer`, `verify-ca`, `no-verify`) se rechazan para
+evitar resultados ambiguos o configuraciones que no validen el hostname. Si se
+incluye `ssl=true` o `ssl=1` sin `sslmode`, el parser TLS de Node conserva la
+validación estándar del certificado; `ssl=false` y `ssl=0` desactivan TLS y son
+solo apropiados para entornos locales. No combines valores `ssl` y `sslmode`
+contradictorios. `uselibpqcompat=true` también se rechaza porque puede debilitar
+la validación TLS.
+
+Si tu proveedor requiere una CA privada, configura su certificado CA oficial
+con `sslrootcert` y `sslmode=verify-full`. No agregues certificados de origen
+desconocido. Esta documentación describe la configuración disponible; no
+confirma una conexión probada con Neon ni con otro proveedor remoto.
+
+Si no usas una URL, configura estos campos para PostgreSQL local:
 
 ```env
-DATABASE_URL=postgresql://<usuario>:<contraseña>@<endpoint-pooler>.neon.tech/<base>?sslmode=require
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=<base_local>
+DB_USER=<usuario_local>
+DB_PASSWORD=<contraseña_local>
 ```
 
 No guardes una URL con credenciales en Git. Usa `.env` local o el gestor de
 secretos de tu plataforma. Si `DATABASE_URL` y `DB_*` están definidos a la vez,
-la URL tiene prioridad.
+`DATABASE_URL` tiene prioridad. No se incluyen credenciales reales en el
+repositorio.
 
 | Variable | Descripción | Valor predeterminado |
 | --- | --- | --- |
@@ -89,15 +120,18 @@ la URL tiene prioridad.
 | `DB_USER` | Usuario de PostgreSQL local | — |
 | `DB_PASSWORD` | Contraseña de PostgreSQL local | — |
 | `DB_MAX` | Máximo de conexiones del pool | `20` |
+| `DB_IDLE_TIMEOUT_MILLIS` | Tiempo máximo que una conexión inactiva permanece en el pool (ms) | `30000` |
+| `DB_CONNECTION_TIMEOUT_MILLIS` | Tiempo máximo para establecer una conexión, tanto con `Client` como con `Pool` (ms) | `2000` |
 | `EXCHANGE_RATE_TIMEOUT_MS` | Timeout por proveedor de tasas | `3000` |
 | `EXCHANGE_RATE_MAX_AGE_HOURS` | Antigüedad máxima aceptada para tasas | `24` |
 | `PORT` | Puerto HTTP de Express | `3000` |
 
 ## Inicializar el esquema
 
-La aplicación, el pool y los scripts `db:init` y `db:seed` aceptan
-`DATABASE_URL`. Si no está definida, los scripts usan los campos `DB_*` para
-PostgreSQL local. Con cualquiera de las dos configuraciones en `.env`, ejecuta:
+La aplicación, el pool y los scripts `db:init` y `db:seed` usan la misma
+configuración: prefieren `DATABASE_URL` y, si no está definida, usan los campos
+`DB_*` para PostgreSQL local. Con cualquiera de las dos configuraciones en
+`.env`, ejecuta:
 
 ```sh
 npm run db:init
