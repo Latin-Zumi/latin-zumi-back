@@ -6,9 +6,55 @@ const optionalEnvString = z.preprocess(
   z.string().min(1).optional(),
 );
 
+const corsOriginsEnv = z.preprocess(
+  (value) => (value === undefined ? '' : value),
+  z.string().transform((value, context) => {
+    const origins: string[] = [];
+
+    for (const configuredOrigin of value.split(',')) {
+      const origin = configuredOrigin.trim();
+      if (!origin) {
+        continue;
+      }
+
+      let parsedOrigin: URL;
+      try {
+        parsedOrigin = new URL(origin);
+      } catch {
+        context.addIssue({
+          code: 'custom',
+          message: `Origen CORS inválido: ${origin}`,
+        });
+        continue;
+      }
+
+      if (
+        !['http:', 'https:'].includes(parsedOrigin.protocol) ||
+        parsedOrigin.pathname !== '/' ||
+        parsedOrigin.search ||
+        parsedOrigin.hash ||
+        parsedOrigin.username ||
+        parsedOrigin.password ||
+        origin.includes('*')
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: `CORS_ORIGINS debe contener orígenes HTTP(S) sin rutas: ${origin}`,
+        });
+        continue;
+      }
+
+      origins.push(parsedOrigin.origin);
+    }
+
+    return [...new Set(origins)];
+  }),
+);
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
+  CORS_ORIGINS: corsOriginsEnv,
 
   DATABASE_URL: z.preprocess(
     (value) => (value === '' ? undefined : value),

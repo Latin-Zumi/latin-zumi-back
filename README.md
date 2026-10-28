@@ -57,6 +57,21 @@ La configuración de las variables de entorno, incluyendo la conexión a
 PostgreSQL, está documentada en [`db/README.md`](./db/README.md). No subas el
 archivo `.env` al repositorio.
 
+### CORS
+
+Configura `CORS_ORIGINS` con los orígenes exactos del frontend, separados por
+comas y sin rutas, por ejemplo `https://sitio-confirmado.example`. El equipo
+debe completar el origen real de producción cuando esté confirmado; no se
+incluye una URL de producción inventada. Una lista vacía no autoriza orígenes
+web. Las solicitudes sin encabezado `Origin` continúan permitidas para health
+checks y comunicación entre servidores.
+
+El backend permite los métodos `GET` y `POST` y los encabezados
+`Authorization` y `Content-Type`, necesarios para la API y su autenticación
+Bearer. No habilita credenciales de cookies. Un origen fuera de la lista no
+recibe autorización CORS; CORS es una política del navegador, no reemplaza la
+autenticación ni el control de acceso del servidor.
+
 ## Ejecutar la aplicación
 
 Compila el proyecto y levanta el servidor:

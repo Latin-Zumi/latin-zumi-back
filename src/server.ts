@@ -10,9 +10,11 @@ import { authRouter } from './routes/auth.route.js';
 import swaggerUi from 'swagger-ui-express';
 import { openApiSpec } from './config/swagger.js';
 import { pool } from './config/db.js';
+import { corsMiddleware } from './config/cors.js';
 
 export const app = express();
 
+app.use(corsMiddleware);
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
