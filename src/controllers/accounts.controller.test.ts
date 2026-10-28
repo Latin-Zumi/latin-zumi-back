@@ -25,7 +25,7 @@ vi.mock('../services/incoming-conversion.service.js', () => ({
 }));
 vi.mock('../services/withdrawal.service.js', () => ({ withdrawFromAccount }));
 
-import { withdrawAccount } from './accounts.controller.js';
+import { getAccounts, withdrawAccount } from './accounts.controller.js';
 
 const accountId = '10000000-0000-4000-8000-000000000001';
 const userId = '20000000-0000-4000-8000-000000000001';
@@ -53,6 +53,53 @@ function createResponse() {
   res.status.mockReturnValue(res);
   return res as unknown as Response & typeof res;
 }
+
+describe('getAccounts', () => {
+  beforeEach(() => getAccountsByUserId.mockReset());
+
+  it('returns the authenticated user accounts and their database balances', async () => {
+    const accounts = [
+      {
+        id: accountId,
+        user_id: userId,
+        currency: 'USD',
+        account_type: 'user',
+        allow_negative: false,
+        balance: '125.00000000',
+      },
+    ];
+    getAccountsByUserId.mockResolvedValueOnce(accounts);
+    const res = createResponse();
+
+    await getAccounts(createRequest({}), res);
+
+    expect(getAccountsByUserId).toHaveBeenCalledWith(userId);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ data: accounts });
+  });
+
+  it('returns an empty data array when the authenticated user has no accounts', async () => {
+    getAccountsByUserId.mockResolvedValueOnce([]);
+    const res = createResponse();
+
+    await getAccounts(createRequest({}), res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ data: [] });
+  });
+
+  it('rejects a request without an authenticated user', async () => {
+    await expect(getAccounts(
+      { auth: undefined } as unknown as Request,
+      createResponse(),
+    )).rejects.toMatchObject({
+      statusCode: 401,
+      message: 'Autenticación requerida',
+    });
+
+    expect(getAccountsByUserId).not.toHaveBeenCalled();
+  });
+});
 
 describe('withdrawAccount', () => {
   beforeEach(() => withdrawFromAccount.mockReset());
