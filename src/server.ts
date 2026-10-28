@@ -15,6 +15,8 @@ import { corsMiddleware } from './config/cors.js';
 
 export const app = express();
 
+// Render terminates TLS at a single trusted reverse proxy.
+app.set('trust proxy', 1);
 app.use(corsMiddleware);
 app.use(express.json());
 

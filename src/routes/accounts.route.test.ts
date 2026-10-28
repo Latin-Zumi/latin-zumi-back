@@ -15,6 +15,7 @@ const otherUserId = '20000000-0000-4000-8000-000000000002';
 const ownerAccount = {
   id: '10000000-0000-4000-8000-000000000001',
   user_id: ownerId,
+  wallet_id: '40000000-0000-4000-8000-000000000001',
   currency: 'USD',
   account_type: 'user',
   allow_negative: false,
@@ -113,7 +114,10 @@ describe('GET /accounts', () => {
     const response = await fetch(`${baseUrl}/accounts`);
 
     expect(response.status).toBe(401);
-    expect(await response.json()).toEqual({ error: 'Autenticación requerida' });
+    expect(await response.json()).toEqual({
+      code: 'UNAUTHORIZED',
+      message: 'Autenticación requerida',
+    });
     expect(findActiveSession).not.toHaveBeenCalled();
     expect(query).not.toHaveBeenCalled();
   });
@@ -140,7 +144,10 @@ describe('GET /accounts', () => {
       });
 
       expect(response.status).toBe(500);
-      expect(await response.json()).toEqual({ error: 'Error interno del servidor' });
+      expect(await response.json()).toEqual({
+        code: 'INTERNAL_ERROR',
+        message: 'Error interno del servidor',
+      });
     } finally {
       log.mockRestore();
     }

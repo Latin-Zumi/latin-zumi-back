@@ -109,7 +109,7 @@ services:
     name: latin-zumi-back
     runtime: node
     buildCommand: npm ci && npm run build
-    preDeployCommand: npm run db:init
+    preDeployCommand: 'DATABASE_URL="$DATABASE_URL_UNPOOLED" npm run db:init'
     startCommand: npm start
     healthCheckPath: /health/ready
     envVars:
@@ -119,15 +119,20 @@ services:
         value: production
       - key: DATABASE_URL
         sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
       - key: CORS_ORIGINS
         sync: false
 ```
 
 Render usa el Blueprint para compilar y arrancar el servidor, y consulta
 `/health/ready` para validar readiness incluyendo PostgreSQL. El operador carga
-`DATABASE_URL` con el connection string pooled de Neon y `sslmode=verify-full`,
-y `CORS_ORIGINS` con el origen real del frontend. `sync: false` mantiene esos
-valores fuera del YAML. Render permite `preDeployCommand` para migraciones solo
+`DATABASE_URL` con el connection string pooled de Neon para las consultas del
+servidor y `sslmode=verify-full`; configura también `DATABASE_URL_UNPOOLED` con
+el connection string directo para migraciones. El `preDeployCommand` debe
+ejecutar `DATABASE_URL="$DATABASE_URL_UNPOOLED" npm run db:init`. `CORS_ORIGINS`
+recibe el origen real del frontend. `sync: false` mantiene estos valores fuera
+del YAML. Render permite `preDeployCommand` para migraciones solo
 en planes pagos; en otro plan, `npm run db:init` debe ejecutarse con un paso
 operativo disponible antes del release. Render establece `PORT` para el servicio
 y la aplicación ya escucha en `env.PORT`.
@@ -142,8 +147,10 @@ Render](https://render.com/docs/configure-environment-variables) y la
 - `src/services/accounts.service.ts`
 - `src/services/accounts.service.test.ts`
 - `src/routes/accounts.route.test.ts`
+- `src/config/swagger.ts`
 - `.env.example` (si se necesita aclarar la configuración de CORS para deploy)
 - `render.yaml`
+- `README.md`
 - `docs/specs/plataforma-y-documentacion/2026-10-28-minimo-funcional-backend.md`
 - `docs/specs/index-specs.md`
 
@@ -154,20 +161,22 @@ Render](https://render.com/docs/configure-environment-variables) y la
 3. Cambiar las expectativas de error de los tests de ruta al formato
    `{ code, message }` que produce `errorHandler`.
 4. Añadir `render.yaml` con Node 24, build/start, health check y migraciones
-   pre-deploy, declarando `DATABASE_URL` y `CORS_ORIGINS` como valores externos.
-5. Aclarar en `.env.example` que Render requiere la URL pooled de Neon y el
-   origen exacto del frontend, sin añadir secretos ni un dominio supuesto.
+   pre-deploy usando la URL directa de Neon; declarar URLs y CORS como valores
+   externos.
+5. Aclarar en `.env.example` y `README.md` cómo cargar la URL pooled de Neon
+   para consultas, la URL directa para migraciones y el origen exacto del
+   frontend, sin añadir secretos ni un dominio supuesto.
 6. Revisar build y suite de pruebas para comprobar el contrato y los flujos.
 7. Configurar Neon y Render, aplicar migraciones según el plan y verificar
    health check, CORS y rate limit desde el entorno desplegado.
 
 ## Cómo probar
-- [ ] `npm run build` completa sin errores de tipos.
-- [ ] `npm run test:vit` pasa, incluidos los tests de ruta y servicio de
+- [x] `npm run build` completa sin errores de tipos.
+- [x] `npm run test:vit` pasa, incluidos los tests de ruta y servicio de
   `GET /accounts`.
-- [ ] Una respuesta autenticada de `GET /accounts` incluye `wallet_id` por
+- [x] Una respuesta autenticada de `GET /accounts` incluye `wallet_id` por
   cuenta y mantiene el aislamiento por titular.
-- [ ] La respuesta de errores conserva `{ code, message }` para 401 y 500.
+- [x] La respuesta de errores conserva `{ code, message }` para 401 y 500.
 - [ ] Detrás del proxy de Render, los intentos desde IP reenviadas distintas
   consumen contadores distintos y no producen `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR`.
 - [ ] El origen real del frontend está configurado en `CORS_ORIGINS` en Render
@@ -182,10 +191,12 @@ Render](https://render.com/docs/configure-environment-variables) y la
 - El ajuste de tests adopta el contrato central vigente `{ code, message }`;
   no introduce una segunda forma de error.
 - `preDeployCommand` de Render solo está disponible en planes pagos. El método
-  de ejecutar migraciones debe corresponder al plan concreto; no se debe
-  habilitar tráfico con el esquema pendiente.
-- La conexión Neon requiere guardar el connection string pooled como secreto
-  `DATABASE_URL` en Render; `sslmode=verify-full` conserva validación TLS.
+  de ejecutar migraciones debe corresponder al plan concreto y usar conexión
+  directa; no se debe habilitar tráfico con el esquema pendiente.
+- La aplicación usa el connection string pooled de Neon en `DATABASE_URL`;
+  las migraciones necesitan el connection string directo en
+  `DATABASE_URL_UNPOOLED`. Ambos se guardan como secretos en Render y usan
+  `sslmode=verify-full`.
 - `CORS_ORIGINS` requiere el dominio real del frontend y acceso a Render. La
   configuración externa es necesaria para la integración frontend-backend,
   aunque el valor no se escriba en el repositorio.

@@ -424,6 +424,7 @@ export const openApiSpec = {
                       {
                         id: '10000000-0000-4000-8000-000000000001',
                         user_id: '20000000-0000-4000-8000-000000000001',
+                        wallet_id: '40000000-0000-4000-8000-000000000001',
                         currency: 'USD',
                         account_type: 'user',
                         allow_negative: false,
@@ -432,6 +433,7 @@ export const openApiSpec = {
                       {
                         id: '10000000-0000-4000-8000-000000000005',
                         user_id: '20000000-0000-4000-8000-000000000001',
+                        wallet_id: '40000000-0000-4000-8000-000000000001',
                         currency: 'ARS',
                         account_type: 'user',
                         allow_negative: false,
@@ -447,6 +449,7 @@ export const openApiSpec = {
                         required: [
                           'id',
                           'user_id',
+                          'wallet_id',
                           'currency',
                           'account_type',
                           'allow_negative',
@@ -455,6 +458,11 @@ export const openApiSpec = {
                         properties: {
                           id: { type: 'string', format: 'uuid' },
                           user_id: { type: 'string', format: 'uuid' },
+                          wallet_id: {
+                            type: 'string',
+                            format: 'uuid',
+                            description: 'ID de la wallet lógica a la que pertenece la cuenta.',
+                          },
                           currency: {
                             type: 'string',
                             enum: ['USD', 'COP', 'ARS', 'EUR'],
@@ -486,7 +494,11 @@ export const openApiSpec = {
                 schema: {
                   type: 'object',
                   properties: {
-                    error: {
+                    code: {
+                      type: 'string',
+                      example: 'INTERNAL_ERROR',
+                    },
+                    message: {
                       type: 'string',
                       example: 'Error interno del servidor',
                     },
@@ -530,6 +542,7 @@ export const openApiSpec = {
                     data: {
                       id: '10000000-0000-4000-8000-000000000001',
                       user_id: '20000000-0000-4000-8000-000000000001',
+                      wallet_id: '40000000-0000-4000-8000-000000000001',
                       currency: 'USD',
                       account_type: 'user',
                       allow_negative: false,
@@ -542,6 +555,7 @@ export const openApiSpec = {
                       required: [
                         'id',
                         'user_id',
+                        'wallet_id',
                         'currency',
                         'account_type',
                         'allow_negative',
@@ -550,6 +564,7 @@ export const openApiSpec = {
                       properties: {
                         id: { type: 'string', format: 'uuid' },
                         user_id: { type: 'string', format: 'uuid', nullable: true },
+                        wallet_id: { type: 'string', format: 'uuid' },
                         currency: {
                           type: 'string',
                           enum: ['USD', 'COP', 'ARS', 'EUR'],
