@@ -39,6 +39,8 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 026 | [Contrato de sesión y login `{ token, user }`](./autenticacion/2026-10-27-contrato-sesion-login.md) | Implementa D1: `toAuthUser`, `createSessionForUser` y login `{ token, user }`. Requiere la migración 008 del spec 025. |
 | 027 | [Migración 008 de perfil y acceso Google](./autenticacion/2026-10-27-migracion-008-perfil-acceso-google.md) | Aplica al inicializador y documenta la migración de perfil, roles y método de acceso; completa los datos de perfil de los seeds demo. |
 | 028 | [Registro transaccional con `POST /auth/register`](./autenticacion/2026-10-27-registro-auth-register-f8.md) | Extrae el cambio 6/F8 del spec 025: crea usuario, wallet, cuenta y sesión en una transacción; conserva `/users` legado. Depende de los specs 026 y 027. |
+| 029 | [Transferencias entre usuarios y actividad de la wallet (backend)](./cuentas-y-wallet/2026-10-27-transferencias-y-actividad-wallet.md) | Etapa 1 del contrato de transacciones: transferencias con conversión a la moneda principal del receptor, lookup de destinatario y feed. Mantiene `GET /accounts` para saldos y agrega `transactions.type` (migración 009). La adaptación del front está en `~/.opencode/plan/2026-10-27-Transferencias-y-actividad-wallet-front.md`. |
+| 030 | [Depósitos y cambio de moneda](./cuentas-y-wallet/2026-10-27-depositos-y-cambio-de-moneda.md) | Etapa 2: `POST /wallet/deposits`, cotización y ejecución de cambios con `exchange_quotes` (migración 010). Depende del spec 029. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de

@@ -180,6 +180,26 @@ curl -i -X POST http://localhost:3000/auth/logout \
 
 ### Wallet e ingresos
 
+#### Buscar destinatarios y transferir
+
+`GET /users/lookup?email=...` requiere sesión y responde solo `{ nombre }`.
+`POST /wallet/transfers` recibe `recipient_email`, `currency`, `amount` y una
+`Idempotency-Key`; acredita al destinatario en la moneda principal de su wallet
+y, si hace falta, registra la conversión. La respuesta incluye la transacción,
+la cantidad recibida y los saldos actualizados del emisor.
+
+```sh
+curl -i -X POST http://localhost:3000/wallet/transfers \\
+  -H 'Authorization: Bearer <token>' \\
+  -H 'Idempotency-Key: transferencia-orden-123' \\
+  -H 'Content-Type: application/json' \\
+  -d '{"recipient_email":"mateo@example.com","currency":"USD","amount":"10.00","note":"Cena"}'
+```
+
+`GET /wallet/transactions` devuelve la actividad paginada del titular con
+filtros `type`, `currency`, `from` y `to`. En transferencias cada participante
+ve su propio importe y moneda. Los errores API usan `{ code, message }`.
+
 #### Listar las cuentas
 
 `GET /accounts`

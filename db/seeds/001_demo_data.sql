@@ -37,8 +37,8 @@ SELECT seed.account_id, owner.id, wallet.id, seed.currency, seed.account_type
 ON CONFLICT DO NOTHING;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000101', 'seed:portfolio:01:usd:movement-1', 'Movimiento demo USD 1', '2026-02-01T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000101', 'seed:portfolio:01:usd:movement-1', 'Movimiento demo USD 1', '2026-02-01T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -53,8 +53,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000102', 'seed:portfolio:01:usd:movement-2', 'Movimiento demo USD 2', '2026-02-02T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000102', 'seed:portfolio:01:usd:movement-2', 'Movimiento demo USD 2', '2026-02-02T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -69,8 +69,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000103', 'seed:portfolio:01:usd:movement-3', 'Movimiento demo USD 3', '2026-02-03T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000103', 'seed:portfolio:01:usd:movement-3', 'Movimiento demo USD 3', '2026-02-03T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -85,8 +85,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000107', 'seed:portfolio:03:ars:movement-1', 'Movimiento demo ARS 1', '2026-02-07T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000107', 'seed:portfolio:03:ars:movement-1', 'Movimiento demo ARS 1', '2026-02-07T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -101,8 +101,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000108', 'seed:portfolio:03:ars:movement-2', 'Movimiento demo ARS 2', '2026-02-08T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000108', 'seed:portfolio:03:ars:movement-2', 'Movimiento demo ARS 2', '2026-02-08T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -117,8 +117,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000109', 'seed:portfolio:03:ars:movement-3', 'Movimiento demo ARS 3', '2026-02-09T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000109', 'seed:portfolio:03:ars:movement-3', 'Movimiento demo ARS 3', '2026-02-09T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -133,8 +133,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000110', 'seed:portfolio:04:eur:movement-1', 'Movimiento demo EUR 1', '2026-02-10T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000110', 'seed:portfolio:04:eur:movement-1', 'Movimiento demo EUR 1', '2026-02-10T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -149,8 +149,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000111', 'seed:portfolio:04:eur:movement-2', 'Movimiento demo EUR 2', '2026-02-11T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000111', 'seed:portfolio:04:eur:movement-2', 'Movimiento demo EUR 2', '2026-02-11T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -165,8 +165,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000112', 'seed:portfolio:04:eur:movement-3', 'Movimiento demo EUR 3', '2026-02-12T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000112', 'seed:portfolio:04:eur:movement-3', 'Movimiento demo EUR 3', '2026-02-12T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -181,8 +181,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000113', 'seed:portfolio:05:usd:movement-1', 'Movimiento demo USD 1', '2026-02-13T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000113', 'seed:portfolio:05:usd:movement-1', 'Movimiento demo USD 1', '2026-02-13T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -197,8 +197,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000114', 'seed:portfolio:05:usd:movement-2', 'Movimiento demo USD 2', '2026-02-14T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000114', 'seed:portfolio:05:usd:movement-2', 'Movimiento demo USD 2', '2026-02-14T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -213,8 +213,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000115', 'seed:portfolio:05:usd:movement-3', 'Movimiento demo USD 3', '2026-02-15T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000115', 'seed:portfolio:05:usd:movement-3', 'Movimiento demo USD 3', '2026-02-15T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -229,8 +229,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000116', 'seed:portfolio:06:cop:movement-1', 'Movimiento demo COP 1', '2026-02-16T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000116', 'seed:portfolio:06:cop:movement-1', 'Movimiento demo COP 1', '2026-02-16T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -245,8 +245,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000117', 'seed:portfolio:06:cop:movement-2', 'Movimiento demo COP 2', '2026-02-17T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000117', 'seed:portfolio:06:cop:movement-2', 'Movimiento demo COP 2', '2026-02-17T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (
@@ -261,8 +261,8 @@ WITH tx AS (
 ) SELECT COUNT(*) FROM inserted_entries;
 
 WITH tx AS (
-    INSERT INTO transactions (id, idempotency_key, description, occurred_at)
-    VALUES ('30000000-0000-4000-8000-000000000118', 'seed:portfolio:06:cop:movement-3', 'Movimiento demo COP 3', '2026-02-18T12:00:00Z')
+    INSERT INTO transactions (id, idempotency_key, description, occurred_at, type)
+    VALUES ('30000000-0000-4000-8000-000000000118', 'seed:portfolio:06:cop:movement-3', 'Movimiento demo COP 3', '2026-02-18T12:00:00Z', 'deposit')
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id
 ), inserted_entries AS (

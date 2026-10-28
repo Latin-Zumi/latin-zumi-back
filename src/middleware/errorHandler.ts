@@ -17,22 +17,20 @@ export function errorHandler(
   console.log(err);
 
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({ error: err.message });
+    return res.status(err.statusCode).json({ code: err.code, message: err.message });
   }
 
   if (err.type === "entity.parse.failed") {
-    return res.status(400).json({ error: "JSON inválido en el body" });
+    return res.status(400).json({ code: 'INVALID_JSON', message: "JSON inválido en el body" });
   }
 
   if (err.code === "23505") {
-    return res
-      .status(400)
-      .json({ error: "El valor ya existe (violación de unicidad)" });
+    return res.status(400).json({ code: 'DUPLICATE_VALUE', message: "El valor ya existe (violación de unicidad)" });
   }
 
   if (err.code === "23503") {
-    return res.status(400).json({ error: "Referencia inválida (foreign key)" });
+    return res.status(400).json({ code: 'INVALID_REFERENCE', message: "Referencia inválida (foreign key)" });
   }
 
-  res.status(500).json({ error: "Error interno del servidor" });
+  res.status(500).json({ code: 'INTERNAL_ERROR', message: "Error interno del servidor" });
 }

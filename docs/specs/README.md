@@ -78,8 +78,6 @@ YYYY-MM-DD
 Copia esto en el chat del IDE:
 
 ```
-Vas a hacer el siguiente cambio: <describe el cambio>.
-
 Antes de escribir código:
 1. Crea el archivo YYYY-MM-DD-titulo-corto.md en la subcarpeta temática
    correspondiente de docs/specs/, usando docs/specs/_plantilla.md.
@@ -96,6 +94,10 @@ Antes de escribir código:
 4. Muéstrame el spec para que lo apruebe.
 5. Cuando lo apruebe, implementa el cambio.
 6. Al final, marca los checkboxes de "Cómo probar" que se cumplan.
+
+Vas a hacer el siguiente cambio:
+
+
 ```
 
 ## Índice de ejecución

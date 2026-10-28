@@ -79,6 +79,12 @@ try {
   );
   await client.query(googleAuthProfileMigration);
 
+  const transactionTypeMigration = await readFile(
+    new URL('../migrations/009_transaction_type.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(transactionTypeMigration);
+
   await client.query('COMMIT');
   console.log('Schema y migraciones aplicados');
 } catch (err: unknown) {

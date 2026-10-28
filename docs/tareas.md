@@ -178,6 +178,19 @@ Spec: [retiro desde cuenta](./specs/cuentas-y-wallet/2026-10-26-retiro-cuenta.md
 - [ ] Ejecutar la [guía E2E de ingreso y retiro](./guia-e2e-ingreso-convertido.md)
   completa; el retiro es contable y no representa un desembolso bancario real.
 
+### Orden 029 — Transferencias y actividad de wallet (backend)
+
+Spec: [transferencias y actividad](./specs/cuentas-y-wallet/2026-10-27-transferencias-y-actividad-wallet.md).
+
+- [x] Agregar `transactions.type` con migración 009 y declarar tipo en seeds,
+  ingresos y retiros.
+- [x] Implementar lookup autenticado, transferencias idempotentes y feed
+  paginado por titular.
+- [x] Devolver errores con `{ code, message }` y documentar las rutas.
+- [ ] Aplicar migración y seeds en PostgreSQL y verificar concurrencia,
+  conversión, paginación y aislamiento por titular.
+- [ ] Ejecutar `npm run build` y `npm run test:vit`.
+
 ### Orden 024 — Revisión completa del proyecto
 
 Spec: [revisión completa](./specs/plataforma-y-documentacion/2026-10-27-revision-completa-proyecto.md).

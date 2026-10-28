@@ -137,8 +137,8 @@ export async function recordIncomingConversion(
     }
 
     const transactionResult = await client.query<{ id: string }>(
-      `INSERT INTO transactions (idempotency_key, description)
-       VALUES ($1, $2) RETURNING id`,
+      `INSERT INTO transactions (idempotency_key, description, type)
+       VALUES ($1, $2, 'deposit') RETURNING id`,
       [input.idempotencyKey, `Ingreso ${input.sourceCurrency} convertido a ${wallet.primary_currency}`],
     );
     const transactionId = transactionResult.rows[0].id;

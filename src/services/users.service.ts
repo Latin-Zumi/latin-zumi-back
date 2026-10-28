@@ -33,6 +33,14 @@ export interface UserProfileRow {
   foto_url: string | null;
 }
 
+export async function findUserByEmail(email: string): Promise<{ id: string; nombre: string; email: string } | null> {
+  const result = await pool.query<{ id: string; nombre: string | null; username: string; email: string }>(
+    `SELECT id, nombre, username, email FROM users WHERE lower(email) = $1 LIMIT 1`, [email.trim().toLowerCase()],
+  );
+  const row = result.rows[0];
+  return row ? { id: row.id, nombre: row.nombre?.trim() || row.username, email: row.email } : null;
+}
+
 export interface RegisteredUser {
   user: {
     id: string;
