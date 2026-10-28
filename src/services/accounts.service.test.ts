@@ -18,6 +18,14 @@ describe('getAccountsByUserId', () => {
         allow_negative: false,
         balance: '325.00000000',
       },
+      {
+        id: '10000000-0000-4000-8000-000000000002',
+        user_id: '20000000-0000-4000-8000-000000000001',
+        currency: 'ARS',
+        account_type: 'user',
+        allow_negative: false,
+        balance: '0',
+      },
     ];
     query.mockResolvedValueOnce({ rows: accounts });
 
@@ -30,6 +38,7 @@ describe('getAccountsByUserId', () => {
     expect(sql).toContain('a.user_id = $1');
     expect(sql).toContain("a.account_type = 'user'");
     expect(sql).toContain('a.closed_at IS NULL');
+    expect(sql).toContain('LEFT JOIN account_balances b');
     expect(sql).toContain('COALESCE(b.balance, 0)::text AS balance');
     expect(sql).toContain('ORDER BY RTRIM(a.currency), a.id');
   });
@@ -39,5 +48,25 @@ describe('getAccountsByUserId', () => {
 
     await expect(getAccountsByUserId('20000000-0000-4000-8000-000000000099'))
       .resolves.toEqual([]);
+  });
+
+  it('passes the owner identifier as a parameter rather than embedding user input in SQL', async () => {
+    const userId = "20000000-0000-4000-8000-000000000099' OR TRUE --";
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(getAccountsByUserId(userId)).resolves.toEqual([]);
+
+    const [sql, parameters] = query.mock.calls[0];
+    expect(parameters).toEqual([userId]);
+    expect(sql).toContain('a.user_id = $1');
+    expect(sql).not.toContain(userId);
+  });
+
+  it('propagates database errors to the HTTP error handler', async () => {
+    const databaseError = new Error('database unavailable');
+    query.mockRejectedValueOnce(databaseError);
+
+    await expect(getAccountsByUserId('20000000-0000-4000-8000-000000000001'))
+      .rejects.toBe(databaseError);
   });
 });
