@@ -99,7 +99,7 @@ ORDER BY a.currency, u.username;
 - README.md
 - src/controllers/users.controller.ts
 - src/config/swagger.ts
-- docs/specs/2026-10-26-congruencia-seeds-cuentas.md
+- docs/specs/ledger-y-transacciones/2026-10-26-congruencia-seeds-cuentas.md
 
 ## Pasos
 1. Comparar UUIDs, claves foráneas, restricciones, monedas y movimientos de

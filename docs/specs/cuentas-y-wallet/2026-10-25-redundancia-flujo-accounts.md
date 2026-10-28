@@ -24,7 +24,7 @@ cambios de rutas ni de respuestas públicas.
 ## Archivos afectados
 - src/services/accounts.service.ts
 - src/controllers/accounts.controller.ts
-- docs/specs/2026-10-25-redundancia-flujo-accounts.md
+- docs/specs/cuentas-y-wallet/2026-10-25-redundancia-flujo-accounts.md
 
 ## Pasos
 1. Inspeccionar los tipos de respuesta y asegurar que la consulta común

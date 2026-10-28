@@ -99,7 +99,7 @@ La ruta no tendrá SQL, y el controller no importará ni usará `pool`.
 - src/services/accounts.service.ts
 - src/routes/accounts.route.ts
 - src/config/swagger.ts (documentar el endpoint nuevo y su contrato)
-- docs/specs/2026-10-24-accounts-endpoints.md
+- docs/specs/cuentas-y-wallet/2026-10-24-accounts-endpoints.md
 
 ## Pasos
 1. Definir el tipo de respuesta de cuenta y la consulta parametrizada que una

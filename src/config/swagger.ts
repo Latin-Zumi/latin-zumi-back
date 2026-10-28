@@ -219,6 +219,28 @@ export const openApiSpec = {
         },
       },
     },
+    '/users/lookup': {
+      get: {
+        summary: 'Buscar destinatario por email', operationId: 'lookupUser', security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'email', in: 'query', required: true, schema: { type: 'string', format: 'email' } }],
+        responses: { '200': { description: 'Nombre del usuario encontrado.', content: { 'application/json': { schema: { type: 'object', example: { nombre: 'Mateo Ríos' } } } } }, '400': { description: 'Email inválido.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' } },
+      },
+    },
+    '/wallet/transfers': {
+      post: {
+        summary: 'Transferir entre usuarios', operationId: 'transfer', security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 } }],
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['recipient_email','currency','amount'], properties: { recipient_email: { type: 'string', format: 'email' }, currency: { type: 'string', enum: ['USD','COP','ARS','EUR'] }, amount: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$' }, note: { type: 'string', maxLength: 140 } } } } } },
+        responses: { '200': { description: 'Transferencia registrada; devuelve movimiento, destinatario y saldos.' }, '400': { description: 'Payload o clave inválidos.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' }, '409': { description: 'Clave idempotente reutilizada.' }, '422': { description: 'Fondos insuficientes, transferencia propia o importe convertido demasiado pequeño.' }, '503': { description: 'Conversión no disponible.' } },
+      },
+    },
+    '/wallet/transactions': {
+      get: {
+        summary: 'Consultar actividad de la wallet', operationId: 'getWalletTransactions', security: [{ bearerAuth: [] }],
+        parameters: ['type','currency','from','to','page','limit'].map((name) => ({ name, in: 'query', required: false, schema: { type: name === 'page' || name === 'limit' ? 'integer' : 'string' } })),
+        responses: { '200': { description: 'Actividad paginada del titular autenticado.' }, '400': { description: 'Filtros inválidos.' }, '401': { description: 'Sesión inválida.' } },
+      },
+    },
     '/users': {
       post: {
         deprecated: true,
@@ -1104,6 +1126,11 @@ export const openApiSpec = {
   },
   components: {
     schemas: {
+      ErrorResponse: {
+        type: 'object',
+        required: ['code', 'message'],
+        properties: { code: { type: 'string', example: 'INSUFFICIENT_FUNDS' }, message: { type: 'string', example: 'Saldo disponible insuficiente' } },
+      },
       AuthUser: {
         type: 'object',
         required: [

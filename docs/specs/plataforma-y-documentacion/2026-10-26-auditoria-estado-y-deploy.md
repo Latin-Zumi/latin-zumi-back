@@ -92,7 +92,7 @@ separará comprobaciones locales de requisitos que solo pueden validarse en el
 entorno elegido.
 
 ## Archivos afectados
-- docs/specs/2026-10-26-auditoria-estado-y-deploy.md
+- docs/specs/plataforma-y-documentacion/2026-10-26-auditoria-estado-y-deploy.md
 - docs/specs/README.md
 - README.md (resultado de auditoría, si se aprueba su publicación ahí)
 

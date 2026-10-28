@@ -16,7 +16,7 @@ Definir una especificación OpenAPI en el código del proyecto y montar Swagger 
 ## Archivos afectados
 - src/server.ts
 - src/config/swagger.ts
-- docs/specs/2026-10-24-swagger-api-docs.md
+- docs/specs/plataforma-y-documentacion/2026-10-24-swagger-api-docs.md
 
 ## Pasos
 1. Crear una definición OpenAPI 3 para la API y su endpoint actual de consulta de saldo.

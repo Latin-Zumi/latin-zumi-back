@@ -67,7 +67,7 @@ Railway comprobará únicamente que el proceso responde.
 
 ## Archivos afectados
 - src/server.ts
-- docs/specs/2026-10-26-health-check-db.md
+- docs/specs/plataforma-y-documentacion/2026-10-26-health-check-db.md
 - docs/specs/README.md
 - README.md (instrucción de configuración para Railway, si corresponde)
 

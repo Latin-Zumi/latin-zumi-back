@@ -13,14 +13,14 @@
 ## Pruebas de integración pendientes
 
 Las pruebas siguientes siguen abiertas en los checklists de sus specs. Están
-ordenadas por el índice de ejecución de [`docs/specs/README.md`](./specs/README.md).
+ordenadas por el índice de ejecución de [`docs/specs/index-specs.md`](./specs/index-specs.md).
 Las pruebas unitarias de decimal y adaptadores ya pasan; esta lista se centra
 en los casos aún no comprobados, especialmente contra PostgreSQL y por HTTP.
 Solo aparecen los órdenes con pendientes abiertos.
 
 ### Orden 001 — Esquema del ledger
 
-Spec: [ledger append-only](./specs/2026-10-21-ledger-append-only.md).
+Spec: [ledger append-only](./specs/ledger-y-transacciones/2026-10-21-ledger-append-only.md).
 
 - [ ] Aplicar la migración inicial en PostgreSQL y confirmar que crea tablas,
   índices, trigger, reglas y vista.
@@ -30,7 +30,7 @@ Spec: [ledger append-only](./specs/2026-10-21-ledger-append-only.md).
 
 ### Orden 002 — Seeds
 
-Spec: [seeds de datos](./specs/2026-10-23-seeds-db.md).
+Spec: [seeds de datos](./specs/ledger-y-transacciones/2026-10-23-seeds-db.md).
 
 - [ ] Ejecutar `db:init` y `db:seed`; comparar `account_balances` con los
   saldos demo documentados.
@@ -39,9 +39,9 @@ Spec: [seeds de datos](./specs/2026-10-23-seeds-db.md).
 
 ### Órdenes 005–008 — Cuentas y Swagger
 
-Specs: [endpoints de cuentas](./specs/2026-10-24-accounts-endpoints.md),
-[redundancia del flujo de cuentas](./specs/2026-10-25-redundancia-flujo-accounts.md)
-y [alineación de Swagger](./specs/2026-10-25-swagger-accounts-alineacion.md).
+Specs: [endpoints de cuentas](./specs/cuentas-y-wallet/2026-10-24-accounts-endpoints.md),
+[redundancia del flujo de cuentas](./specs/cuentas-y-wallet/2026-10-25-redundancia-flujo-accounts.md)
+y [alineación de Swagger](./specs/cuentas-y-wallet/2026-10-25-swagger-accounts-alineacion.md).
 
 - [ ] Probar `GET /accounts/:id` y `GET /accounts/:id/balance` contra PostgreSQL
   y confirmar los contratos y saldos esperados.
@@ -54,7 +54,7 @@ y [alineación de Swagger](./specs/2026-10-25-swagger-accounts-alineacion.md).
 
 ### Orden 009 — Detalle de transacciones
 
-Spec: [lectura de transactions](./specs/2026-10-25-transactions-read-endpoint.md).
+Spec: [lectura de transactions](./specs/ledger-y-transacciones/2026-10-25-transactions-read-endpoint.md).
 
 - [ ] Confirmar por HTTP que los importes se serializan como texto.
 - [ ] Probar UUID inválido (`400`) y transacción inexistente (`404`).
@@ -62,7 +62,7 @@ Spec: [lectura de transactions](./specs/2026-10-25-transactions-read-endpoint.md
 
 ### Orden 010 — Registro de usuario
 
-Spec: [registro y wallet](./specs/2026-10-26-registro-usuario-billetera.md).
+Spec: [registro y wallet](./specs/autenticacion/2026-10-26-registro-usuario-billetera.md).
 
 - [ ] Registrar un usuario y verificar `201`, cuenta asociada y saldo inicial cero.
 - [ ] Comprobar en DB el hash de contraseña y que la respuesta no filtra hash
@@ -74,7 +74,7 @@ Spec: [registro y wallet](./specs/2026-10-26-registro-usuario-billetera.md).
 
 ### Orden 011 — Autenticación y autorización
 
-Spec: [autenticación por titular](./specs/2026-10-26-autenticacion-y-acceso-por-titular.md).
+Spec: [autenticación por titular](./specs/autenticacion/2026-10-26-autenticacion-y-acceso-por-titular.md).
 
 - [ ] Probar login correcto e incorrecto y verificar token Bearer y error `401`
   genérico.
@@ -89,7 +89,7 @@ Spec: [autenticación por titular](./specs/2026-10-26-autenticacion-y-acceso-por
 
 ### Orden 012 — Seguridad y operación
 
-Spec: [revisión de prácticas de wallet](./specs/2026-10-26-revision-practicas-wallet.md).
+Spec: [revisión de prácticas de wallet](./specs/cuentas-y-wallet/2026-10-26-revision-practicas-wallet.md).
 
 - [ ] Definir el mecanismo de autenticación del sistema de origen para impedir
   que una sesión de usuario pueda autoacreditar fondos; exigir confirmación del
@@ -100,9 +100,9 @@ Spec: [revisión de prácticas de wallet](./specs/2026-10-26-revision-practicas-
 
 ### Órdenes 014–016 — Wallet e ingresos convertidos
 
-Specs: [wallet de moneda principal](./specs/2026-10-26-wallet-unica-multimoneda.md),
-[conversión original](./specs/2026-10-26-conversion-tasas-exchange-rate.md) y
-[evolución a wallet multimoneda](./specs/2026-10-26-ingresos-multimoneda-wallet.md).
+Specs: [wallet de moneda principal](./specs/cuentas-y-wallet/2026-10-26-wallet-unica-multimoneda.md),
+[conversión original](./specs/cuentas-y-wallet/2026-10-26-conversion-tasas-exchange-rate.md) y
+[evolución a wallet multimoneda](./specs/cuentas-y-wallet/2026-10-26-ingresos-multimoneda-wallet.md).
 
 El spec 016 amplía el modelo de los specs 014–015: una wallet conserva moneda
 principal y puede tener saldos secundarios por moneda. Al verificar, no se debe
@@ -137,7 +137,7 @@ en toda la wallet.
 
 ### Orden 019 — Listado de cuentas
 
-Spec: [listado de cuentas del usuario](./specs/2026-10-26-listado-cuentas-usuario.md).
+Spec: [listado de cuentas del usuario](./specs/cuentas-y-wallet/2026-10-26-listado-cuentas-usuario.md).
 
 - [ ] Probar por HTTP que `GET /accounts` requiere sesión válida y devuelve solo
   las cuentas `user` activas del titular autenticado.
@@ -148,7 +148,7 @@ Spec: [listado de cuentas del usuario](./specs/2026-10-26-listado-cuentas-usuari
 
 ### Orden 020 — Historial paginado de transactions
 
-Spec: [historial paginado](./specs/2026-10-26-transactions-historial-paginado.md).
+Spec: [historial paginado](./specs/ledger-y-transacciones/2026-10-26-transactions-historial-paginado.md).
 
 - [ ] Probar por HTTP la primera página, filtros de cuenta/fechas y metadatos
   con datos de PostgreSQL.
@@ -159,7 +159,7 @@ Spec: [historial paginado](./specs/2026-10-26-transactions-historial-paginado.md
 
 ### Orden 021 — Retiro desde cuenta
 
-Spec: [retiro desde cuenta](./specs/2026-10-26-retiro-cuenta.md).
+Spec: [retiro desde cuenta](./specs/cuentas-y-wallet/2026-10-26-retiro-cuenta.md).
 
 - [ ] Retirar por HTTP desde una cuenta propia activa y confirmar que una
   sesión ausente o una cuenta ajena/inexistente no produce cambios.
@@ -178,9 +178,22 @@ Spec: [retiro desde cuenta](./specs/2026-10-26-retiro-cuenta.md).
 - [ ] Ejecutar la [guía E2E de ingreso y retiro](./guia-e2e-ingreso-convertido.md)
   completa; el retiro es contable y no representa un desembolso bancario real.
 
+### Orden 029 — Transferencias y actividad de wallet (backend)
+
+Spec: [transferencias y actividad](./specs/cuentas-y-wallet/2026-10-27-transferencias-y-actividad-wallet.md).
+
+- [x] Agregar `transactions.type` con migración 009 y declarar tipo en seeds,
+  ingresos y retiros.
+- [x] Implementar lookup autenticado, transferencias idempotentes y feed
+  paginado por titular.
+- [x] Devolver errores con `{ code, message }` y documentar las rutas.
+- [ ] Aplicar migración y seeds en PostgreSQL y verificar concurrencia,
+  conversión, paginación y aislamiento por titular.
+- [ ] Ejecutar `npm run build` y `npm run test:vit`.
+
 ### Orden 024 — Revisión completa del proyecto
 
-Spec: [revisión completa](./specs/2026-10-27-revision-completa-proyecto.md).
+Spec: [revisión completa](./specs/plataforma-y-documentacion/2026-10-27-revision-completa-proyecto.md).
 
 - [x] Revisar arquitectura, capas, endpoints, seguridad, migraciones y
   documentación.

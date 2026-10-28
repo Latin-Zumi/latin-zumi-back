@@ -13,13 +13,13 @@ los retiros, el historial paginado de transacciones y los health checks. La
 arquitectura mantiene la separación `route → middleware/handler → controller →
 service → PostgreSQL`.
 
-Quedan fuera del alcance funcional las transferencias entre usuarios, la
-recuperación de contraseña y un endpoint de perfil. También siguen abiertas
+Quedan fuera del alcance funcional la recuperación de contraseña y un endpoint
+de perfil. También siguen abiertas
 decisiones operativas: CORS, almacenamiento compartido para rate limiting,
 versionado de migraciones y validación de un deploy real.
 
 La revisión completa está documentada en
-[`docs/specs/2026-10-27-revision-completa-proyecto.md`](./specs/2026-10-27-revision-completa-proyecto.md).
+[`docs/specs/plataforma-y-documentacion/2026-10-27-revision-completa-proyecto.md`](./specs/plataforma-y-documentacion/2026-10-27-revision-completa-proyecto.md).
 
 ## Comprobaciones locales
 
@@ -53,6 +53,9 @@ OpenAPI en `src/config/swagger.ts`.
 | `GET /accounts/:id/balance` | Bearer y titular | Consultar saldo propio. |
 | `POST /accounts/:id/incoming` | Bearer y titular | Registrar un ingreso convertido con idempotencia. |
 | `POST /accounts/:id/withdraw` | Bearer y titular | Registrar un retiro con saldo suficiente e idempotencia. |
+| `GET /users/lookup` | Bearer | Buscar destinatario y exponer solo el nombre. |
+| `POST /wallet/transfers` | Bearer | Transferir entre usuarios, convirtiendo a la moneda principal del receptor. |
+| `GET /wallet/transactions` | Bearer | Actividad paginada y filtrable del titular. |
 | `GET /transactions` | Bearer y titular | Historial paginado con filtros por cuenta y fechas. |
 | `GET /transactions/:id` | Bearer y titular | Consultar una transacción propia. |
 | `GET /api-docs` | Público | Swagger UI/OpenAPI. |
@@ -64,7 +67,7 @@ definidos. No se recomienda agregar rutas solo para completar una lista.
 
 | Capacidad | Estado | Cuándo sería necesaria |
 | --- | --- | --- |
-| Transferencia (`POST /transfers`) | Ausente. | Solo si se permiten movimientos entre usuarios/cuentas; definir atomicidad, destinatario y reversas. |
+| Recuperación de contraseña | Ausente. | Definir proveedor/canal de recuperación. |
 | Recuperación de contraseña | Ausente. | Si usuarios finales pueden recuperar acceso sin soporte administrativo. Requiere canal y flujo de verificación. |
 | Perfil (`GET /users/me`) | Ausente. | Si el cliente necesita cargar identidad propia tras iniciar sesión. |
 
@@ -158,7 +161,7 @@ paso no se ejecute simultáneamente y planear una herramienta con versionado.
   fallar antes de que la API arranque.
 - **`GET /transactions` y `GET /transactions/:id` exponen `idempotency_key`.**
   El spec de autenticación
-  ([orden 011](./specs/2026-10-26-autenticacion-y-acceso-por-titular.md))
+  ([orden 011](./specs/autenticacion/2026-10-26-autenticacion-y-acceso-por-titular.md))
   pedía retirarla de la respuesta pública. No es un secreto de autenticación,
   pero sí una desviación de contrato que conviene corregir en un cambio
   independiente, junto con Swagger y las pruebas.

@@ -1,8 +1,16 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { registerUser } from '../services/users.service.js';
+import { findUserByEmail, registerUser } from '../services/users.service.js';
 import { AppError } from '../utils/AppError.js';
 import { hashPassword, isPasswordLongEnough } from '../utils/password.js';
+
+export async function lookupUser(req: Request, res: Response) {
+  const parsed = z.string().trim().email().max(254).safeParse(req.query.email);
+  if (!parsed.success) throw new AppError('Email inválido', 400);
+  const user = await findUserByEmail(parsed.data.toLowerCase());
+  if (!user) throw new AppError('Destinatario no encontrado', 404, 'RECIPIENT_NOT_FOUND');
+  return res.status(200).json({ nombre: user.nombre });
+}
 
 const registrationSchema = z.object({
   username: z

@@ -114,8 +114,8 @@ export async function withdrawFromAccount(
     }
 
     const transactionResult = await client.query<{ id: string }>(
-      `INSERT INTO transactions (idempotency_key, description)
-       VALUES ($1, 'Retiro de cuenta') RETURNING id`,
+      `INSERT INTO transactions (idempotency_key, description, type)
+       VALUES ($1, 'Retiro de cuenta', 'withdrawal') RETURNING id`,
       [input.idempotencyKey],
     );
     const transactionId = transactionResult.rows[0].id;

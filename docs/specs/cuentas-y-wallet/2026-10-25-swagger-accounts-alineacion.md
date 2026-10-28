@@ -22,7 +22,7 @@ no existen movimientos. No cambiar rutas, handlers ni respuestas del API.
 
 ## Archivos afectados
 - src/config/swagger.ts
-- docs/specs/2026-10-25-swagger-accounts-alineacion.md
+- docs/specs/cuentas-y-wallet/2026-10-25-swagger-accounts-alineacion.md
 
 ## Pasos
 1. Añadir un ejemplo completo a la respuesta `200` de

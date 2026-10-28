@@ -86,7 +86,7 @@ autenticación y devuelve `401` si falta una sesión válida.
 - docs/auditoria-estado-proyecto-y-deploy.md
 - tests o pruebas de integración de la API
 - docs/specs/README.md
-- docs/specs/2026-10-26-listado-cuentas-usuario.md
+- docs/specs/cuentas-y-wallet/2026-10-26-listado-cuentas-usuario.md
 
 ## Pasos
 1. Añadir una consulta de servicio que liste solo las cuentas `user` activas

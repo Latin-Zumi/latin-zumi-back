@@ -1,4 +1,7 @@
 import { pool } from '../config/db.js';
+import type { PoolClient } from 'pg';
+
+type Queryable = Pick<PoolClient, 'query'>;
 
 export interface Account {
   id: string;
@@ -15,8 +18,8 @@ export interface AccountBalance {
   balance: string;
 }
 
-export async function getAccountsByUserId(userId: string): Promise<Account[]> {
-  const result = await pool.query<Account>(
+export async function getAccountsByUserId(userId: string, db: Queryable = pool): Promise<Account[]> {
+  const result = await db.query<Account>(
     `SELECT a.id,
             a.user_id,
             RTRIM(a.currency) AS currency,
@@ -34,6 +37,14 @@ export async function getAccountsByUserId(userId: string): Promise<Account[]> {
   );
 
   return result.rows;
+}
+
+export async function getWalletByUserId(userId: string, db: Queryable = pool): Promise<{ id: string; primaryCurrency: string } | null> {
+  const result = await db.query<{ id: string; primary_currency: string }>(
+    `SELECT id, RTRIM(primary_currency) AS primary_currency FROM wallets WHERE user_id = $1 LIMIT 1`, [userId],
+  );
+  const row = result.rows[0];
+  return row ? { id: row.id, primaryCurrency: row.primary_currency } : null;
 }
 
 export async function getAccountById(
