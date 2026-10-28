@@ -13,6 +13,7 @@ describe('getAccountsByUserId', () => {
       {
         id: '10000000-0000-4000-8000-000000000001',
         user_id: '20000000-0000-4000-8000-000000000001',
+        wallet_id: '40000000-0000-4000-8000-000000000001',
         currency: 'USD',
         account_type: 'user',
         allow_negative: false,
@@ -21,6 +22,7 @@ describe('getAccountsByUserId', () => {
       {
         id: '10000000-0000-4000-8000-000000000002',
         user_id: '20000000-0000-4000-8000-000000000001',
+        wallet_id: '40000000-0000-4000-8000-000000000001',
         currency: 'ARS',
         account_type: 'user',
         allow_negative: false,
@@ -36,6 +38,7 @@ describe('getAccountsByUserId', () => {
     const [sql, parameters] = query.mock.calls[0];
     expect(parameters).toEqual(['20000000-0000-4000-8000-000000000001']);
     expect(sql).toContain('a.user_id = $1');
+    expect(sql).toContain('a.wallet_id');
     expect(sql).toContain("a.account_type = 'user'");
     expect(sql).toContain('a.closed_at IS NULL');
     expect(sql).toContain('LEFT JOIN account_balances b');

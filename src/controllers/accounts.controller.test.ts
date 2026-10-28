@@ -62,6 +62,7 @@ describe('getAccounts', () => {
       {
         id: accountId,
         user_id: userId,
+        wallet_id: '40000000-0000-4000-8000-000000000001',
         currency: 'USD',
         account_type: 'user',
         allow_negative: false,
@@ -86,6 +87,24 @@ describe('getAccounts', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ data: [] });
+  });
+
+  it('documents wallet_id and the standard error envelope for GET /accounts', () => {
+    const operation = openApiSpec.paths['/accounts']?.get;
+    const accountSchema = operation?.responses['200']?.content?.['application/json']
+      ?.schema?.properties?.data?.items;
+    const errorSchema = operation?.responses['500']?.content?.['application/json']
+      ?.schema;
+
+    expect(accountSchema?.required).toContain('wallet_id');
+    expect(accountSchema?.properties?.wallet_id).toMatchObject({
+      type: 'string',
+      format: 'uuid',
+    });
+    expect(errorSchema?.properties).toMatchObject({
+      code: { type: 'string', example: 'INTERNAL_ERROR' },
+      message: { type: 'string', example: 'Error interno del servidor' },
+    });
   });
 
   it('rejects a request without an authenticated user', async () => {

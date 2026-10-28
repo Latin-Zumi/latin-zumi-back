@@ -6,6 +6,7 @@ type Queryable = Pick<PoolClient, 'query'>;
 export interface Account {
   id: string;
   user_id: string | null;
+  wallet_id: string;
   currency: string;
   account_type: string;
   allow_negative: boolean;
@@ -22,6 +23,7 @@ export async function getAccountsByUserId(userId: string, db: Queryable = pool):
   const result = await db.query<Account>(
     `SELECT a.id,
             a.user_id,
+            a.wallet_id,
             RTRIM(a.currency) AS currency,
             a.account_type,
             a.allow_negative,
@@ -54,6 +56,7 @@ export async function getAccountById(
   const result = await pool.query<Account>(
     `SELECT a.id,
             a.user_id,
+            a.wallet_id,
             RTRIM(a.currency) AS currency,
             a.account_type,
             a.allow_negative,

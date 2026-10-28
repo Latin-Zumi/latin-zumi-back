@@ -21,8 +21,10 @@ Actualmente el proyecto incluye:
 La guía de PostgreSQL, migraciones y seeds está en [`db/README.md`](./db/README.md).
 Para ejecutar el flujo de ingreso completo, usa la
 [guía de prueba de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).
-El estado de endpoints y la checklist tentativa de despliegue en Railway están
-en la [auditoría del proyecto](./docs/auditoria-estado-proyecto-y-deploy.md).
+El estado histórico de endpoints está en la
+[auditoría del proyecto](./docs/auditoria-estado-proyecto-y-deploy.md). La
+configuración actual de despliegue en Render con PostgreSQL en Neon está en el
+[spec 031](./docs/specs/plataforma-y-documentacion/2026-10-28-minimo-funcional-backend.md).
 
 ## Stack
 
@@ -57,6 +59,13 @@ La configuración de las variables de entorno, incluyendo la conexión a
 PostgreSQL, está documentada en [`db/README.md`](./db/README.md). No subas el
 archivo `.env` al repositorio.
 
+Para Render con Neon, `DATABASE_URL` debe contener la URL pooled de la rama de
+Neon para las consultas de la API y `DATABASE_URL_UNPOOLED` la URL directa para
+`db:init`/migraciones. En Render ambas se cargan como secretos; el Blueprint
+usa la directa durante el pre-deploy y la pooled al arrancar el servidor. Para
+planes de Render sin `preDeployCommand`, ejecuta `npm run db:init` con la URL
+directa antes de desplegar tráfico.
+
 ### CORS
 
 Configura `CORS_ORIGINS` con los orígenes exactos del frontend, separados por
@@ -71,6 +80,10 @@ El backend permite los métodos `GET` y `POST` y los encabezados
 Bearer. No habilita credenciales de cookies. Un origen fuera de la lista no
 recibe autorización CORS; CORS es una política del navegador, no reemplaza la
 autenticación ni el control de acceso del servidor.
+
+En producción, carga el origen exacto del frontend en la variable
+`CORS_ORIGINS` del servicio Render. Sin este valor, el navegador bloqueará las
+llamadas del frontend a la API desplegada.
 
 ## Ejecutar la aplicación
 
