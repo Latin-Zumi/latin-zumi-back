@@ -28,7 +28,6 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
-    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   },
@@ -38,10 +37,14 @@
     "express-rate-limit": "^8.7.1",
     "pg": "^8.23.1",
     "swagger-ui-express": "^5.0.1",
+    "tsx": "^4.23.15",
     "zod": "^4.6.7"
   },
   "allowScripts": {
     "esbuild@0.28.2": true,
     "@scarf/scarf@1.4.0": true
+  },
+  "engines": {
+    "node": ">=24 <25"
   }
 }
