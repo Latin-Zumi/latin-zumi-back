@@ -7,6 +7,7 @@ import { accountsRouter } from './routes/accounts.route.js';
 import { transactionsRouter } from './routes/transactions.route.js';
 import { usersRouter } from './routes/users.route.js';
 import { authRouter } from './routes/auth.route.js';
+import { chatRouter } from './routes/chat.route.js';
 import { walletRouter } from './routes/wallet.route.js';
 import swaggerUi from 'swagger-ui-express';
 import { openApiSpec } from './config/swagger.js';
@@ -40,6 +41,7 @@ app.use(transactionsRouter);
 app.use(usersRouter);
 app.use(walletRouter);
 app.use(authRouter);
+app.use(chatRouter);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
   next(new AppError('Ruta no encontrada', 404));
