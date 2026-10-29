@@ -1,8 +1,12 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { findUserByEmail, registerUser } from '../services/users.service.js';
+import {
+  firstIssueMessage,
+  passwordSchema,
+} from '../schemas/password.js';
 import { AppError } from '../utils/AppError.js';
-import { hashPassword, isPasswordLongEnough } from '../utils/password.js';
+import { hashPassword } from '../utils/password.js';
 
 export async function lookupUser(req: Request, res: Response) {
   const parsed = z.string().trim().email().max(254).safeParse(req.query.email);
@@ -26,7 +30,7 @@ const registrationSchema = z.object({
     .email()
     .max(254)
     .transform((value) => value.toLowerCase()),
-  password: z.string().max(128).refine(isPasswordLongEnough),
+  password: passwordSchema,
   currency: z
     .enum(['USD', 'COP', 'ARS', 'EUR'])
     .or(
@@ -42,7 +46,10 @@ const registrationSchema = z.object({
 export async function createUser(req: Request, res: Response) {
   const parsed = registrationSchema.safeParse(req.body);
   if (!parsed.success) {
-    throw new AppError('Datos de registro inválidos', 400);
+    throw new AppError(
+      firstIssueMessage(parsed.error, 'Datos de registro inválidos', 'password'),
+      400,
+    );
   }
 
   const passwordHash = await hashPassword(parsed.data.password);

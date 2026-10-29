@@ -78,7 +78,7 @@ detectados se proponen como tareas separadas.
 
 ### Pruebas
 - `npm run build`: correcto.
-- `npm run test:vit`: 8 archivos, 37 pruebas correctas.
+- `npm test`: 8 archivos, 37 pruebas correctas.
 - `npm test`: 1 archivo, 2 pruebas (`AppError`).
 - No se ejecutaron pruebas de integración contra PostgreSQL en esta revisión.
 
@@ -132,7 +132,7 @@ detectados se proponen como tareas separadas.
    definir una allowlist.
 
 6. **`npm test` no ejecuta la suite completa.** Solo corre `AppError`; la suite
-   principal es `npm run test:vit`. Conviene unificar el comando o documentarlo
+   principal es `npm test`. Conviene unificar el comando o documentarlo
    en CI.
 
 7. **Variables de entorno no consumidas.** `.env.example` incluye
@@ -150,7 +150,7 @@ detectados se proponen como tareas separadas.
 - [x] Revisar migraciones, seeds y congruencia del modelo de datos.
 - [x] Revisar documentación y contrastarla con el código.
 - [x] Ejecutar `npm run build`.
-- [x] Ejecutar `npm run test:vit` (8 archivos, 37 pruebas).
+- [x] Ejecutar `npm test` (8 archivos, 37 pruebas).
 - [x] Actualizar `docs/tareas.md`, la auditoría, el índice de specs y el README.
 
 ## Recomendaciones
@@ -161,7 +161,7 @@ detectados se proponen como tareas separadas.
 3. Sustituir `console.log(err)` por logging estructurado sin datos sensibles.
 4. Definir CORS y el almacenamiento de rate limiting según la topología de
    deploy (un origen, varias réplicas).
-5. Unificar `npm test` y `npm run test:vit`, o dejar explícito en CI qué comando
+5. Unificar `npm test` y `npm test`, o dejar explícito en CI qué comando
    es la suite obligatoria.
 6. Añadir versionado de migraciones antes de operar con varias réplicas o
    cambios concurrentes.

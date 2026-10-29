@@ -247,7 +247,7 @@ El backend incluye el contexto de cuentas y movimientos del usuario autenticado 
 
 `POST /auth/register` es el flujo nuevo. Crea el usuario, su wallet, la cuenta
 inicial y una sesión; el país determina la moneda (`Argentina` → `ARS`,
-`Colombia` → `COP`, `Otro` → `USD`). La contraseña debe tener entre 15 y 128
+`Colombia` → `COP`, `Otro` → `USD`). La contraseña debe tener entre 8 y 128
 caracteres.
 
 ```sh
@@ -267,7 +267,7 @@ una sesión. Para nuevas integraciones usa `POST /auth/register`.
 
 Registra un username y email, almacena un hash de la contraseña y crea una
 wallet lógica y su cuenta inicial en la moneda principal. La contraseña debe
-tener entre 15 y 128 caracteres; `currency` es opcional, acepta `USD`, `COP`,
+tener entre 8 y 128 caracteres; `currency` es opcional, acepta `USD`, `COP`,
 `ARS` o `EUR` y usa `COP` por defecto.
 
 ```sh
@@ -317,14 +317,14 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
 ```
 
 Las sesiones vencen en una hora. Si una cuenta existente inicia sesión con
-una contraseña menor a 15 caracteres, el login responde `200` pero las rutas
+una contraseña menor a 8 caracteres, el login responde `200` pero las rutas
 protegidas responden `403` hasta que la actualice:
 
 ```sh
 curl -i -X POST http://localhost:3000/auth/change-password \
   -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
-  -d '{"current_password":"clave-anterior","new_password":"una-frase-de-acceso-de-quince-o-mas"}'
+  -d '{"current_password":"clave-anterior","new_password":"clave-segura-8"}'
 ```
 
 Para revocar la sesión actual:
@@ -583,11 +583,10 @@ de PostgreSQL. Las rutas específicas `/accounts/:id/balance`,
 
 ```sh
 npm run build
-npm run test:vit
+npm test
 ```
 
-`npm run test:vit` ejecuta la suite completa con Vitest. `npm test` solo ejecuta
-la prueba básica de `AppError` mediante `node --test`.
+`npm test` ejecuta la suite completa con Vitest.
 
 La validación manual de integración con PostgreSQL está descrita en la
 [guía de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).

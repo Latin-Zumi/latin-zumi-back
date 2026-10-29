@@ -225,6 +225,17 @@ describe('loginWithPassword', () => {
     expect(insert?.[1]?.[2]).toBe(true);
   });
 
+  it('does not mark passwords at the minimum length as requiring a change', async () => {
+    queueSuccessfulLogin();
+
+    await loginWithPassword('ana@example.com', '12345678');
+
+    const insert = clientQuery.mock.calls.find(([statement]) =>
+      statement.includes('INSERT INTO auth_sessions'),
+    );
+    expect(insert?.[1]?.[2]).toBe(false);
+  });
+
   it('rehashes the password before creating the session', async () => {
     poolQuery.mockResolvedValueOnce({ rows: [userRow] });
     verifyPassword.mockResolvedValueOnce({

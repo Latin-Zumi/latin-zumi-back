@@ -55,3 +55,4 @@ build/
 *.tmp
 *.bak
 *.old
+.neon

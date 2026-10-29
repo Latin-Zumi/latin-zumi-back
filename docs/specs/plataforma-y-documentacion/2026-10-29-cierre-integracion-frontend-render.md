@@ -295,7 +295,7 @@ segunda llamada a `/accounts` con el token revocado debe responder `401`.
    de Render/Vercel.
 6. Añadir al README la sección de despliegue e integración con el smoke test y
    las limitaciones del plan gratuito.
-7. Ejecutar `npm run build` y `npm run test:vit`.
+7. Ejecutar `npm run build` y `npm test`.
 8. Desplegar desde Render, cargar secretos, aplicar migraciones y ejecutar el
    smoke test contra la URL pública.
 9. Configurar Vercel y hacer redeploy del frontend.
@@ -303,7 +303,7 @@ segunda llamada a `/accounts` con el token revocado debe responder `401`.
 ## Cómo probar
 
 - [x] `npm run build` completa sin errores de tipos.
-- [x] `npm run test:vit` pasa, incluidos CORS y el saldo con `wallet_id`.
+- [x] `npm test` pasa, incluidos CORS y el saldo con `wallet_id`.
 - [ ] El preflight local desde `http://localhost:5173` responde `204` y
       permite `Authorization`, `Content-Type` e `Idempotency-Key`.
 - [x] `GET /accounts/:id/balance` devuelve `wallet_id` sin romper el envelope

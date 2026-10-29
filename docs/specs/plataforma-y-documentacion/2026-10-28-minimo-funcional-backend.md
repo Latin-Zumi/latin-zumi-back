@@ -172,7 +172,7 @@ Render](https://render.com/docs/configure-environment-variables) y la
 
 ## Cómo probar
 - [x] `npm run build` completa sin errores de tipos.
-- [x] `npm run test:vit` pasa, incluidos los tests de ruta y servicio de
+- [x] `npm test` pasa, incluidos los tests de ruta y servicio de
   `GET /accounts`.
 - [x] Una respuesta autenticada de `GET /accounts` incluye `wallet_id` por
   cuenta y mantiene el aislamiento por titular.
