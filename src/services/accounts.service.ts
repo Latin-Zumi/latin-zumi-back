@@ -15,6 +15,7 @@ export interface Account {
 
 export interface AccountBalance {
   account_id: string;
+  wallet_id: string;
   currency: string;
   balance: string;
 }
@@ -82,6 +83,7 @@ export async function getBalanceByAccountId(
 
   return {
     account_id: account.id,
+    wallet_id: account.wallet_id,
     currency: account.currency,
     balance: account.balance,
   };
