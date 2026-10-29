@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { query } = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock('../config/db.js', () => ({ pool: { query } }));
 
-import { getAccountsByUserId } from './accounts.service.js';
+import { getAccountsByUserId, getBalanceByAccountId } from './accounts.service.js';
 
 describe('getAccountsByUserId', () => {
   beforeEach(() => query.mockReset());
@@ -71,5 +71,48 @@ describe('getAccountsByUserId', () => {
 
     await expect(getAccountsByUserId('20000000-0000-4000-8000-000000000001'))
       .rejects.toBe(databaseError);
+  });
+});
+
+describe('getBalanceByAccountId', () => {
+  beforeEach(() => query.mockReset());
+
+  it('returns the balance of the account including its wallet_id', async () => {
+    const balanceAccount = {
+      id: '10000000-0000-4000-8000-000000000001',
+      user_id: '20000000-0000-4000-8000-000000000001',
+      wallet_id: '40000000-0000-4000-8000-000000000001',
+      currency: 'USD',
+      account_type: 'user',
+      allow_negative: false,
+      balance: '325.00000000',
+    };
+    query.mockResolvedValueOnce({ rows: [balanceAccount] });
+
+    await expect(
+      getBalanceByAccountId('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001'),
+    ).resolves.toEqual({
+      account_id: '10000000-0000-4000-8000-000000000001',
+      wallet_id: '40000000-0000-4000-8000-000000000001',
+      currency: 'USD',
+      balance: '325.00000000',
+    });
+
+    const [sql, parameters] = query.mock.calls[0];
+    expect(parameters).toEqual([
+      '10000000-0000-4000-8000-000000000001',
+      '20000000-0000-4000-8000-000000000001',
+    ]);
+    expect(sql).toContain('a.user_id = $2');
+    expect(sql).toContain('a.wallet_id');
+    expect(sql).toContain('COALESCE(b.balance, 0)::text AS balance');
+  });
+
+  it('returns null when the account does not belong to the user', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(
+      getBalanceByAccountId('10000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001'),
+    ).resolves.toEqual(null);
   });
 });

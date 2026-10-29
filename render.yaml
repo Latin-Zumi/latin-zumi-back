@@ -2,10 +2,14 @@ services:
   - type: web
     name: latin-zumi-back
     runtime: node
-    buildCommand: npm ci && npm run build
-    preDeployCommand: 'DATABASE_URL="$DATABASE_URL_UNPOOLED" npm run db:init'
+    plan: free
+    region: oregon
+    buildCommand: 'npm ci --include=dev && npm run build && DATABASE_URL="$DATABASE_URL_UNPOOLED" npm run db:init'
+    # En un plan pago, mover la migración a preDeployCommand:
+    # preDeployCommand: 'DATABASE_URL="$DATABASE_URL_UNPOOLED" npm run db:init'
     startCommand: npm start
     healthCheckPath: /health/ready
+    autoDeployTrigger: commit
     envVars:
       - key: NODE_VERSION
         value: 24
@@ -17,3 +21,5 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      - key: DB_CONNECTION_TIMEOUT_MILLIS
+        value: 10000

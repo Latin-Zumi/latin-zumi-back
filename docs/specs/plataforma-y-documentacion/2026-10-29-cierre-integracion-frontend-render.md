@@ -302,11 +302,11 @@ segunda llamada a `/accounts` con el token revocado debe responder `401`.
 
 ## Cómo probar
 
-- [ ] `npm run build` completa sin errores de tipos.
-- [ ] `npm run test:vit` pasa, incluidos CORS y el saldo con `wallet_id`.
+- [x] `npm run build` completa sin errores de tipos.
+- [x] `npm run test:vit` pasa, incluidos CORS y el saldo con `wallet_id`.
 - [ ] El preflight local desde `http://localhost:5173` responde `204` y
       permite `Authorization`, `Content-Type` e `Idempotency-Key`.
-- [ ] `GET /accounts/:id/balance` devuelve `wallet_id` sin romper el envelope
+- [x] `GET /accounts/:id/balance` devuelve `wallet_id` sin romper el envelope
       `{ data }`.
 - [ ] El Blueprint de Render valida y despliega en el plan gratuito; el build
       aplica `db:init` con `DATABASE_URL_UNPOOLED`.

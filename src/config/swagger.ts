@@ -707,6 +707,7 @@ export const openApiSpec = {
                   example: {
                     data: {
                       account_id: '10000000-0000-4000-8000-000000000001',
+                      wallet_id: '40000000-0000-4000-8000-000000000001',
                       currency: 'USD',
                       balance: '325.00000000',
                     },
@@ -714,9 +715,10 @@ export const openApiSpec = {
                   properties: {
                     data: {
                       type: 'object',
-                      required: ['account_id', 'currency', 'balance'],
+                      required: ['account_id', 'wallet_id', 'currency', 'balance'],
                       properties: {
                         account_id: { type: 'string', format: 'uuid' },
+                        wallet_id: { type: 'string', format: 'uuid', description: 'ID de la wallet lógica, que puede contener cuentas de saldo por moneda.' },
                         currency: {
                           type: 'string',
                           enum: ['USD', 'COP', 'ARS', 'EUR'],
