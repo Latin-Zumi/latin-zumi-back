@@ -15,7 +15,7 @@ Logout: llama a POST /auth/logout y borra la sesión local siempre, aunque falle
 Con 401 se cierra la sesión y te manda a /login.
 Con 403 se muestra el mensaje sin cerrar la sesión.
 Ids: pasan a ser string (UUID), y Balance ahora tiene account_id y wallet_id.
-Contraseña del registro: de 15 a 128 caracteres. En el login solo se exige un máximo de 128.
+Contraseña del registro: de 8 a 128 caracteres. En el login solo se exige un máximo de 128.
 
 3. Flags nuevas en src/config/features.ts:
 GOOGLE_AUTH_ENABLED = false: oculta el botón de Google y la ruta /completar-perfil. Los componentes siguen en el código para cuando el backend lo implemente.
@@ -36,7 +36,7 @@ Spec: 2026-10-28-Minimo-funcional-API-real.md.
 
 ## Dos decisiones que tomé:
 
-- Mensaje de contraseña: el documento pide “La contraseña debe tener entre 15 y 128 caracteres”. Dejé el mensaje genérico que ustedes eligieron, y la lista de requisitos muestra “Entre 15 y 128 caracteres (faltan N)”.
+- Mensaje de contraseña: el documento pide “La contraseña debe tener entre 8 y 128 caracteres”. Dejé el mensaje genérico que ustedes eligieron, y la lista de requisitos muestra “Entre 8 y 128 caracteres (faltan N)”.
 - Mayúscula y carácter especial: el backend no los exige, pero los dejé porque los había pedido tu equipo. Si los quieren sacar, es un cambio en getPasswordRequirements.
 
 ## Falta para cerrar el mínimo:
@@ -50,4 +50,4 @@ poner VITE_USE_MOCK=false y VITE_API_URL con la URL pública del backend;
 hacer redeploy.
 Prueba final: con eso listo, probar el flujo completo contra el backend real. Es el único ítem de la spec que quedó sin marcar.
 
-Si querés seguir usando el mock en local: tu .env todavía tiene VITE_USE_MOCK=true. Las cuentas de prueba siguen funcionando para el login, pero para registrar una cuenta nueva ahora hace falta una contraseña de 15 caracteres o más.
+Si querés seguir usando el mock en local: tu .env todavía tiene VITE_USE_MOCK=true. Las cuentas de prueba siguen funcionando para el login, pero para registrar una cuenta nueva ahora hace falta una contraseña de 8 caracteres o más.

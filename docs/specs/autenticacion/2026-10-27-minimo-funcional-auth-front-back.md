@@ -1104,7 +1104,7 @@ envelope y `createSessionForUser` del 026.
 
 ### Backend
 
-- [ ] `npm run build` y `npm run test:vit` pasan.
+- [ ] `npm run build` y `npm test` pasan.
 - [ ] `npm run db:init` funciona sobre base limpia y existente; dos veces
       seguidas es idempotente.
 - [ ] `npm run db:seed` dos veces seguidas no duplica datos y los saldos demo
