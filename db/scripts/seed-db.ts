@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { readdir, readFile } from 'node:fs/promises';
 import pg from 'pg';
 import { getClientConfig } from '../../src/config/db-connection.js';
