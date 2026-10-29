@@ -73,6 +73,70 @@ export const openApiSpec = {
         },
       },
     },
+    '/chat/messages': {
+      post: {
+        summary: 'Enviar un mensaje al asistente de LATIN ZUMI',
+        operationId: 'postChatMessage',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['message'],
+                properties: {
+                  message: { type: 'string', minLength: 1, maxLength: 2000, example: '¿Cuánto dinero tengo en mis cuentas?' },
+                  conversationId: { type: 'string', format: 'uuid', example: 'd4d49d78-1e1d-4f1d-b678-d1f7a4fca5f6' },
+                  history: {
+                    type: 'array',
+                    maxItems: 10,
+                    items: {
+                      type: 'object',
+                      required: ['role', 'content'],
+                      properties: {
+                        role: { type: 'string', enum: ['user', 'assistant'] },
+                        content: { type: 'string', maxLength: 2000 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Respuesta del asistente generada con contexto seguro del usuario.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['data'],
+                  properties: {
+                    data: {
+                      type: 'object',
+                      required: ['message', 'conversationId', 'suggestions'],
+                      properties: {
+                        message: { type: 'string' },
+                        conversationId: { type: 'string', format: 'uuid' },
+                        suggestions: {
+                          type: 'array',
+                          items: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Payload inválido o mensaje fuera de rango.' },
+          '401': { description: 'Se requiere autenticación válida.' },
+          '503': { description: 'El servicio del asistente IA no está disponible.' },
+        },
+      },
+    },
     '/auth/register': {
       post: {
         summary: 'Registrar usuario e iniciar sesión',
