@@ -9,7 +9,7 @@ export function createCorsMiddleware(origins: readonly string[] = env.CORS_ORIGI
       callback(null, origin === undefined || allowedOrigins.has(origin));
     },
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Authorization', 'Content-Type'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key'],
     credentials: false,
   };
 

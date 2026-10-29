@@ -85,7 +85,7 @@ describe('CORS allowlist', () => {
       headers: {
         Origin: 'https://frontend.example',
         'Access-Control-Request-Method': 'POST',
-        'Access-Control-Request-Headers': 'authorization,content-type',
+        'Access-Control-Request-Headers': 'authorization,content-type,idempotency-key',
       },
     });
     expect(preflightResponse.status).toBe(204);
@@ -94,6 +94,7 @@ describe('CORS allowlist', () => {
     const allowedHeaders = preflightResponse.headers.get('access-control-allow-headers')?.toLowerCase();
     expect(allowedHeaders).toContain('authorization');
     expect(allowedHeaders).toContain('content-type');
+    expect(allowedHeaders).toContain('idempotency-key');
   });
 
   it('does not authorize browser origins when the allowlist is empty', async () => {

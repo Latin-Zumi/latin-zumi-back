@@ -24,7 +24,7 @@ Para ejecutar el flujo de ingreso completo, usa la
 El estado histórico de endpoints está en la
 [auditoría del proyecto](./docs/auditoria-estado-proyecto-y-deploy.md). La
 configuración actual de despliegue en Render con PostgreSQL en Neon está en el
-[spec 031](./docs/specs/plataforma-y-documentacion/2026-10-28-minimo-funcional-backend.md).
+[spec 032](./docs/specs/plataforma-y-documentacion/2026-10-29-cierre-integracion-frontend-render.md).
 
 ## Stack
 
@@ -69,21 +69,30 @@ directa antes de desplegar tráfico.
 ### CORS
 
 Configura `CORS_ORIGINS` con los orígenes exactos del frontend, separados por
-comas y sin rutas, por ejemplo `https://sitio-confirmado.example`. El equipo
-debe completar el origen real de producción cuando esté confirmado; no se
-incluye una URL de producción inventada. Una lista vacía no autoriza orígenes
-web. Las solicitudes sin encabezado `Origin` continúan permitidas para health
-checks y comunicación entre servidores.
+comas y sin rutas, por ejemplo `https://sitio-confirmado.example`. Para desarrollo
+local, usa el origen del frontend en Vite:
+
+```dotenv
+CORS_ORIGINS=http://localhost:5173
+```
+
+El equipo debe completar el origen real de producción cuando esté confirmado;
+no se incluye una URL de producción inventada. Una lista vacía no autoriza
+orígenes web. Las solicitudes sin encabezado `Origin` continúan permitidas para
+health checks y comunicación entre servidores.
 
 El backend permite los métodos `GET` y `POST` y los encabezados
-`Authorization` y `Content-Type`, necesarios para la API y su autenticación
-Bearer. No habilita credenciales de cookies. Un origen fuera de la lista no
-recibe autorización CORS; CORS es una política del navegador, no reemplaza la
+`Authorization`, `Content-Type` e `Idempotency-Key`, necesarios para la API, su
+autenticación Bearer y los endpoints idempotentes de ingresos, retiros y
+transferencias. No habilita credenciales de cookies. Un origen fuera de la lista
+no recibe autorización CORS; CORS es una política del navegador, no reemplaza la
 autenticación ni el control de acceso del servidor.
 
 En producción, carga el origen exacto del frontend en la variable
 `CORS_ORIGINS` del servicio Render. Sin este valor, el navegador bloqueará las
-llamadas del frontend a la API desplegada.
+llamadas del frontend a la API desplegada. Si el frontend publica en Vercel con
+un dominio propio o previews estables, agrega esos orígenes como entradas
+separadas por coma. No se usa `*` y no se versionan los dominios reales.
 
 ## Ejecutar la aplicación
 
@@ -105,6 +114,91 @@ Con la configuración predeterminada, la API queda disponible en
 
 Para un deploy, usa `/health/ready` como health check si la plataforma debe
 esperar también la disponibilidad de la base de datos.
+
+## Despliegue e integración
+
+El backend está desplegado en Render con PostgreSQL en Neon. El Blueprint de
+Render se encuentra en [`render.yaml`](./render.yaml) y define el servicio web
+Node con `plan: free`, el health check `/health/ready`, el build que compila y
+aplica las migraciones con `DATABASE_URL_UNPOOLED`, y el arranque con
+`DATABASE_URL` (pooled).
+
+En un plan gratuito, Render no soporta `preDeployCommand`, por lo que las
+migraciones se ejecutan durante el `buildCommand`:
+
+```yaml
+buildCommand: 'npm ci --include=dev && npm run build && DATABASE_URL="$DATABASE_URL_UNPOOLED" npm run db:init'
+# En un plan pago, mover la migración a preDeployCommand:
+# preDeployCommand: 'DATABASE_URL="$DATABASE_URL_UNPOOLED" npm run db:init'
+```
+
+Si el servicio pasa a un plan pago, la migración puede moverse a `preDeployCommand`.
+
+Variables de entorno para el servicio en Render (cargadas como secretos en el
+dashboard, nunca en Git):
+
+```dotenv
+DATABASE_URL=postgresql://...-pooler.../neondb?sslmode=verify-full
+DATABASE_URL_UNPOOLED=postgresql://.../neondb?sslmode=verify-full
+CORS_ORIGINS=http://localhost:5173,https://<dominio-de-vercel>
+DB_CONNECTION_TIMEOUT_MILLIS=10000
+```
+
+Variables de build para el frontend en Vercel:
+
+```dotenv
+VITE_API_URL=https://<servicio>.onrender.com
+VITE_USE_MOCK=false
+```
+
+Como Vite inyecta las variables en build, hay que hacer un redeploy del frontend
+después de cambiarlas.
+
+### Smoke test contra la API publicada
+
+Con la URL pública del servicio (`https://<servicio>.onrender.com`), un email de
+prueba y una contraseña larga:
+
+```sh
+API="https://<servicio>.onrender.com"
+EMAIL="prueba-$(date +%s)@example.com"
+PASSWORD="una-frase-de-acceso-larga"
+
+curl -i "$API/health/ready"
+curl -i -X OPTIONS "$API/auth/login" \
+  -H "Origin: https://<dominio-de-vercel>" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization,content-type,idempotency-key"
+
+curl -i -X POST "$API/auth/register" \
+  -H 'Content-Type: application/json' \
+  -d "{\"nombre\":\"Ana Pérez\",\"email\":\"$EMAIL\",\"pais\":\"Argentina\",\"password\":\"$PASSWORD\"}"
+
+TOKEN=$(curl -s -X POST "$API/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d "{\"identifier\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
+  | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).token')
+
+curl -i "$API/accounts" -H "Authorization: Bearer $TOKEN"
+curl -i -X POST "$API/auth/logout" -H "Authorization: Bearer $TOKEN"
+curl -i "$API/accounts" -H "Authorization: Bearer $TOKEN"
+```
+
+El health check debe responder `200` con `{ "status": "ok", "db": "ok" }`; el
+preflight debe responder `204` con `Access-Control-Allow-Origin` igual al origen
+de Vercel; el login debe devolver `{ token, user }`; `/accounts` debe devolver
+las cuentas con `wallet_id` y saldo, incluido `"0"`; el logout debe responder
+`204`; y la segunda llamada a `/accounts` con el token revocado debe responder
+`401`.
+
+### Limitaciones del plan gratuito
+
+- El plan gratuito de Render suspende el servicio tras 15 minutos sin tráfico; el
+  primer request puede tardar cerca de un minuto, y el frontend debe reintentar o
+  mostrar un mensaje de espera.
+- El plan gratuito de Render puede suspender un servicio que genera mucho
+  tráfico saliente hacia una base de datos externa; para una demo el volumen es
+  bajo, pero Render + Neon gratuitos no son una configuración de producción.
 
 ## API
 
@@ -248,6 +342,7 @@ curl -i http://localhost:3000/accounts \
     {
       "id": "10000000-0000-4000-8000-000000000001",
       "user_id": "20000000-0000-4000-8000-000000000001",
+      "wallet_id": "40000000-0000-4000-8000-000000000001",
       "currency": "USD",
       "account_type": "user",
       "allow_negative": false,
@@ -273,6 +368,7 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
   "data": {
     "id": "10000000-0000-4000-8000-000000000001",
     "user_id": "20000000-0000-4000-8000-000000000001",
+    "wallet_id": "40000000-0000-4000-8000-000000000001",
     "currency": "USD",
     "account_type": "user",
     "allow_negative": false,
@@ -285,7 +381,8 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
 
 `GET /accounts/:id/balance`
 
-Devuelve únicamente el saldo y la moneda de una cuenta:
+Devuelve el saldo, la moneda y el `wallet_id` (identificador de la wallet lógica
+que contiene la cuenta) de una cuenta:
 
 ```sh
 curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/balance \
@@ -296,6 +393,7 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/bala
 {
   "data": {
     "account_id": "10000000-0000-4000-8000-000000000001",
+    "wallet_id": "40000000-0000-4000-8000-000000000001",
     "currency": "USD",
     "balance": "325.00000000"
   }
