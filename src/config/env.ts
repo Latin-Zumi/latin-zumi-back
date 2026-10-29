@@ -79,6 +79,14 @@ const envSchema = z.object({
   ),
   EXCHANGE_RATE_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
   EXCHANGE_RATE_MAX_AGE_HOURS: z.coerce.number().positive().default(24),
+  GEMINI_API_KEY: z.preprocess(
+    (value) => (value === '' ? undefined : String(value)),
+    z.string().min(1).optional(),
+  ),
+  GEMINI_MODEL: z.preprocess(
+    (value) => (value === '' ? 'gemini-2.5-flash' : value),
+    z.string().min(1).default('gemini-2.5-flash'),
+  ),
 
 }).refine(
   ({ DATABASE_URL, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD }) =>

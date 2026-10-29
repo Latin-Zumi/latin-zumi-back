@@ -207,6 +207,40 @@ historial paginado devuelve `{ "data": [...], "meta": {...} }` y los endpoints
 de logout/cambio de contraseña responden `204`. Los saldos se serializan como
 texto para conservar la precisión decimal de PostgreSQL.
 
+### Asistente IA del backend
+
+#### `POST /chat/messages`
+
+El chatbot autenticado permite responder preguntas generales sobre LATIN ZUMI y orientar al usuario con el contexto seguro de sus cuentas y movimientos recientes. Requiere `Authorization: Bearer <token>`.
+
+Request:
+
+```json
+{
+  "message": "¿Cuánto dinero tengo disponible?",
+  "conversationId": "d4d49d78-1e1d-4f1d-b678-d1f7a4fca5f6"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "message": "Te muestro el saldo disponible según tus cuentas activas.",
+    "conversationId": "d4d49d78-1e1d-4f1d-b678-d1f7a4fca5f6",
+    "suggestions": ["¿Qué cuentas tengo activas?", "¿Cuáles fueron mis últimos movimientos?"]
+  }
+}
+```
+
+El backend incluye el contexto de cuentas y movimientos del usuario autenticado con fines de asistencia, pero nunca inventa saldos ni modifica el ledger. Si falta información o la clave de Gemini no está configurada, responde con un error controlado `503`.
+
+#### Variables de entorno del chatbot
+
+- `GEMINI_API_KEY`: clave de Gemini del backend. Debe mantenerse en `.env` local o el gestor de secretos del deploy. No se registra en Git.
+- `GEMINI_MODEL`: modelo a usar, por defecto `gemini-2.5-flash`.
+
 ### Usuario y sesión
 
 #### Registrar y abrir una sesión
