@@ -7,17 +7,21 @@ import {
   revokeSession,
 } from '../services/auth.service.js';
 import { getAuthContext } from '../middleware/requireAuth.js';
+import {
+  firstIssueMessage,
+  loginPasswordSchema,
+  passwordSchema,
+} from '../schemas/password.js';
 import { AppError } from '../utils/AppError.js';
-import { isPasswordLongEnough } from '../utils/password.js';
 
 const loginSchema = z.object({
   identifier: z.string().trim().min(3).max(254).transform((value) => value.toLowerCase()),
-  password: z.string().max(128),
+  password: loginPasswordSchema,
 });
 
 const changePasswordSchema = z.object({
   current_password: z.string().min(1).max(128),
-  new_password: z.string().max(128).refine(isPasswordLongEnough),
+  new_password: passwordSchema,
 });
 
 const nombreSchema = z
@@ -39,15 +43,17 @@ const registerSchema = z.object({
     .max(254)
     .transform((value) => value.toLowerCase()),
   pais: z.enum(['Argentina', 'Colombia', 'Otro']),
-  password: z
-    .string()
-    .max(128)
-    .refine(isPasswordLongEnough, 'La contraseña debe tener entre 15 y 128 caracteres'),
+  password: passwordSchema,
 });
 
 export async function register(req: Request, res: Response) {
   const parsed = registerSchema.safeParse(req.body);
-  if (!parsed.success) throw new AppError('Datos de registro inválidos', 400);
+  if (!parsed.success) {
+    throw new AppError(
+      firstIssueMessage(parsed.error, 'Datos de registro inválidos', 'password'),
+      400,
+    );
+  }
 
   const result = await registerAccount(parsed.data);
   return res.status(201).json(result);
@@ -73,7 +79,10 @@ export async function logout(req: Request, res: Response) {
 export async function changePassword(req: Request, res: Response) {
   const parsed = changePasswordSchema.safeParse(req.body);
   if (!parsed.success) {
-    throw new AppError('La contraseña nueva debe tener entre 15 y 128 caracteres', 400);
+    throw new AppError(
+      firstIssueMessage(parsed.error, 'Datos de contraseña inválidos', 'new_password'),
+      400,
+    );
   }
 
   await changeUserPassword(

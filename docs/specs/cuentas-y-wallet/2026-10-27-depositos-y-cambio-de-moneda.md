@@ -592,7 +592,7 @@ importe acreditado (`transaction.amount`).
   en otra moneda acredita la conversión en la moneda principal.
 - [ ] Los depósitos y cambios aparecen en `GET /wallet/transactions` y los
   balances se actualizan.
-- [ ] `npm run build` y `npm run test:vit` pasan; `/api-docs` documenta las
+- [ ] `npm run build` y `npm test` pasan; `/api-docs` documenta las
   rutas nuevas.
 
 ## Riesgos / notas

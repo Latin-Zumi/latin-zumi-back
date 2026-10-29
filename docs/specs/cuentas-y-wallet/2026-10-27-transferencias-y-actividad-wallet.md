@@ -894,7 +894,7 @@ migración 009. Los seeds también se actualizan, como se mostró arriba.
 - [ ] Depósitos y retiros existentes siguen funcionando y aparecen en el feed
   como `deposit` y `withdrawal`.
 - [ ] Todos los errores responden `{ code, message }`; `npm run build` y
-  `npm run test:vit` pasan.
+  `npm test` pasan.
 - [ ] `/api-docs` documenta las tres rutas nuevas y el schema de error.
 
 ## Riesgos / notas
