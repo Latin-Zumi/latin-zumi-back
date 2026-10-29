@@ -90,7 +90,7 @@ export const openApiSpec = {
                   nombre: { type: 'string', minLength: 2, maxLength: 50, example: 'Ana Pérez' },
                   email: { type: 'string', format: 'email', maxLength: 254 },
                   pais: { type: 'string', enum: ['Argentina', 'Colombia', 'Otro'] },
-                  password: { type: 'string', format: 'password', minLength: 15, maxLength: 128 },
+                  password: { type: 'string', format: 'password', minLength: 8, maxLength: 128 },
                 },
               },
             },
@@ -133,7 +133,7 @@ export const openApiSpec = {
                 required: ['identifier', 'password'],
                 properties: {
                   identifier: { type: 'string', example: 'usuario.registrado' },
-                  password: { type: 'string', format: 'password' },
+                  password: { type: 'string', format: 'password', maxLength: 128 },
                 },
               },
             },
@@ -192,7 +192,7 @@ export const openApiSpec = {
                   new_password: {
                     type: 'string',
                     format: 'password',
-                    minLength: 15,
+                    minLength: 8,
                     maxLength: 128,
                   },
                 },
@@ -202,7 +202,7 @@ export const openApiSpec = {
         },
         responses: {
           '204': { description: 'Contraseña actualizada; las otras sesiones se revocan.' },
-          '400': { description: 'La nueva contraseña debe tener de 15 a 128 caracteres.' },
+          '400': { description: 'La nueva contraseña debe tener de 8 a 128 caracteres.' },
           '401': { description: 'Sesión inválida o contraseña actual incorrecta.' },
           '403': { description: 'Se requiere cambiar la contraseña antes de consultar datos.' },
         },
@@ -270,7 +270,7 @@ export const openApiSpec = {
                   password: {
                     type: 'string',
                     format: 'password',
-                    minLength: 15,
+                    minLength: 8,
                     maxLength: 128,
                   },
                   currency: {

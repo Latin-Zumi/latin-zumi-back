@@ -173,7 +173,7 @@ Spec: [retiro desde cuenta](./specs/cuentas-y-wallet/2026-10-26-retiro-cuenta.md
   queda negativo.
 - [ ] Comprobar en PostgreSQL el débito a la cuenta `user`, el crédito
   equivalente a `external` y la reversión completa ante un fallo.
-- [x] Ejecutar `npm run test:vit` (36 pruebas), `npm run build` y comprobar el
+- [x] Ejecutar `npm test` (36 pruebas), `npm run build` y comprobar el
   contrato documentado en Swagger.
 - [ ] Ejecutar la [guía E2E de ingreso y retiro](./guia-e2e-ingreso-convertido.md)
   completa; el retiro es contable y no representa un desembolso bancario real.
@@ -189,7 +189,7 @@ Spec: [transferencias y actividad](./specs/cuentas-y-wallet/2026-10-27-transfere
 - [x] Devolver errores con `{ code, message }` y documentar las rutas.
 - [ ] Aplicar migración y seeds en PostgreSQL y verificar concurrencia,
   conversión, paginación y aislamiento por titular.
-- [ ] Ejecutar `npm run build` y `npm run test:vit`.
+- [ ] Ejecutar `npm run build` y `npm test`.
 
 ### Orden 024 — Revisión completa del proyecto
 
@@ -197,7 +197,7 @@ Spec: [revisión completa](./specs/plataforma-y-documentacion/2026-10-27-revisio
 
 - [x] Revisar arquitectura, capas, endpoints, seguridad, migraciones y
   documentación.
-- [x] Ejecutar `npm run build` y `npm run test:vit` (8 archivos, 37 pruebas).
+- [x] Ejecutar `npm run build` y `npm test` (8 archivos, 37 pruebas).
 - [x] Actualizar `docs/tareas.md`, la auditoría, el índice de specs y el README
   con el estado real del proyecto.
 - [ ] Retirar `idempotency_key` de las respuestas públicas de transacciones,
@@ -205,7 +205,7 @@ Spec: [revisión completa](./specs/plataforma-y-documentacion/2026-10-27-revisio
 - [ ] Adaptar `db:init` y `db:seed` para aceptar `DATABASE_URL`, o documentar y
   validar el uso conjunto con `DB_*` en el entorno de deploy.
 - [ ] Unificar el comando de pruebas (`npm test` solo ejecuta `AppError`) o
-  documentar `npm run test:vit` como suite principal en CI.
+  documentar `npm test` como suite principal en CI.
 - [ ] Evaluar CORS y un almacenamiento compartido de rate limiting antes de
   exponer la API a un frontend en otro origen o a varias réplicas.
 

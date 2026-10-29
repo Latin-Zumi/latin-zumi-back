@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import { pool } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../utils/password.js';
+import { PASSWORD_MIN_LENGTH } from '../schemas/password.js';
 import { createUserWithWallet, type UserProfileRow } from './users.service.js';
 import { currencyForCountry, type Pais } from '../utils/country.js';
 
@@ -160,7 +161,7 @@ export async function loginWithPassword(
     throw new AppError('Credenciales inválidas', 401);
   }
 
-  const passwordChangeRequired = Array.from(password).length < 15;
+  const passwordChangeRequired = Array.from(password).length < PASSWORD_MIN_LENGTH;
   // scrypt es costoso: se calcula antes de abrir la transacción para no
   // retener una conexión mientras se hashea la contraseña.
   const upgradedHash = verification.needsRehash

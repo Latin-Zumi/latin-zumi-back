@@ -26,14 +26,12 @@ La revisión completa está documentada en
 | Comprobación | Resultado |
 | --- | --- |
 | `npm run build` | Correcto (`tsc -p tsconfig.json`). |
-| `npm run test:vit` | Correcto: 8 archivos y 37 pruebas. |
-| `npm test` | Correcto: 1 archivo y 2 pruebas (`AppError`). |
+| `npm test` | Correcto: suite completa con Vitest (8 archivos y 37 pruebas al momento de la revisión). |
 | `npm ci` | No ejecutado en esta revisión. |
 | Inicialización PostgreSQL | No ejecutada; no se validó acceso a una base de datos. |
 | Deploy/health check | No ejecutado; no hay servicio desplegado validado desde este entorno. |
 
-`npm test` ejecuta únicamente la prueba de `AppError` mediante `node --test`.
-La suite completa del proyecto se ejecuta con `npm run test:vit`.
+`npm test` ejecuta la suite completa del proyecto con Vitest.
 
 ## Endpoints presentes
 
@@ -182,9 +180,8 @@ paso no se ejecute simultáneamente y planear una herramienta con versionado.
 - **Migraciones sin tabla de versionado.** El inicializador aplica una secuencia
   fija; no hay registro de migraciones aplicadas ni protección contra
   ejecuciones concurrentes.
-- **Documentación de pruebas.** `npm test` solo ejecuta `AppError`; la suite
-  completa es `npm run test:vit`. Conviene unificarlo o documentarlo con
-  claridad para evitar falsos positivos en CI.
+- **Documentación de pruebas.** Resuelto: `npm test` ejecuta la suite completa
+  con Vitest, evitando falsos positivos en CI.
 
 ## Fortalezas verificadas
 

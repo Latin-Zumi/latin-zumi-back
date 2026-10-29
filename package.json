@@ -9,8 +9,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "test": "node --import tsx --test src/handlers/AppError.test.ts",
-    "test:vit": "vitest run --config vitest.config.ts",
+    "test": "vitest run --config vitest.config.ts",
     "db:init": "tsx db/scripts/init-db.ts",
     "db:seed": "tsx db/scripts/seed-db.ts"
   },

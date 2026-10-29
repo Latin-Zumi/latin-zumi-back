@@ -103,10 +103,5 @@ export async function verifyPassword(
   return { valid: false, needsRehash: false };
 }
 
-export function isPasswordLongEnough(password: string): boolean {
-  const length = Array.from(password).length;
-  return length >= 15 && length <= 128;
-}
-
 export const DUMMY_PASSWORD_HASH =
   `scrypt$v2$${CURRENT_COST}$${BLOCK_SIZE}$${PARALLELIZATION}$${'0'.repeat(32)}$${'0'.repeat(128)}`;
