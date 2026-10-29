@@ -1,0 +1,52 @@
+{
+  "name": "latin-zumi-back",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "node --import tsx --test src/handlers/AppError.test.ts",
+    "test:vit": "vitest run --config vitest.config.ts",
+    "db:init": "tsx db/scripts/init-db.ts",
+    "db:seed": "tsx db/scripts/seed-db.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latin-Zumi/latin-zumi-back.git"
+  },
+  "keywords": [],
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Latin-Zumi/latin-zumi-back/issues"
+  },
+  "homepage": "https://github.com/Latin-Zumi/latin-zumi-back#readme",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "pg": "^8.23.1",
+    "swagger-ui-express": "^5.0.1",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.7"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "@scarf/scarf@1.4.0": true
+  },
+  "engines": {
+    "node": ">=24 <25"
+  }
+}
