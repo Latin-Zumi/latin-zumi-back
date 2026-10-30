@@ -14,6 +14,7 @@
 - [x] Manejo de errores
 - [x] Handlers
 - [x] Router
+- [x] Script de desarrollo con recarga automática (`npm run dev`)
 
 ## Pruebas de integración pendientes
 
