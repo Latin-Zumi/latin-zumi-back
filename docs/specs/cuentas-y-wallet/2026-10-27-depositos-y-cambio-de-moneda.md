@@ -207,8 +207,13 @@ Content-Type: application/json
 
 ## Migración 010: cotizaciones
 
+> **Errata (2026-10-30):** esta migración se aplicó como
+> `db/migrations/011_exchange_quotes.sql`, porque la numeración `010` quedó
+> ocupada por `010_password_reset_tokens.sql`. El spec 039 documenta la
+> implementación final.
+
 ```sql
--- db/migrations/010_exchange_quotes.sql
+-- db/migrations/011_exchange_quotes.sql
 CREATE TABLE IF NOT EXISTS exchange_quotes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id),
@@ -542,7 +547,8 @@ importe acreditado (`transaction.amount`).
 
 ## Archivos afectados
 
-- `db/migrations/010_exchange_quotes.sql` (nuevo)
+- `db/migrations/011_exchange_quotes.sql` (nuevo; renumerada desde `010` por la
+  errata del 2026-10-30)
 - `db/scripts/init-db.ts`
 - `src/services/exchange-quotes.service.ts` (nuevo)
 - `src/services/exchanges.service.ts` (nuevo)

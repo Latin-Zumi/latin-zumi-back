@@ -1,5 +1,10 @@
 # Tareas
 
+> Actualizado el 2026-10-30. Los checkboxes marcados reflejan implementación
+> verificada en el repositorio; los de prueba siguen abiertos hasta ejecutarlos
+> contra PostgreSQL y por HTTP. La deuda técnica priorizada está en la
+> auditoría externa `Report00`.
+
 ## Base del proyecto
 
 - [x] Seeds
@@ -9,6 +14,7 @@
 - [x] Manejo de errores
 - [x] Handlers
 - [x] Router
+- [x] Script de desarrollo con recarga automática (`npm run dev`)
 
 ## Pruebas de integración pendientes
 
@@ -202,12 +208,42 @@ Spec: [revisión completa](./specs/plataforma-y-documentacion/2026-10-27-revisio
   con el estado real del proyecto.
 - [ ] Retirar `idempotency_key` de las respuestas públicas de transacciones,
   como pedía el spec de autenticación (orden 011), y ajustar Swagger y pruebas.
-- [ ] Adaptar `db:init` y `db:seed` para aceptar `DATABASE_URL`, o documentar y
-  validar el uso conjunto con `DB_*` en el entorno de deploy.
-- [ ] Unificar el comando de pruebas (`npm test` solo ejecuta `AppError`) o
-  documentar `npm test` como suite principal en CI.
-- [ ] Evaluar CORS y un almacenamiento compartido de rate limiting antes de
-  exponer la API a un frontend en otro origen o a varias réplicas.
+- [x] Adaptar `db:init` y `db:seed` para aceptar `DATABASE_URL`: ambos usan
+  `getClientConfig()`, que prioriza `DATABASE_URL` y cae a `DB_*`.
+- [x] Unificar el comando de pruebas: `npm test` ejecuta
+  `vitest run --config vitest.config.ts` sobre toda la suite.
+- [x] Implementar CORS por allowlist exacta (`CORS_ORIGINS`), validada al
+  arrancar y sin comodines.
+- [ ] Adoptar un almacenamiento compartido de rate limiting antes de correr
+  varias réplicas.
+
+### Órdenes 030–039 — Wallet, autenticación completa y despliegue
+
+Specs: [depósitos y cambio de moneda](./specs/cuentas-y-wallet/2026-10-27-depositos-y-cambio-de-moneda.md),
+[cierre del mínimo backend](./specs/plataforma-y-documentacion/2026-10-28-minimo-funcional-backend.md),
+[cierre de integración en Render](./specs/plataforma-y-documentacion/2026-10-29-cierre-integracion-frontend-render.md),
+[configuración de entorno](./specs/plataforma-y-documentacion/2026-10-29-configuracion-env-y-lectura-dotenv.md),
+[archivos .env por escenario](./specs/plataforma-y-documentacion/2026-10-29-archivos-env-escenarios.md),
+[reorganización de tests](./specs/plataforma-y-documentacion/2026-10-29-reorganizacion-tests-src.md),
+[recuperación de contraseña](./specs/autenticacion/2026-10-29-recuperacion-contrasena.md),
+[cambio de contraseña](./specs/autenticacion/2026-10-29-cambio-contrasena-front.md),
+[Google y perfil](./specs/autenticacion/2026-10-29-acceso-google-y-perfil.md) y
+[depósitos y cambios (implementación)](./specs/cuentas-y-wallet/2026-10-29-depositos-y-cambios-implementacion.md).
+
+- [x] Implementar `POST /wallet/deposits`, `GET /wallet/exchange/quote` y
+  `POST /wallet/exchanges` con `exchange_quotes` (migración 011).
+- [x] Implementar `POST /auth/forgot-password` y `POST /auth/reset-password`
+  con tokens de un solo uso y proveedores `console`/`resend`.
+- [x] Implementar `POST /auth/google` con Firebase Admin y `PATCH /users/me`.
+- [x] Aplicar la migración 008 y completar el perfil de los seeds demo.
+- [x] Mover los tests a `src/tests` y limitar el descubrimiento de Vitest.
+- [x] Crear el Blueprint de Render y documentar CORS para localhost y Vercel.
+- [ ] Ejecutar `db:init` y `db:seed` en una base limpia y en una existente.
+- [ ] Probar por HTTP depósitos, cambios, transferencias y retiros con sus
+  códigos `400/409/422/429` y el aislamiento por titular.
+- [ ] Verificar el flujo de recuperación de contraseña con el proveedor real.
+- [ ] Verificar el login con Google con credenciales de Firebase reales.
+- [ ] Ejecutar `npm run build` y `npm test` en limpio y registrar el resultado.
 
 ## Criterio de cierre
 
