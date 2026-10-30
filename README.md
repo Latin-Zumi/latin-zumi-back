@@ -97,7 +97,13 @@ separadas por coma. No se usa `*` y no se versionan los dominios reales.
 
 ## Ejecutar la aplicación
 
-Compila el proyecto y levanta el servidor:
+Para desarrollo, con recarga automática al guardar:
+
+```sh
+npm run dev
+```
+
+Para replicar producción, compila y ejecuta el JavaScript emitido:
 
 ```sh
 npm run build

@@ -27,14 +27,15 @@ detallada está en la auditoría externa `Report00` (2026-10-30).
 | Comprobación | Resultado |
 | --- | --- |
 | `npm ci --dry-run` | Correcto: resuelve el árbol completo, incluido `firebase-admin@14.5.0`. |
-| `npm run build` | Falla en el entorno de esta revisión por `node_modules` incompleto (`Cannot find module 'firebase-admin/app'`). El lockfile sí contiene la dependencia; requiere `npm ci` limpio. No es un defecto de código. |
-| `npm test` | 3 suites y 1 prueba fallan por el mismo módulo ausente. La suite es `vitest run --config vitest.config.ts` sobre `src/tests/**/*.test.ts` (24 archivos). |
-| `npm ci` | No ejecutado: implica reinstalar dependencias en el entorno de revisión. |
+| `npm run build` | Correcto (`tsc -p tsconfig.json`). |
+| `npm test` | Correcto: 24 archivos y 144 pruebas. |
+| `npm run dev` | Correcto: levanta el servidor y reinicia al guardar un archivo de `src/`. |
 | Inicialización PostgreSQL | No ejecutada desde este entorno. |
 | Deploy/health check | No validado contra un servicio desplegado desde este entorno. |
 
-> El build y los tests deben confirmarse con `rm -rf node_modules && npm ci &&
-> npm run build && npm test` antes de dar por buena cualquier medición.
+> El entorno de revisión tenía `node_modules` incompleto: faltaba
+> `firebase-admin` aunque el lockfile lo declara. Se instaló la dependencia para
+> verificar. En una máquina limpia, `npm ci` debe reproducir el mismo resultado.
 
 ## Endpoints presentes
 
@@ -91,6 +92,12 @@ definidos. No se recomienda agregar rutas solo para completar una lista.
 La lista anterior no reemplaza un backlog aprobado.
 
 ## Preparación de deploy
+
+### Desarrollo local
+
+`npm run dev` ejecuta `tsx watch src/index.ts` y reinicia el proceso al guardar
+archivos de `src/`. No genera `dist/`; para validar el artefacto compilado usar
+`npm run build && npm start`. El modo watch no recarga cambios en `.env`.
 
 ### Servicio de API
 

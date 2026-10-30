@@ -18,11 +18,14 @@ npm ci
 cp .env.example .env    # completar DATABASE_URL o los campos DB_*
 npm run db:init
 npm run db:seed         # solo en desarrollo: crea datos demo
-npm run build && npm start
+npm run dev             # recarga automática con tsx watch
 ```
 
-No hay script de servidor en modo watch. Para desarrollo se puede usar
-`npx tsx src/index.ts`, pero el build de `tsc` sigue siendo la referencia.
+Para validar que el código compila y corre igual que en producción:
+
+```sh
+npm run build && npm start
+```
 
 ## Flujo de ramas
 
