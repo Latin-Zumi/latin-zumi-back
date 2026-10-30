@@ -49,6 +49,17 @@ export const passwordResetEmailRateLimit = rateLimit({
   },
 });
 
+export const changePasswordRateLimit = rateLimit({
+  ...commonOptions,
+  limit: 10,
+  keyGenerator: (req) => {
+    const token = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const clientIp = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+    return `${ipKeyGenerator(clientIp)}:${tokenHash}`;
+  },
+});
+
 // Las cotizaciones consultan al proveedor de tasas y se pueden agotar rápido
 export const quoteRateLimit = rateLimit({
   ...commonOptions,

@@ -38,11 +38,12 @@ vi.mock('../../middleware/requireAuth.js', () => ({
 
 import {
   changePassword,
+  forgotPassword,
   login,
   loginGoogle,
   register,
+  resetPasswordHandler,
 } from '../../controllers/auth.controller.js';
-import { changePassword, forgotPassword, login, register, resetPasswordHandler } from '../../controllers/auth.controller.js';
 import { getAuthContext } from '../../middleware/requireAuth.js';
 
 const session = {

@@ -294,7 +294,8 @@ curl -i -X POST http://localhost:3000/auth/register \
   -d '{"nombre":"Ana Pérez","email":"ana@example.com","pais":"Argentina","password":"una-frase-de-acceso-larga"}'
 ```
 
-Responde `201` con `{ token, user }`, listo para usar el token como Bearer.
+Responde `201` con `{ token, user, password_change_required: false }`, listo
+para usar el token como Bearer.
 Los errores de validación, email duplicado y límite de intentos responden
 `400`, `409` y `429`, respectivamente.
 
@@ -328,7 +329,9 @@ curl -i -X POST http://localhost:3000/auth/login \
   -d '{"identifier":"usuario.prueba","password":"una-frase-de-acceso-larga"}'
 ```
 
-La respuesta `200` tiene el envelope `{ token, user }`:
+La respuesta `200` contiene `{ token, user, password_change_required }`. El
+campo es `true` cuando la contraseña usada tiene menos de 8 caracteres; en ese
+caso las rutas protegidas piden cambiarla antes de continuar:
 
 ```json
 {
@@ -342,7 +345,8 @@ La respuesta `200` tiene el envelope `{ token, user }`:
     "roles": ["user"],
     "estado": "activo",
     "foto_url": null
-  }
+  },
+  "password_change_required": false
 }
 ```
 
@@ -356,7 +360,11 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
 
 Las sesiones vencen en una hora. Si una cuenta existente inicia sesión con
 una contraseña menor a 8 caracteres, el login responde `200` pero las rutas
-protegidas responden `403` hasta que la actualice:
+protegidas responden `403` hasta que la actualice. El cambio acepta hasta 10
+intentos por sesión y dirección IP cada 15 minutos; contraseña actual
+incorrecta devuelve `401 INVALID_CURRENT_PASSWORD`, una contraseña nueva igual
+a la actual devuelve `400 PASSWORD_UNCHANGED`, y una cuenta Google sin clave
+devuelve `409 PASSWORD_NOT_SET`. Esta ruta y logout quedan exentas del `403`:
 
 ```sh
 curl -i -X POST http://localhost:3000/auth/change-password \

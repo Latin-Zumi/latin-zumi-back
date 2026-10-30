@@ -44,6 +44,8 @@ const registerSchema = z.object({
 
 const googleLoginSchema = z.object({
   idToken: z.string().min(20).max(8192),
+});
+
 const forgotPasswordSchema = z.object({
   email: z
     .string()
@@ -62,19 +64,23 @@ export async function register(req: Request, res: Response) {
     );
   }
 
-  const result = await registerAccount(parsed.data);
-  return res.status(201).json(result);
+  const { token, user } = await registerAccount(parsed.data);
+  return res.status(201).json({ token, user, password_change_required: false });
 }
 
 export async function login(req: Request, res: Response) {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError('Datos de login inválidos', 400);
 
-  const { token, user } = await loginWithPassword(
+  const { token, user, passwordChangeRequired } = await loginWithPassword(
     parsed.data.identifier,
     parsed.data.password,
   );
-  return res.status(200).json({ token, user });
+  return res.status(200).json({
+    token,
+    user,
+    password_change_required: passwordChangeRequired,
+  });
 }
 
 export async function loginGoogle(req: Request, res: Response) {

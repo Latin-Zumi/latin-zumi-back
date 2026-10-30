@@ -167,10 +167,11 @@ export const openApiSpec = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['token', 'user'],
+                  required: ['token', 'user', 'password_change_required'],
                   properties: {
                     token: { type: 'string' },
                     user: { $ref: '#/components/schemas/AuthUser' },
+                    password_change_required: { type: 'boolean', example: false },
                   },
                 },
               },
@@ -211,10 +212,11 @@ export const openApiSpec = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['token', 'user'],
+                  required: ['token', 'user', 'password_change_required'],
                   properties: {
                     token: { type: 'string' },
                     user: { $ref: '#/components/schemas/AuthUser' },
+                    password_change_required: { type: 'boolean', example: false },
                   },
                   example: {
                     token: '<token-bearer>',
@@ -228,6 +230,7 @@ export const openApiSpec = {
                       estado: 'activo',
                       foto_url: null,
                     },
+                    password_change_required: false,
                   },
                 },
               },
@@ -245,12 +248,6 @@ export const openApiSpec = {
         description:
           'Verifica un ID token de Firebase con email verificado y proveedor google.com. Vincula por email o crea usuario, wallet y cuenta inicial.',
         operationId: 'loginGoogle',
-    '/auth/forgot-password': {
-      post: {
-        summary: 'Solicitar recuperación de contraseña',
-        description:
-          'Genera un token de un solo uso para el email y envía el enlace de restablecimiento por el proveedor configurado. Responde 202 con un mensaje constante para no revelar si el email está registrado.',
-        operationId: 'forgotPassword',
         requestBody: {
           required: true,
           content: {
@@ -260,9 +257,6 @@ export const openApiSpec = {
                 required: ['idToken'],
                 properties: {
                   idToken: { type: 'string', minLength: 20, maxLength: 8192 },
-                required: ['email'],
-                properties: {
-                  email: { type: 'string', format: 'email', maxLength: 254, example: 'ana@example.com' },
                 },
               },
             },
@@ -271,8 +265,6 @@ export const openApiSpec = {
         responses: {
           '200': {
             description: 'Sesión creada para el usuario verificado por Google.',
-          '202': {
-            description: 'Solicitud procesada; el correo se envía en segundo plano.',
             content: {
               'application/json': {
                 schema: {
@@ -293,6 +285,36 @@ export const openApiSpec = {
           '409': { description: 'El email está vinculado a otra cuenta de Google.' },
           '429': { description: 'Demasiados intentos; intenta más tarde.' },
           '503': { description: 'El acceso con Google no está configurado.' },
+        },
+      },
+    },
+    '/auth/forgot-password': {
+      post: {
+        summary: 'Solicitar recuperación de contraseña',
+        description:
+          'Genera un token de un solo uso, válido por 30 minutos por defecto, y envía el enlace. Responde con el mismo mensaje exista o no el email.',
+        operationId: 'forgotPassword',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['email'],
+                properties: {
+                  email: { type: 'string', format: 'email', maxLength: 254, example: 'ana@example.com' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '202': {
+            description: 'Solicitud procesada; no revela si el email está registrado.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
                   required: ['message'],
                   properties: {
                     message: {
@@ -314,7 +336,7 @@ export const openApiSpec = {
       post: {
         summary: 'Restablecer contraseña con token',
         description:
-          'Consume el token de un solo uso y actualiza la contraseña; revoca todas las sesiones del usuario. El token viaja por el enlace del correo, no por la API.',
+          'Consume el token de un solo uso recibido por correo y actualiza la contraseña; revoca todas las sesiones del usuario.',
         operationId: 'resetPassword',
         requestBody: {
           required: true,
@@ -341,6 +363,8 @@ export const openApiSpec = {
     '/auth/change-password': {
       post: {
         summary: 'Cambiar contraseña',
+        description:
+          'Mantiene la sesión actual y revoca las demás. Esta ruta está exenta del bloqueo password_change_required y no devuelve 403 por ese estado.',
         operationId: 'changePassword',
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -365,10 +389,10 @@ export const openApiSpec = {
         },
         responses: {
           '204': { description: 'Contraseña actualizada; las otras sesiones se revocan.' },
-          '400': { description: 'La nueva contraseña debe tener de 8 a 128 caracteres.' },
-          '401': { description: 'Sesión inválida o contraseña actual incorrecta.' },
-          '403': { description: 'Se requiere cambiar la contraseña antes de consultar datos.' },
-          '409': { description: 'PASSWORD_NOT_SET: esta cuenta no tiene una contraseña configurada.' },
+          '400': { description: 'BAD_REQUEST o PASSWORD_UNCHANGED: payload inválido o contraseña igual a la actual.' },
+          '401': { description: 'UNAUTHORIZED o INVALID_CURRENT_PASSWORD: sesión inválida o contraseña actual incorrecta.' },
+          '409': { description: 'PASSWORD_NOT_SET o CONFLICT: cuenta sin contraseña o cambio concurrente.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
         },
       },
     },
