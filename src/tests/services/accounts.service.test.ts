@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { query } = vi.hoisted(() => ({ query: vi.fn() }));
-vi.mock('../config/db.js', () => ({ pool: { query } }));
+vi.mock('../../config/db.js', () => ({ pool: { query } }));
 
-import { getAccountsByUserId, getBalanceByAccountId } from './accounts.service.js';
+import { getAccountsByUserId, getBalanceByAccountId } from '../../services/accounts.service.js';
 
 describe('getAccountsByUserId', () => {
   beforeEach(() => query.mockReset());

@@ -7,8 +7,8 @@ const { query, findActiveSession } = vi.hoisted(() => ({
   findActiveSession: vi.fn(),
 }));
 
-vi.mock('../config/db.js', () => ({ pool: { query } }));
-vi.mock('../services/auth.service.js', () => ({ findActiveSession }));
+vi.mock('../../config/db.js', () => ({ pool: { query } }));
+vi.mock('../../services/auth.service.js', () => ({ findActiveSession }));
 
 const ownerId = '20000000-0000-4000-8000-000000000001';
 const otherUserId = '20000000-0000-4000-8000-000000000002';
@@ -41,8 +41,8 @@ describe('GET /accounts', () => {
     vi.stubEnv('PORT', '3000');
 
     const [{ accountsRouter }, { errorHandler }] = await Promise.all([
-      import('./accounts.route.js'),
-      import('../middleware/errorHandler.js'),
+      import('../../routes/accounts.route.js'),
+      import('../../middleware/errorHandler.js'),
     ]);
     const app = express();
     app.use(accountsRouter);

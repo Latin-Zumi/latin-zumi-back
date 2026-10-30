@@ -14,7 +14,7 @@ const { clientQuery, poolQuery, release, client, connect } = vi.hoisted(() => {
   };
 });
 
-vi.mock('../config/db.js', () => ({
+vi.mock('../../config/db.js', () => ({
   pool: { query: poolQuery, connect },
 }));
 
@@ -23,7 +23,7 @@ const { verifyPassword, hashPassword } = vi.hoisted(() => ({
   hashPassword: vi.fn(),
 }));
 
-vi.mock('../utils/password.js', () => ({
+vi.mock('../../utils/password.js', () => ({
   DUMMY_PASSWORD_HASH: 'dummy-hash',
   hashPassword,
   verifyPassword,
@@ -34,7 +34,7 @@ import {
   createSessionForUser,
   loginWithPassword,
   toAuthUser,
-} from './auth.service.js';
+} from '../../services/auth.service.js';
 
 const userId = '20000000-0000-4000-8000-000000000001';
 const expiresAt = new Date('2026-10-27T13:00:00.000Z');

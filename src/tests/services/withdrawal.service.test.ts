@@ -6,9 +6,9 @@ const { client, connect, query, release } = vi.hoisted(() => {
   const client = { query, release };
   return { client, connect: vi.fn(async () => client), query, release };
 });
-vi.mock('../config/db.js', () => ({ pool: { connect } }));
+vi.mock('../../config/db.js', () => ({ pool: { connect } }));
 
-import { withdrawFromAccount } from './withdrawal.service.js';
+import { withdrawFromAccount } from '../../services/withdrawal.service.js';
 
 const accountId = '10000000-0000-4000-8000-000000000001';
 const userId = '20000000-0000-4000-8000-000000000001';
