@@ -97,7 +97,13 @@ separadas por coma. No se usa `*` y no se versionan los dominios reales.
 
 ## Ejecutar la aplicación
 
-Compila el proyecto y levanta el servidor:
+Para desarrollo, con recarga automática al guardar:
+
+```sh
+npm run dev
+```
+
+Para replicar producción, compila y ejecuta el JavaScript emitido:
 
 ```sh
 npm run build
@@ -214,10 +220,26 @@ las cuentas con `wallet_id` y saldo, incluido `"0"`; el logout debe responder
 
 ## API
 
-La mayoría de las respuestas exitosas usan el formato `{ "data": ... }`. El
-historial paginado devuelve `{ "data": [...], "meta": {...} }` y los endpoints
-de logout/cambio de contraseña responden `204`. Los saldos se serializan como
-texto para conservar la precisión decimal de PostgreSQL.
+Los endpoints no comparten un único sobre de respuesta. Conviene que el cliente
+lea el contrato de cada uno:
+
+- `{ "data": ... }`: `GET /accounts`, `GET /accounts/:id`,
+  `GET /accounts/:id/balance`, `GET /transactions/:id`,
+  `POST /accounts/:id/incoming`, `POST /accounts/:id/withdraw` y
+  `POST /chat/messages`.
+- `{ "data": [...], "meta": {...} }`: `GET /transactions`.
+- `{ "items": [...], "page", "limit", "total", "totalPages" }`:
+  `GET /wallet/transactions`.
+- Objeto plano, sin sobre: `POST /wallet/transfers`,
+  `POST /wallet/deposits`, `GET /wallet/exchange/quote`,
+  `POST /wallet/exchanges`, `GET /users/lookup` (`{ nombre }`),
+  `PATCH /users/me` (`{ user }`), `POST /auth/register`, `POST /auth/login` y
+  `POST /auth/google` (`{ token, user, password_change_required }`).
+- `204`: `POST /auth/logout`, `POST /auth/change-password` y
+  `POST /auth/reset-password`.
+
+Los saldos y montos se serializan como texto para conservar la precisión
+decimal de PostgreSQL.
 
 ### Asistente IA del backend
 
@@ -750,6 +772,7 @@ La validación manual de integración con PostgreSQL está descrita en la
 
 ## Documentación del proyecto
 
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md): flujo de ramas, estilo, specs y checklist de PR.
 - [`docs/guia-e2e-ingreso-convertido.md`](./docs/guia-e2e-ingreso-convertido.md): registro, login, ingreso, idempotencia y verificación del ledger.
 - [`db/README.md`](./db/README.md): PostgreSQL, migraciones y seeds.
 - [`docs/specs/README.md`](./docs/specs/README.md): guía y reglas para crear specs.
