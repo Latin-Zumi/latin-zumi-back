@@ -89,11 +89,11 @@ Antes de escribir código:
 3. El spec debe incluir snippets representativos de código para cada flujo o
    comportamiento principal que cambie. Después de cada snippet, explica en
    lenguaje claro qué ocurre, quién lo ejecuta y qué resultado produce. Usa el
-   lenguaje correspondiente (SQL, TypeScript, JSON, etc.); los snippets deben
-   aclarar el comportamiento y no ser código de relleno.
-4. Muéstrame el spec para que lo apruebe.
-5. Cuando lo apruebe, implementa el cambio.
-6. Al final, marca los checkboxes de "Cómo probar" que se cumplan.
+   lenguaje correspondiente (SQL, TypeScript, JSON, etc.); los snippets deben aclarar el comportamiento y no ser código de relleno.
+4. EL spec no debe tener más de 200 líneas. Si los cambios que se deben implementar no pueden quedar registradas en las 200 líneas, propon la división del spec y espera instrucciones.
+5. Muéstrame el spec para que lo apruebe.
+6. Cuando lo apruebe, implementa el cambio.
+7. Al final, marca los checkboxes de "Cómo probar" que se cumplan.
 
 Vas a hacer el siguiente cambio:
 

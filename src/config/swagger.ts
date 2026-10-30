@@ -5,9 +5,20 @@ export const openApiSpec = {
     version: '1.0.0',
     description: 'Documentación de los endpoints de Latin Zumi.',
   },
+  servers: [{ url: '/' }],
+  tags: [
+    { name: 'health', description: 'Estado y disponibilidad del servicio.' },
+    { name: 'auth', description: 'Registro, sesión y recuperación de acceso.' },
+    { name: 'users', description: 'Usuarios y perfiles.' },
+    { name: 'wallet', description: 'Wallets, transferencias, depósitos y cambios de moneda.' },
+    { name: 'accounts', description: 'Cuentas, saldos e ingresos/retiros.' },
+    { name: 'transactions', description: 'Historial del ledger.' },
+    { name: 'chat', description: 'Asistente de inteligencia artificial.' },
+  ],
   paths: {
     '/health': {
       get: {
+        tags: ['health'],
         summary: 'Comprobar que la API está activa',
         operationId: 'getHealth',
         responses: {
@@ -31,6 +42,7 @@ export const openApiSpec = {
     },
     '/health/ready': {
       get: {
+        tags: ['health'],
         summary: 'Comprobar disponibilidad de la API y PostgreSQL',
         operationId: 'getReadiness',
         responses: {
@@ -75,6 +87,7 @@ export const openApiSpec = {
     },
     '/chat/messages': {
       post: {
+        tags: ['chat'],
         summary: 'Enviar un mensaje al asistente de LATIN ZUMI',
         operationId: 'postChatMessage',
         security: [{ bearerAuth: [] }],
@@ -139,6 +152,7 @@ export const openApiSpec = {
     },
     '/auth/register': {
       post: {
+        tags: ['auth'],
         summary: 'Registrar usuario e iniciar sesión',
         description:
           'Crea usuario, wallet, cuenta inicial y sesión en una transacción. La moneda inicial se deriva del país.',
@@ -185,6 +199,7 @@ export const openApiSpec = {
     },
     '/auth/login': {
       post: {
+        tags: ['auth'],
         summary: 'Iniciar sesión',
         description:
           'Devuelve un token opaco y el usuario. El 403 por cambio de contraseña lo devuelven las rutas protegidas, no este endpoint.',
@@ -244,6 +259,7 @@ export const openApiSpec = {
     },
     '/auth/google': {
       post: {
+        tags: ['auth'],
         summary: 'Iniciar sesión o registrarse con Google',
         description:
           'Verifica un ID token de Firebase con email verificado y proveedor google.com. Vincula por email o crea usuario, wallet y cuenta inicial.',
@@ -290,6 +306,7 @@ export const openApiSpec = {
     },
     '/auth/forgot-password': {
       post: {
+        tags: ['auth'],
         summary: 'Solicitar recuperación de contraseña',
         description:
           'Genera un token de un solo uso, válido por 30 minutos por defecto, y envía el enlace. Responde con el mismo mensaje exista o no el email.',
@@ -334,6 +351,7 @@ export const openApiSpec = {
     },
     '/auth/reset-password': {
       post: {
+        tags: ['auth'],
         summary: 'Restablecer contraseña con token',
         description:
           'Consume el token de un solo uso recibido por correo y actualiza la contraseña; revoca todas las sesiones del usuario.',
@@ -362,6 +380,7 @@ export const openApiSpec = {
     },
     '/auth/change-password': {
       post: {
+        tags: ['auth'],
         summary: 'Cambiar contraseña',
         description:
           'Mantiene la sesión actual y revoca las demás. Esta ruta está exenta del bloqueo password_change_required y no devuelve 403 por ese estado.',
@@ -398,6 +417,7 @@ export const openApiSpec = {
     },
     '/auth/logout': {
       post: {
+        tags: ['auth'],
         summary: 'Cerrar sesión actual',
         operationId: 'logout',
         security: [{ bearerAuth: [] }],
@@ -409,6 +429,7 @@ export const openApiSpec = {
     },
     '/users/lookup': {
       get: {
+        tags: ['users'],
         summary: 'Buscar destinatario por email', operationId: 'lookupUser', security: [{ bearerAuth: [] }],
         parameters: [{ name: 'email', in: 'query', required: true, schema: { type: 'string', format: 'email' } }],
         responses: { '200': { description: 'Nombre del usuario encontrado.', content: { 'application/json': { schema: { type: 'object', example: { nombre: 'Mateo Ríos' } } } } }, '400': { description: 'Email inválido.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' } },
@@ -416,6 +437,7 @@ export const openApiSpec = {
     },
     '/users/me': {
       patch: {
+        tags: ['users'],
         summary: 'Completar o actualizar el perfil del usuario autenticado',
         description:
           'Actualiza nombre y país. Cambia la moneda de wallet/cuenta solo si la wallet no tiene movimientos; de lo contrario conserva la moneda real y alinea moneda_preferida.',
@@ -461,6 +483,7 @@ export const openApiSpec = {
     },
     '/wallet/transfers': {
       post: {
+        tags: ['wallet'],
         summary: 'Transferir entre usuarios', operationId: 'transfer', security: [{ bearerAuth: [] }],
         parameters: [{ name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 } }],
         requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['recipient_email','currency','amount'], properties: { recipient_email: { type: 'string', format: 'email' }, currency: { type: 'string', enum: ['USD','COP','ARS','EUR'] }, amount: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$' }, note: { type: 'string', maxLength: 140 } } } } } },
@@ -469,6 +492,7 @@ export const openApiSpec = {
     },
     '/wallet/deposits': {
       post: {
+        tags: ['wallet'],
         summary: 'Registrar un depósito en la wallet',
         description:
           'Acredita un ingreso en la moneda principal de la wallet del usuario autenticado. Si la moneda del ingreso difiere de la principal, la conversión usa la tasa vigente. No hay pasarela: se registra contra la cuenta interna `external`. El depósito es de prueba y no representa una transferencia bancaria.',
@@ -555,6 +579,7 @@ export const openApiSpec = {
     },
     '/wallet/exchange/quote': {
       get: {
+        tags: ['wallet'],
         summary: 'Cotizar un cambio de moneda',
         description:
           'Fija la tasa de cambio entre dos monedas distintas durante 60 segundos y devuelve el importe convertido. La cotización queda asociada al titular que la pidió.',
@@ -597,6 +622,7 @@ export const openApiSpec = {
     },
     '/wallet/exchanges': {
       post: {
+        tags: ['wallet'],
         summary: 'Ejecutar un cambio de moneda con una cotización',
         description:
           'Ejecuta el cambio fijado por la cotización: debita la moneda de origen del usuario y acredita la convertida en la moneda destino, creando la cuenta destino si no existía. La cotización se consume en la misma operación.',
@@ -672,13 +698,22 @@ export const openApiSpec = {
     },
     '/wallet/transactions': {
       get: {
+        tags: ['wallet'],
         summary: 'Consultar actividad de la wallet', operationId: 'getWalletTransactions', security: [{ bearerAuth: [] }],
-        parameters: ['type','currency','from','to','page','limit'].map((name) => ({ name, in: 'query', required: false, schema: { type: name === 'page' || name === 'limit' ? 'integer' : 'string' } })),
+        parameters: [
+          { name: 'type', in: 'query', required: false, schema: { type: 'string', enum: ['deposit', 'transfer_sent', 'transfer_received', 'withdrawal', 'exchange'] } },
+          { name: 'currency', in: 'query', required: false, schema: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] } },
+          { name: 'from', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
+          { name: 'to', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
+          { name: 'page', in: 'query', required: false, schema: { type: 'integer', minimum: 1, default: 1 } },
+          { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+        ],
         responses: { '200': { description: 'Actividad paginada del titular autenticado.' }, '400': { description: 'Filtros inválidos.' }, '401': { description: 'Sesión inválida.' } },
       },
     },
     '/users': {
       post: {
+        tags: ['users'],
         deprecated: true,
         summary: 'Legado: crear usuario, wallet y cuenta sin iniciar sesión',
         operationId: 'createUser',
@@ -803,12 +838,7 @@ export const openApiSpec = {
             description: 'El payload de registro no cumple la validación.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    error: { type: 'string', example: 'Datos de registro inválidos' },
-                  },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -816,12 +846,7 @@ export const openApiSpec = {
             description: 'El username o email ya está registrado.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    error: { type: 'string', example: 'Username o email ya registrado' },
-                  },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -829,12 +854,7 @@ export const openApiSpec = {
             description: 'Error interno del servidor.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    error: { type: 'string', example: 'Error interno del servidor' },
-                  },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -843,6 +863,7 @@ export const openApiSpec = {
     },
     '/accounts': {
       get: {
+        tags: ['accounts'],
         summary: 'Listar las cuentas activas del usuario autenticado',
         operationId: 'getAccounts',
         security: [{ bearerAuth: [] }],
@@ -948,6 +969,7 @@ export const openApiSpec = {
     },
     '/accounts/{id}': {
       get: {
+        tags: ['accounts'],
         summary: 'Consultar una cuenta activa del usuario',
         operationId: 'getAccount',
         security: [{ bearerAuth: [] }],
@@ -1025,10 +1047,7 @@ export const openApiSpec = {
             description: 'El identificador no es un UUID válido.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: { error: { type: 'string', example: 'ID de cuenta inválido' } },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -1036,10 +1055,7 @@ export const openApiSpec = {
             description: 'La cuenta no existe o no pertenece al titular autenticado.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: { error: { type: 'string', example: 'Cuenta no encontrada' } },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -1049,16 +1065,16 @@ export const openApiSpec = {
             description: 'Error interno del servidor.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: { error: { type: 'string', example: 'Error interno del servidor' } },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
         },
       },
+    },
+    '/accounts/{id}/incoming': {
       post: {
+        tags: ['accounts'],
         summary: 'Registrar un ingreso y convertirlo a la moneda principal de la wallet',
         deprecated: true,
         description:
@@ -1117,6 +1133,7 @@ export const openApiSpec = {
     },
     '/accounts/{id}/balance': {
       get: {
+        tags: ['accounts'],
         summary: 'Consultar el saldo de una cuenta activa',
         operationId: 'getAccountBalance',
         security: [{ bearerAuth: [] }],
@@ -1180,10 +1197,7 @@ export const openApiSpec = {
             description: 'El identificador no es un UUID válido.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: { error: { type: 'string', example: 'ID de cuenta inválido' } },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -1191,10 +1205,7 @@ export const openApiSpec = {
             description: 'La cuenta no existe o no pertenece al titular autenticado.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: { error: { type: 'string', example: 'Cuenta no encontrada' } },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -1204,10 +1215,7 @@ export const openApiSpec = {
             description: 'Error interno del servidor.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: { error: { type: 'string', example: 'Error interno del servidor' } },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -1216,6 +1224,7 @@ export const openApiSpec = {
     },
     '/accounts/{id}/withdraw': {
       post: {
+        tags: ['accounts'],
         summary: 'Retirar saldo de la cuenta autenticada',
         operationId: 'withdrawAccount',
         security: [{ bearerAuth: [] }],
@@ -1287,6 +1296,7 @@ export const openApiSpec = {
     },
     '/transactions': {
       get: {
+        tags: ['transactions'],
         summary: 'Listar el historial del usuario autenticado',
         operationId: 'getTransactions',
         security: [{ bearerAuth: [] }],
@@ -1427,12 +1437,7 @@ export const openApiSpec = {
             description: 'Error interno del servidor.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    error: { type: 'string', example: 'Error interno del servidor' },
-                  },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -1441,6 +1446,7 @@ export const openApiSpec = {
     },
     '/transactions/{id}': {
       get: {
+        tags: ['transactions'],
         summary: 'Consultar una transacción',
         operationId: 'getTransaction',
         security: [{ bearerAuth: [] }],
@@ -1539,12 +1545,7 @@ export const openApiSpec = {
             description: 'El identificador no es un UUID válido.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    error: { type: 'string', example: 'ID de transacción inválido' },
-                  },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -1552,12 +1553,7 @@ export const openApiSpec = {
             description: 'No existe una transacción con ese identificador.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    error: { type: 'string', example: 'Transacción no encontrada' },
-                  },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
@@ -1567,12 +1563,7 @@ export const openApiSpec = {
             description: 'Error interno del servidor.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    error: { type: 'string', example: 'Error interno del servidor' },
-                  },
-                },
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },
