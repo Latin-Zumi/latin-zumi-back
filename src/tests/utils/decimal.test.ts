@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { multiplyAndRoundHalfUp, normalizeDecimal } from './decimal.js';
+import { multiplyAndRoundHalfUp, normalizeDecimal } from '../../utils/decimal.js';
 
 describe('decimal arithmetic', () => {
   it('multiplies exactly and rounds HALF_UP to two decimals', () => {

@@ -7,10 +7,10 @@ const { findActiveSession, sendChatMessage } = vi.hoisted(() => ({
   sendChatMessage: vi.fn(),
 }));
 
-vi.mock('../services/auth.service.js', () => ({
+vi.mock('../../services/auth.service.js', () => ({
   findActiveSession,
 }));
-vi.mock('../services/chat/chat.service.js', () => ({
+vi.mock('../../services/chat/chat.service.js', () => ({
   sendChatMessage,
 }));
 
@@ -28,8 +28,8 @@ describe('POST /chat/messages', () => {
     vi.stubEnv('PORT', '3000');
 
     const [{ chatRouter }, { errorHandler }] = await Promise.all([
-      import('./chat.route.js'),
-      import('../middleware/errorHandler.js'),
+      import('../../routes/chat.route.js'),
+      import('../../middleware/errorHandler.js'),
     ]);
 
     const app = express();

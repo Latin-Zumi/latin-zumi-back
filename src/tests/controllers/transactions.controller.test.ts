@@ -1,17 +1,17 @@
 import type { Request, Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { openApiSpec } from '../config/swagger.js';
+import { openApiSpec } from '../../config/swagger.js';
 
 const { getTransactionById, getTransactionsByUserId } = vi.hoisted(() => ({
   getTransactionById: vi.fn(),
   getTransactionsByUserId: vi.fn(),
 }));
-vi.mock('../services/transactions.service.js', () => ({
+vi.mock('../../services/transactions.service.js', () => ({
   getTransactionById,
   getTransactionsByUserId,
 }));
 
-import { getTransactions } from './transactions.controller.js';
+import { getTransactions } from '../../controllers/transactions.controller.js';
 
 const userId = '20000000-0000-4000-8000-000000000001';
 

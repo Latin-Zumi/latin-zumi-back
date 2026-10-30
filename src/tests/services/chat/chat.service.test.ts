@@ -6,18 +6,18 @@ const { getAccountsByUserId, getTransactionsByUserId, createGeminiProvider } = v
   createGeminiProvider: vi.fn(),
 }));
 
-vi.mock('../accounts.service.js', () => ({
+vi.mock('../../../services/accounts.service.js', () => ({
   getAccountsByUserId,
 }));
-vi.mock('../transactions.service.js', () => ({
+vi.mock('../../../services/transactions.service.js', () => ({
   getTransactionsByUserId,
 }));
-vi.mock('./gemini-provider.js', () => ({
+vi.mock('../../../services/chat/gemini-provider.js', () => ({
   createGeminiProvider,
   normalizeHistory: (history: unknown) => history,
 }));
 
-import { sendChatMessage } from './chat.service.js';
+import { sendChatMessage } from '../../../services/chat/chat.service.js';
 
 describe('sendChatMessage', () => {
   beforeEach(() => {

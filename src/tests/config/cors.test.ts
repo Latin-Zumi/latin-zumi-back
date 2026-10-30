@@ -50,18 +50,18 @@ describe('CORS allowlist', () => {
   it('defaults an empty allowlist safely and rejects invalid origins', async () => {
     vi.stubEnv('CORS_ORIGINS', '');
     vi.resetModules();
-    const { env: emptyEnv } = await import('./env.js');
+    const { env: emptyEnv } = await import('../../config/env.js');
     expect(emptyEnv.CORS_ORIGINS).toEqual([]);
 
     vi.stubEnv('CORS_ORIGINS', 'https://frontend.example/path');
     vi.resetModules();
-    await expect(import('./env.js')).rejects.toThrow(/CORS_ORIGINS/);
+    await expect(import('../../config/env.js')).rejects.toThrow(/CORS_ORIGINS/);
   });
 
   it('allows configured origins, denies others, permits requests without Origin, and handles preflight', async () => {
     vi.stubEnv('CORS_ORIGINS', 'https://frontend.example, https://admin.example');
     vi.resetModules();
-    const { app } = await import('../server.js');
+    const { app } = await import('../../server.js');
     const { baseUrl } = await listen(app);
 
     const allowedResponse = await fetch(`${baseUrl}/health`, {
@@ -98,7 +98,7 @@ describe('CORS allowlist', () => {
   });
 
   it('does not authorize browser origins when the allowlist is empty', async () => {
-    const { createCorsMiddleware } = await import('./cors.js');
+    const { createCorsMiddleware } = await import('../../config/cors.js');
     const testApp = express();
     testApp.use(createCorsMiddleware([]));
     testApp.get('/health', (_request, response) => response.status(200).json({ status: 'ok' }));

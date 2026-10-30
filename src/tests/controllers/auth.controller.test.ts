@@ -13,19 +13,19 @@ const {
   revokeSession: vi.fn(),
 }));
 
-vi.mock('../services/auth.service.js', () => ({
+vi.mock('../../services/auth.service.js', () => ({
   loginWithPassword,
   changeUserPassword,
   registerAccount,
   revokeSession,
 }));
 
-vi.mock('../middleware/requireAuth.js', () => ({
+vi.mock('../../middleware/requireAuth.js', () => ({
   getAuthContext: vi.fn(),
 }));
 
-import { changePassword, login, register } from './auth.controller.js';
-import { getAuthContext } from '../middleware/requireAuth.js';
+import { changePassword, login, register } from '../../controllers/auth.controller.js';
+import { getAuthContext } from '../../middleware/requireAuth.js';
 
 const session = {
   token: 'token-123',

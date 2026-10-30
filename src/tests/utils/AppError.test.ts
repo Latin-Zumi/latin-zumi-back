@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AppError } from "../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 
 describe('AppError', () => {
   it('creates an operational error with an HTTP status', () => {
