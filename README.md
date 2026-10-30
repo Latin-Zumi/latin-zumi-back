@@ -239,7 +239,33 @@ El backend incluye el contexto de cuentas y movimientos del usuario autenticado 
 #### Variables de entorno del chatbot
 
 - `GEMINI_API_KEY`: clave de Gemini del backend. Debe mantenerse en `.env` local o el gestor de secretos del deploy. No se registra en Git.
-- `GEMINI_MODEL`: modelo a usar, por defecto `gemini-2.5-flash`.
+- `GEMINI_MODEL`: modelo a usar, por defecto `gemini-3.5-flash-lite`.
+
+### Acceso con Google y perfil
+
+`POST /auth/google` recibe un ID token de Firebase y devuelve una sesión con
+el mismo contrato que el login por contraseña. Firebase debe confirmar el email
+y el proveedor `google.com`. Si el usuario es nuevo, se crea con una wallet y
+una cuenta inicial en USD; luego debe completar el perfil mediante
+`PATCH /users/me`.
+
+Para habilitar el acceso con Google, configura juntas en el backend
+`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` y `FIREBASE_PRIVATE_KEY` usando
+una cuenta de servicio de Firebase. La clave privada debe guardarse solo en el
+gestor de secretos del entorno y usarse con saltos de línea escapados como
+`\\n`. Si las tres variables quedan vacías, el endpoint responde
+`503 GOOGLE_AUTH_UNAVAILABLE`; si solo algunas están definidas, la
+configuración es inválida y el backend no inicia.
+La vinculación de una cuenta existente se realiza por email solo después de
+verificarlo con Google; al migrar a otro proyecto Firebase, el usuario puede
+volver a vincularse por ese email verificado.
+
+`PATCH /users/me` requiere una sesión Bearer y `pais`; `nombre` es opcional.
+Si la wallet aún no tiene movimientos, actualiza su moneda y la cuenta activa
+al valor derivado del país. Si ya hay movimientos, conserva la moneda real de
+la wallet y alinea `moneda_preferida` con ella.
+Las cuentas solo-Google no tienen contraseña; `POST /auth/change-password`
+responde `409 PASSWORD_NOT_SET`.
 
 ### Usuario y sesión
 

@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   loginWithPassword,
+  loginWithGoogle,
   changeUserPassword,
   registerAccount,
   revokeSession,
 } = vi.hoisted(() => ({
   loginWithPassword: vi.fn(),
+  loginWithGoogle: vi.fn(),
   changeUserPassword: vi.fn(),
   registerAccount: vi.fn(),
   revokeSession: vi.fn(),
@@ -15,6 +17,7 @@ const {
 
 vi.mock('../../services/auth.service.js', () => ({
   loginWithPassword,
+  loginWithGoogle,
   changeUserPassword,
   registerAccount,
   revokeSession,
@@ -24,7 +27,12 @@ vi.mock('../../middleware/requireAuth.js', () => ({
   getAuthContext: vi.fn(),
 }));
 
-import { changePassword, login, register } from '../../controllers/auth.controller.js';
+import {
+  changePassword,
+  login,
+  loginGoogle,
+  register,
+} from '../../controllers/auth.controller.js';
 import { getAuthContext } from '../../middleware/requireAuth.js';
 
 const session = {
@@ -86,6 +94,39 @@ describe('login', () => {
       ),
     ).rejects.toMatchObject({ statusCode: 400 });
     expect(loginWithPassword).not.toHaveBeenCalled();
+  });
+});
+
+describe('loginGoogle', () => {
+  beforeEach(() => loginWithGoogle.mockReset());
+
+  it('returns the Google session contract', async () => {
+    const result = {
+      token: 'opaque-token',
+      user: session.user,
+      passwordChangeRequired: false,
+    };
+    loginWithGoogle.mockResolvedValueOnce(result);
+    const res = createResponse();
+
+    await loginGoogle({ body: { idToken: 'a'.repeat(20) } } as Request, res);
+
+    expect(loginWithGoogle).toHaveBeenCalledWith('a'.repeat(20));
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      token: result.token,
+      user: result.user,
+      password_change_required: false,
+    });
+  });
+
+  it('rejects missing or short Firebase ID tokens', async () => {
+    const res = createResponse();
+
+    await expect(
+      loginGoogle({ body: { idToken: 'short' } } as Request, res),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    expect(loginWithGoogle).not.toHaveBeenCalled();
   });
 });
 

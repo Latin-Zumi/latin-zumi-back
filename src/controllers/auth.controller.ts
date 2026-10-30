@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import {
   changeUserPassword,
+  loginWithGoogle,
   loginWithPassword,
   registerAccount,
   revokeSession,
@@ -12,6 +13,7 @@ import {
   loginPasswordSchema,
   passwordSchema,
 } from '../schemas/password.js';
+import { nombreSchema, paisSchema } from '../schemas/profile.js';
 import { AppError } from '../utils/AppError.js';
 
 const loginSchema = z.object({
@@ -24,16 +26,6 @@ const changePasswordSchema = z.object({
   new_password: passwordSchema,
 });
 
-const nombreSchema = z
-  .string()
-  .trim()
-  .min(2, 'Ingresá tu nombre')
-  .max(50, 'El nombre no puede superar los 50 caracteres')
-  .regex(
-    /^[\p{L}\p{M}]+(?:[ '\u2019\u002D\u00B7.][\p{L}\p{M}]+)*$/u,
-    'Ingresá un nombre válido, sin números',
-  );
-
 const registerSchema = z.object({
   nombre: nombreSchema,
   email: z
@@ -42,8 +34,12 @@ const registerSchema = z.object({
     .email('Ingresá un email válido')
     .max(254)
     .transform((value) => value.toLowerCase()),
-  pais: z.enum(['Argentina', 'Colombia', 'Otro']),
+  pais: paisSchema,
   password: passwordSchema,
+});
+
+const googleLoginSchema = z.object({
+  idToken: z.string().min(20).max(8192),
 });
 
 export async function register(req: Request, res: Response) {
@@ -68,6 +64,20 @@ export async function login(req: Request, res: Response) {
     parsed.data.password,
   );
   return res.status(200).json({ token, user });
+}
+
+export async function loginGoogle(req: Request, res: Response) {
+  const parsed = googleLoginSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError('Datos de Google inválidos', 400);
+
+  const { token, user, passwordChangeRequired } = await loginWithGoogle(
+    parsed.data.idToken,
+  );
+  return res.status(200).json({
+    token,
+    user,
+    password_change_required: passwordChangeRequired,
+  });
 }
 
 export async function logout(req: Request, res: Response) {

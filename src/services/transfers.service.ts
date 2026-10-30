@@ -27,6 +27,7 @@ export async function transferBetweenUsers(input: TransferInput) {
   if (recipient.id === input.userId) throw new AppError('No podés transferirte a vos mismo', 422, 'SELF_TRANSFER');
   const recipientWallet = await getWalletByUserId(recipient.id);
   if (!recipientWallet) throw new AppError('El destinatario no tiene una wallet', 500);
+  const recipientWalletInitialCurrency = recipientWallet.primaryCurrency;
   const amount = normalizeDecimal(input.amount, 2);
   const conversion = input.currency === recipientWallet.primaryCurrency ? null : await getExchangeRate(input.currency, recipientWallet.primaryCurrency).catch(() => {
     throw new AppError('No hay una tasa vigente disponible', 503, 'CONVERSION_UNAVAILABLE');
@@ -41,6 +42,30 @@ export async function transferBetweenUsers(input: TransferInput) {
     await client.query('BEGIN');
     const ids = [senderWallet.id, recipientWallet.id].sort();
     for (const id of ids) await client.query('SELECT id FROM wallets WHERE id=$1 FOR UPDATE', [id]);
+    const lockedWallets = await client.query<{
+      id: string;
+      primary_currency: string;
+    }>(
+      `SELECT id, RTRIM(primary_currency) AS primary_currency
+         FROM wallets
+        WHERE id = ANY($1::uuid[])
+        ORDER BY id`,
+      [ids],
+    );
+    const primaryCurrencyByWalletId = new Map(
+      lockedWallets.rows.map((wallet) => [wallet.id, wallet.primary_currency]),
+    );
+    const currentSenderCurrency = primaryCurrencyByWalletId.get(senderWallet.id);
+    const currentRecipientCurrency = primaryCurrencyByWalletId.get(recipientWallet.id);
+    if (!currentSenderCurrency || !currentRecipientCurrency) {
+      throw new AppError(
+        'El estado de la wallet cambió; reintentá la transferencia',
+        409,
+        'TRANSFER_WALLET_STATE_CHANGED',
+      );
+    }
+    recipientWallet.primaryCurrency = currentRecipientCurrency;
+
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`operation:${input.idempotencyKey}`]);
     const prior = (await existingTransfer(client, input.idempotencyKey)).rows[0];
     if (prior) {
@@ -49,6 +74,13 @@ export async function transferBetweenUsers(input: TransferInput) {
       const balances = await getAccountsByUserId(input.userId, client);
       await client.query('COMMIT');
       return { transaction: { id: prior.id, type: 'transfer_sent', status: 'completed', currency: input.currency, amount, created_at: prior.occurred_at.toISOString(), description: prior.description ?? `Transferencia a ${recipient.nombre}`, counterparty: { nombre: recipient.nombre, email: recipient.email }, exchange: null }, recipient: { currency: prior.recipient_currency ?? recipientWallet.primaryCurrency, amount: normalizeDecimal(prior.recipient_amount ?? amount, 2), rate: normalizeDecimal(prior.rate ?? '1', 12) }, balances };
+    }
+    if (currentRecipientCurrency !== recipientWalletInitialCurrency) {
+      throw new AppError(
+        'La moneda de la wallet destinataria cambió; reintentá la transferencia',
+        409,
+        'TRANSFER_WALLET_CURRENCY_CHANGED',
+      );
     }
     const sender = await client.query<{ account_id: string; sufficient: boolean }>(
       `SELECT a.id AS account_id, COALESCE(b.balance,0) >= $3::numeric AS sufficient FROM accounts a LEFT JOIN account_balances b ON b.account_id=a.id AND b.currency=a.currency WHERE a.wallet_id=$1 AND RTRIM(a.currency)=$2 AND a.account_type='user' AND a.closed_at IS NULL`,

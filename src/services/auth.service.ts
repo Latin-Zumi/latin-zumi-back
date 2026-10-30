@@ -6,6 +6,7 @@ import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../utils/pass
 import { PASSWORD_MIN_LENGTH } from '../schemas/password.js';
 import { createUserWithWallet, type UserProfileRow } from './users.service.js';
 import { currencyForCountry, type Pais } from '../utils/country.js';
+import { verifyGoogleIdToken, type GoogleIdentity } from './firebase-admin.service.js';
 
 interface UserCredential {
   id: string;
@@ -78,6 +79,85 @@ function isEmailUniqueViolation(error: unknown): boolean {
     databaseError.constraint === 'users_email_key' ||
     databaseError.constraint === 'users_email_lower_idx'
   );
+}
+
+function isGoogleUidUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const databaseError = error as { code?: string; constraint?: string };
+  return databaseError.code === '23505'
+    && databaseError.constraint === 'users_google_uid_idx';
+}
+
+async function findOrCreateGoogleUser(
+  client: PoolClient,
+  identity: GoogleIdentity,
+): Promise<UserProfileRow> {
+  const lockKeys = [
+    `google-uid:${identity.googleUid}`,
+    `google-email:${identity.email}`,
+  ].sort();
+  for (const lockKey of lockKeys) {
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [lockKey]);
+  }
+
+  const byGoogle = await client.query<UserProfileRow>(
+    `SELECT id, username, email, nombre, pais,
+            RTRIM(moneda_preferida) AS moneda_preferida,
+            roles, estado, foto_url
+       FROM users
+      WHERE google_uid = $1
+      FOR UPDATE`,
+    [identity.googleUid],
+  );
+  if (byGoogle.rows[0]) return byGoogle.rows[0];
+
+  const byEmail = await client.query<
+    UserProfileRow & { google_uid: string | null }
+  >(
+    `SELECT id, username, email, nombre, pais,
+            RTRIM(moneda_preferida) AS moneda_preferida,
+            roles, estado, foto_url, google_uid
+       FROM users
+      WHERE lower(email) = $1
+      FOR UPDATE`,
+    [identity.email],
+  );
+
+  const existing = byEmail.rows[0];
+  if (existing) {
+    if (existing.google_uid && existing.google_uid !== identity.googleUid) {
+      throw new AppError(
+        'Ese email ya está vinculado a otra cuenta de Google',
+        409,
+        'GOOGLE_ACCOUNT_CONFLICT',
+      );
+    }
+
+    const linked = await client.query<UserProfileRow>(
+      `UPDATE users
+          SET google_uid = $2,
+              foto_url = COALESCE(foto_url, $3),
+              nombre = COALESCE(NULLIF(trim(nombre), ''), $4)
+        WHERE id = $1
+        RETURNING id, username, email, nombre, pais,
+                  RTRIM(moneda_preferida) AS moneda_preferida,
+                  roles, estado, foto_url`,
+      [existing.id, identity.googleUid, identity.fotoUrl, identity.nombre],
+    );
+    return linked.rows[0];
+  }
+
+  const { user } = await createUserWithWallet(client, {
+    username: buildUsername(identity.email),
+    email: identity.email,
+    passwordHash: null,
+    nombre: identity.nombre ?? buildUsername(identity.email),
+    pais: null,
+    monedaPreferida: 'USD',
+    googleUid: identity.googleUid,
+    fotoUrl: identity.fotoUrl,
+  });
+  return user;
 }
 
 export async function registerAccount(
@@ -161,6 +241,10 @@ export async function loginWithPassword(
     throw new AppError('Credenciales inválidas', 401);
   }
 
+  if (user.estado !== 'activo') {
+    throw new AppError('Tu cuenta no está habilitada', 403, 'USER_BLOCKED');
+  }
+
   const passwordChangeRequired = Array.from(password).length < PASSWORD_MIN_LENGTH;
   // scrypt es costoso: se calcula antes de abrir la transacción para no
   // retener una conexión mientras se hashea la contraseña.
@@ -188,6 +272,47 @@ export async function loginWithPassword(
     return { token: session.token, user: toAuthUser(user) };
   } catch (error) {
     await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function loginWithGoogle(idToken: string): Promise<{
+  token: string;
+  user: AuthUser;
+  passwordChangeRequired: boolean;
+}> {
+  const identity = await verifyGoogleIdToken(idToken);
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+    const user = await findOrCreateGoogleUser(client, identity);
+    if (user.estado !== 'activo') {
+      throw new AppError('Tu cuenta no está habilitada', 403, 'USER_BLOCKED');
+    }
+
+    const session = await createSessionForUser(user.id, {
+      passwordChangeRequired: false,
+      client,
+    });
+    await client.query('COMMIT');
+
+    return {
+      token: session.token,
+      user: toAuthUser(user),
+      passwordChangeRequired: false,
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (isEmailUniqueViolation(error) || isGoogleUidUniqueViolation(error)) {
+      throw new AppError(
+        'Ese email ya está vinculado a otra cuenta',
+        409,
+        'GOOGLE_ACCOUNT_CONFLICT',
+      );
+    }
     throw error;
   } finally {
     client.release();
@@ -230,8 +355,15 @@ export async function changeUserPassword(
     [context.userId],
   );
   const user = userResult.rows[0];
-  if (!user || !user.password_hash) {
+  if (!user) {
     throw new AppError('Credenciales inválidas', 401);
+  }
+  if (!user.password_hash) {
+    throw new AppError(
+      'Esta cuenta no tiene una contraseña configurada',
+      409,
+      'PASSWORD_NOT_SET',
+    );
   }
 
   const verification = await verifyPassword(currentPassword, user.password_hash);
