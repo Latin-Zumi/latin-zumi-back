@@ -12,7 +12,7 @@ vi.mock('@google/genai', () => ({
   },
 }));
 
-import { GeminiChatProvider } from './gemini-provider.js';
+import { GeminiChatProvider } from '../../../services/chat/gemini-provider.js';
 
 describe('GeminiChatProvider', () => {
   beforeEach(() => {

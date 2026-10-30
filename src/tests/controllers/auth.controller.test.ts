@@ -3,29 +3,48 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   loginWithPassword,
+  loginWithGoogle,
   changeUserPassword,
   registerAccount,
   revokeSession,
+  requestPasswordReset,
+  resetPassword,
 } = vi.hoisted(() => ({
   loginWithPassword: vi.fn(),
+  loginWithGoogle: vi.fn(),
   changeUserPassword: vi.fn(),
   registerAccount: vi.fn(),
   revokeSession: vi.fn(),
+  requestPasswordReset: vi.fn(),
+  resetPassword: vi.fn(),
 }));
 
-vi.mock('../services/auth.service.js', () => ({
+vi.mock('../../services/auth.service.js', () => ({
   loginWithPassword,
+  loginWithGoogle,
   changeUserPassword,
   registerAccount,
   revokeSession,
 }));
 
-vi.mock('../middleware/requireAuth.js', () => ({
+vi.mock('../../services/password-reset.service.js', () => ({
+  requestPasswordReset,
+  resetPassword,
+}));
+
+vi.mock('../../middleware/requireAuth.js', () => ({
   getAuthContext: vi.fn(),
 }));
 
-import { changePassword, login, register } from './auth.controller.js';
-import { getAuthContext } from '../middleware/requireAuth.js';
+import {
+  changePassword,
+  forgotPassword,
+  login,
+  loginGoogle,
+  register,
+  resetPasswordHandler,
+} from '../../controllers/auth.controller.js';
+import { getAuthContext } from '../../middleware/requireAuth.js';
 
 const session = {
   token: 'token-123',
@@ -86,6 +105,39 @@ describe('login', () => {
       ),
     ).rejects.toMatchObject({ statusCode: 400 });
     expect(loginWithPassword).not.toHaveBeenCalled();
+  });
+});
+
+describe('loginGoogle', () => {
+  beforeEach(() => loginWithGoogle.mockReset());
+
+  it('returns the Google session contract', async () => {
+    const result = {
+      token: 'opaque-token',
+      user: session.user,
+      passwordChangeRequired: false,
+    };
+    loginWithGoogle.mockResolvedValueOnce(result);
+    const res = createResponse();
+
+    await loginGoogle({ body: { idToken: 'a'.repeat(20) } } as Request, res);
+
+    expect(loginWithGoogle).toHaveBeenCalledWith('a'.repeat(20));
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      token: result.token,
+      user: result.user,
+      password_change_required: false,
+    });
+  });
+
+  it('rejects missing or short Firebase ID tokens', async () => {
+    const res = createResponse();
+
+    await expect(
+      loginGoogle({ body: { idToken: 'short' } } as Request, res),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    expect(loginWithGoogle).not.toHaveBeenCalled();
   });
 });
 
@@ -181,5 +233,71 @@ describe('changePassword', () => {
       '12345678',
     );
     expect(res.status).toHaveBeenCalledWith(204);
+  });
+});
+
+describe('forgotPassword', () => {
+  beforeEach(() => requestPasswordReset.mockReset());
+
+  it('returns 202 with the generic message for a valid email', async () => {
+    requestPasswordReset.mockResolvedValueOnce(undefined);
+    const res = createResponse();
+
+    await forgotPassword(
+      { body: { email: 'ana@example.com' }, ip: '203.0.113.10' } as Request,
+      res,
+    );
+
+    expect(requestPasswordReset).toHaveBeenCalledWith(
+      'ana@example.com',
+      '203.0.113.10',
+    );
+    expect(res.status).toHaveBeenCalledWith(202);
+    expect(res.json).toHaveBeenCalledWith({
+      message:
+        'Si el email está registrado, te enviamos instrucciones para restablecer la contraseña.',
+    });
+  });
+
+  it('rejects an invalid email with 400 before calling the service', async () => {
+    const res = createResponse();
+
+    await expect(
+      forgotPassword({ body: { email: 'no-valid-email' } } as Request, res),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    expect(requestPasswordReset).not.toHaveBeenCalled();
+  });
+});
+
+describe('resetPassword', () => {
+  beforeEach(() => resetPassword.mockReset());
+
+  it('rejects a password shorter than the minimum with a clear message', async () => {
+    const res = createResponse();
+
+    await expect(
+      resetPasswordHandler(
+        { body: { token: 'a'.repeat(32), password: '1234567' } } as Request,
+        res,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: 'La contraseña debe tener al menos 8 caracteres',
+    });
+    expect(resetPassword).not.toHaveBeenCalled();
+  });
+
+  it('accepts a valid token and password, returning 204', async () => {
+    resetPassword.mockResolvedValueOnce(undefined);
+    const res = createResponse();
+
+    await resetPasswordHandler(
+      { body: { token: 'a'.repeat(32), password: '12345678' } } as Request,
+      res,
+    );
+
+    expect(resetPassword).toHaveBeenCalledWith('a'.repeat(32), '12345678');
+    expect(res.status).toHaveBeenCalledWith(204);
+    expect(res.end).toHaveBeenCalled();
   });
 });

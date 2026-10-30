@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { query } = vi.hoisted(() => ({ query: vi.fn() }));
-vi.mock('../config/db.js', () => ({ pool: { query } }));
+vi.mock('../../config/db.js', () => ({ pool: { query } }));
 
-import { getTransactionsByUserId } from './transactions.service.js';
+import { getTransactionsByUserId } from '../../services/transactions.service.js';
 
 const userId = '20000000-0000-4000-8000-000000000001';
 const transactionId = '30000000-0000-4000-8000-000000000101';

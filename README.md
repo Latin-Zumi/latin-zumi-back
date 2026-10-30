@@ -11,6 +11,7 @@ Actualmente el proyecto incluye:
 - Persistencia PostgreSQL basada en un ledger contable append-only.
 - Wallets con una moneda principal y cuentas de saldo por moneda.
 - Registro de usuario, login, cambio de contraseña y logout con sesiones Bearer.
+- Recuperación de contraseña con tokens de un solo uso y proveedor de email.
 - Consultas autenticadas de cuentas, saldos y transacciones propias.
 - Listado de cuentas e historial paginado de transacciones con filtros.
 - Ingresos convertidos y retiros registrados de forma idempotente en el ledger.
@@ -142,7 +143,18 @@ DATABASE_URL=postgresql://...-pooler.../neondb?sslmode=verify-full
 DATABASE_URL_UNPOOLED=postgresql://.../neondb?sslmode=verify-full
 CORS_ORIGINS=http://localhost:5173,https://<dominio-de-vercel>
 DB_CONNECTION_TIMEOUT_MILLIS=10000
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=<secret>
+EMAIL_FROM=Latin Zumi <no-reply@latinzumi.com>
+PASSWORD_RESET_URL=https://<dominio-del-front>/restablecer-contrasena
+PASSWORD_RESET_TTL_MINUTES=30
 ```
+
+Con `EMAIL_PROVIDER=resend` el servicio de recuperación envía los correos reales
+por Resend; la API key es un secreto que se carga en el dashboard de Render. En
+producción no se acepta el provider de consola, que responde `503
+EMAIL_NOT_CONFIGURED`. El enlace de recuperación apunta al frontend
+(`PASSWORD_RESET_URL`), no al backend.
 
 Variables de build para el frontend en Vercel:
 
@@ -239,7 +251,33 @@ El backend incluye el contexto de cuentas y movimientos del usuario autenticado 
 #### Variables de entorno del chatbot
 
 - `GEMINI_API_KEY`: clave de Gemini del backend. Debe mantenerse en `.env` local o el gestor de secretos del deploy. No se registra en Git.
-- `GEMINI_MODEL`: modelo a usar, por defecto `gemini-2.5-flash`.
+- `GEMINI_MODEL`: modelo a usar, por defecto `gemini-3.5-flash-lite`.
+
+### Acceso con Google y perfil
+
+`POST /auth/google` recibe un ID token de Firebase y devuelve una sesión con
+el mismo contrato que el login por contraseña. Firebase debe confirmar el email
+y el proveedor `google.com`. Si el usuario es nuevo, se crea con una wallet y
+una cuenta inicial en USD; luego debe completar el perfil mediante
+`PATCH /users/me`.
+
+Para habilitar el acceso con Google, configura juntas en el backend
+`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` y `FIREBASE_PRIVATE_KEY` usando
+una cuenta de servicio de Firebase. La clave privada debe guardarse solo en el
+gestor de secretos del entorno y usarse con saltos de línea escapados como
+`\\n`. Si las tres variables quedan vacías, el endpoint responde
+`503 GOOGLE_AUTH_UNAVAILABLE`; si solo algunas están definidas, la
+configuración es inválida y el backend no inicia.
+La vinculación de una cuenta existente se realiza por email solo después de
+verificarlo con Google; al migrar a otro proyecto Firebase, el usuario puede
+volver a vincularse por ese email verificado.
+
+`PATCH /users/me` requiere una sesión Bearer y `pais`; `nombre` es opcional.
+Si la wallet aún no tiene movimientos, actualiza su moneda y la cuenta activa
+al valor derivado del país. Si ya hay movimientos, conserva la moneda real de
+la wallet y alinea `moneda_preferida` con ella.
+Las cuentas solo-Google no tienen contraseña; `POST /auth/change-password`
+responde `409 PASSWORD_NOT_SET`.
 
 ### Usuario y sesión
 
@@ -256,7 +294,8 @@ curl -i -X POST http://localhost:3000/auth/register \
   -d '{"nombre":"Ana Pérez","email":"ana@example.com","pais":"Argentina","password":"una-frase-de-acceso-larga"}'
 ```
 
-Responde `201` con `{ token, user }`, listo para usar el token como Bearer.
+Responde `201` con `{ token, user, password_change_required: false }`, listo
+para usar el token como Bearer.
 Los errores de validación, email duplicado y límite de intentos responden
 `400`, `409` y `429`, respectivamente.
 
@@ -290,7 +329,9 @@ curl -i -X POST http://localhost:3000/auth/login \
   -d '{"identifier":"usuario.prueba","password":"una-frase-de-acceso-larga"}'
 ```
 
-La respuesta `200` tiene el envelope `{ token, user }`:
+La respuesta `200` contiene `{ token, user, password_change_required }`. El
+campo es `true` cuando la contraseña usada tiene menos de 8 caracteres; en ese
+caso las rutas protegidas piden cambiarla antes de continuar:
 
 ```json
 {
@@ -304,7 +345,8 @@ La respuesta `200` tiene el envelope `{ token, user }`:
     "roles": ["user"],
     "estado": "activo",
     "foto_url": null
-  }
+  },
+  "password_change_required": false
 }
 ```
 
@@ -318,7 +360,11 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
 
 Las sesiones vencen en una hora. Si una cuenta existente inicia sesión con
 una contraseña menor a 8 caracteres, el login responde `200` pero las rutas
-protegidas responden `403` hasta que la actualice:
+protegidas responden `403` hasta que la actualice. El cambio acepta hasta 10
+intentos por sesión y dirección IP cada 15 minutos; contraseña actual
+incorrecta devuelve `401 INVALID_CURRENT_PASSWORD`, una contraseña nueva igual
+a la actual devuelve `400 PASSWORD_UNCHANGED`, y una cuenta Google sin clave
+devuelve `409 PASSWORD_NOT_SET`. Esta ruta y logout quedan exentas del `403`:
 
 ```sh
 curl -i -X POST http://localhost:3000/auth/change-password \
@@ -333,6 +379,55 @@ Para revocar la sesión actual:
 curl -i -X POST http://localhost:3000/auth/logout \
   -H 'Authorization: Bearer <token>'
 ```
+
+#### Recuperación de contraseña
+
+`POST /auth/forgot-password` y `POST /auth/reset-password` cierran el ciclo de
+recuperación sin exigir la contraseña actual:
+
+- `POST /auth/forgot-password` recibe `{ email }` y responde `202` con un
+  mensaje constante (no revela si el email está registrado). Si la cuenta
+  existe, genera un token de un solo uso (hash SHA-256 en la base, vence a los
+  30 minutos), lo guarda y envía el enlace al frontend.
+- `POST /auth/reset-password` recibe `{ token, password }` y responde `204`.
+  Consume el token una sola vez, actualiza el hash de la contraseña y revoca
+  todas las sesiones del usuario.
+
+```sh
+curl -i -X POST http://localhost:3000/auth/forgot-password \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"ana@example.com"}'
+```
+
+Respuesta `202`:
+
+```json
+{
+  "message": "Si el email está registrado, te enviamos instrucciones para restablecer la contraseña."
+}
+```
+
+```sh
+curl -i -X POST http://localhost:3000/auth/reset-password \
+  -H 'Content-Type: application/json' \
+  -d '{"token":"<token-del-enlace>","password":"nueva-clave-segura-8"}'
+```
+
+Respuesta `204`. Con token vencido o ya usado responde `400` con
+`INVALID_RESET_TOKEN`.
+
+Variables de entorno relacionadas con el envío de correos:
+
+- `EMAIL_PROVIDER`: `console` (desarrollo/test) o `resend` (producción). Con
+  `EMAIL_PROVIDER=console` en producción el pedido responde `503
+  EMAIL_NOT_CONFIGURED`.
+- `RESEND_API_KEY`: requerida cuando `EMAIL_PROVIDER=resend`.
+- `EMAIL_FROM`: remitente del correo (`Latin Zumi <no-reply@latinzumi.com>` por
+  defecto).
+- `PASSWORD_RESET_URL`: URL del frontend donde se construye el enlace
+  (`http://localhost:5173/restablecer-contrasena` por defecto).
+- `PASSWORD_RESET_TTL_MINUTES`: validez del token en minutos (rango 5–240, default
+  `30`).
 
 ### Wallet e ingresos
 
@@ -465,6 +560,68 @@ válida, `403` si una contraseña legada debe actualizarse, `404` si la cuenta
 no existe o no pertenece al usuario, `409` si se reutiliza una clave con otra
 solicitud, `422` si el importe convertido redondea a cero y `503` si no hay
 una tasa vigente. Los errores internos no controlados responden `500`.
+
+> La ruta `POST /accounts/:id/incoming` está marcada como `deprecated` en
+> Swagger: el consumidor vigente del front es `POST /wallet/deposits`.
+
+#### Depósitos y cambios de moneda
+
+El front llama a tres endpoints nuevos del wallet:
+
+- `POST /wallet/deposits` registra un depósito en la moneda principal de la
+  wallet del usuario autenticado. Si el importe se manda en otra moneda, se
+  convierte con la tasa vigente y se guarda la conversión. No hay pasarela: se
+  acredita contra la cuenta interna `external`. Requiere `Idempotency-Key`.
+- `GET /wallet/exchange/quote?from=...&to=...&amount=...` fija la tasa de
+  cambio entre dos monedas distintas por 60 segundos y devuelve el importe
+  convertido con redondeo `HALF_UP`.
+- `POST /wallet/exchanges` ejecuta un cambio con una cotización: debita la
+  moneda de origen, acredita la convertida en la moneda destino (creando la
+  cuenta destino si no existía) y consume la cotización.
+
+```sh
+curl -i -X POST http://localhost:3000/wallet/deposits \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Idempotency-Key: deposito-orden-123' \
+  -H 'Content-Type: application/json' \
+  -d '{"currency":"USD","amount":"100.00"}'
+```
+
+```json
+{
+  "transaction": {
+    "id": "30000000-0000-4000-8000-000000000301",
+    "type": "deposit",
+    "status": "completed",
+    "currency": "ARS",
+    "amount": "385000.00",
+    "created_at": "2026-10-29T15:10:00.000Z",
+    "description": "Ingreso USD convertido a ARS",
+    "counterparty": null,
+    "exchange": null
+  },
+  "source": { "currency": "USD", "amount": "100.00", "rate": "3850.000000000000" },
+  "balances": [
+    {
+      "id": "10000000-0000-4000-8000-000000000005",
+      "user_id": "20000000-0000-4000-8000-000000000001",
+      "wallet_id": "50000000-0000-4000-8000-000000000001",
+      "currency": "ARS",
+      "account_type": "user",
+      "allow_negative": false,
+      "balance": "385000.00000000"
+    }
+  ]
+}
+```
+
+El error `INVALID_AMOUNT` cubre importes no numéricos, con más de dos decimales
+o no mayores a cero; `SAME_CURRENCY` para cambios entre monedas iguales;
+`INVALID_IDEMPOTENCY_KEY` para claves mal formadas; `QUOTE_NOT_FOUND`,
+`WALLET_NOT_FOUND`, `QUOTE_ALREADY_USED`, `QUOTE_EXPIRED`,
+`IDEMPOTENCY_CONFLICT`, `INSUFFICIENT_FUNDS`, `AMOUNT_TOO_SMALL`,
+`AMOUNT_TOO_LARGE` y `CONVERSION_UNAVAILABLE` completan el ciclo de errores.
+Los depósitos son de prueba: no hay pasarela ni confirmación bancaria.
 
 #### Registrar un retiro
 

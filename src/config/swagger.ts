@@ -167,10 +167,11 @@ export const openApiSpec = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['token', 'user'],
+                  required: ['token', 'user', 'password_change_required'],
                   properties: {
                     token: { type: 'string' },
                     user: { $ref: '#/components/schemas/AuthUser' },
+                    password_change_required: { type: 'boolean', example: false },
                   },
                 },
               },
@@ -211,10 +212,11 @@ export const openApiSpec = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['token', 'user'],
+                  required: ['token', 'user', 'password_change_required'],
                   properties: {
                     token: { type: 'string' },
                     user: { $ref: '#/components/schemas/AuthUser' },
+                    password_change_required: { type: 'boolean', example: false },
                   },
                   example: {
                     token: '<token-bearer>',
@@ -228,6 +230,7 @@ export const openApiSpec = {
                       estado: 'activo',
                       foto_url: null,
                     },
+                    password_change_required: false,
                   },
                 },
               },
@@ -239,9 +242,129 @@ export const openApiSpec = {
         },
       },
     },
+    '/auth/google': {
+      post: {
+        summary: 'Iniciar sesión o registrarse con Google',
+        description:
+          'Verifica un ID token de Firebase con email verificado y proveedor google.com. Vincula por email o crea usuario, wallet y cuenta inicial.',
+        operationId: 'loginGoogle',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['idToken'],
+                properties: {
+                  idToken: { type: 'string', minLength: 20, maxLength: 8192 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Sesión creada para el usuario verificado por Google.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['token', 'user', 'password_change_required'],
+                  properties: {
+                    token: { type: 'string' },
+                    user: { $ref: '#/components/schemas/AuthUser' },
+                    password_change_required: { type: 'boolean', example: false },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Payload de Google inválido.' },
+          '401': { description: 'Token inválido, email no verificado o proveedor distinto de Google.' },
+          '403': { description: 'La cuenta del usuario no está habilitada.' },
+          '409': { description: 'El email está vinculado a otra cuenta de Google.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
+          '503': { description: 'El acceso con Google no está configurado.' },
+        },
+      },
+    },
+    '/auth/forgot-password': {
+      post: {
+        summary: 'Solicitar recuperación de contraseña',
+        description:
+          'Genera un token de un solo uso, válido por 30 minutos por defecto, y envía el enlace. Responde con el mismo mensaje exista o no el email.',
+        operationId: 'forgotPassword',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['email'],
+                properties: {
+                  email: { type: 'string', format: 'email', maxLength: 254, example: 'ana@example.com' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '202': {
+            description: 'Solicitud procesada; no revela si el email está registrado.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['message'],
+                  properties: {
+                    message: {
+                      type: 'string',
+                      example: 'Si el email está registrado, te enviamos instrucciones para restablecer la contraseña.',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Email inválido.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
+          '503': { description: 'El envío de correos no está configurado.' },
+        },
+      },
+    },
+    '/auth/reset-password': {
+      post: {
+        summary: 'Restablecer contraseña con token',
+        description:
+          'Consume el token de un solo uso recibido por correo y actualiza la contraseña; revoca todas las sesiones del usuario.',
+        operationId: 'resetPassword',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['token', 'password'],
+                properties: {
+                  token: { type: 'string', minLength: 32, maxLength: 128, description: 'Token recibido por el correo, en base64url.' },
+                  password: { type: 'string', format: 'password', minLength: 8, maxLength: 128 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '204': { description: 'Contraseña actualizada; las sesiones previas quedaron revocadas.' },
+          '400': { description: 'Token vencido, usado o inválido, o contraseña fuera de rango.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
+        },
+      },
+    },
     '/auth/change-password': {
       post: {
         summary: 'Cambiar contraseña',
+        description:
+          'Mantiene la sesión actual y revoca las demás. Esta ruta está exenta del bloqueo password_change_required y no devuelve 403 por ese estado.',
         operationId: 'changePassword',
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -266,9 +389,10 @@ export const openApiSpec = {
         },
         responses: {
           '204': { description: 'Contraseña actualizada; las otras sesiones se revocan.' },
-          '400': { description: 'La nueva contraseña debe tener de 8 a 128 caracteres.' },
-          '401': { description: 'Sesión inválida o contraseña actual incorrecta.' },
-          '403': { description: 'Se requiere cambiar la contraseña antes de consultar datos.' },
+          '400': { description: 'BAD_REQUEST o PASSWORD_UNCHANGED: payload inválido o contraseña igual a la actual.' },
+          '401': { description: 'UNAUTHORIZED o INVALID_CURRENT_PASSWORD: sesión inválida o contraseña actual incorrecta.' },
+          '409': { description: 'PASSWORD_NOT_SET o CONFLICT: cuenta sin contraseña o cambio concurrente.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
         },
       },
     },
@@ -290,12 +414,260 @@ export const openApiSpec = {
         responses: { '200': { description: 'Nombre del usuario encontrado.', content: { 'application/json': { schema: { type: 'object', example: { nombre: 'Mateo Ríos' } } } } }, '400': { description: 'Email inválido.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' } },
       },
     },
+    '/users/me': {
+      patch: {
+        summary: 'Completar o actualizar el perfil del usuario autenticado',
+        description:
+          'Actualiza nombre y país. Cambia la moneda de wallet/cuenta solo si la wallet no tiene movimientos; de lo contrario conserva la moneda real y alinea moneda_preferida.',
+        operationId: 'updateMe',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['pais'],
+                properties: {
+                  nombre: { type: 'string', minLength: 2, maxLength: 50 },
+                  pais: { type: 'string', enum: ['Argentina', 'Colombia', 'Otro'] },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Perfil actualizado.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['user'],
+                  properties: {
+                    user: { $ref: '#/components/schemas/AuthUser' },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Datos de perfil inválidos.' },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': { description: 'La sesión debe completar un cambio de contraseña.' },
+          '404': { description: 'No se encontró el usuario o su wallet/cuenta.' },
+          '409': { description: 'PROFILE_CURRENCY_CONFLICT: no se pudo actualizar la moneda de la wallet.' },
+        },
+      },
+    },
     '/wallet/transfers': {
       post: {
         summary: 'Transferir entre usuarios', operationId: 'transfer', security: [{ bearerAuth: [] }],
         parameters: [{ name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 } }],
         requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['recipient_email','currency','amount'], properties: { recipient_email: { type: 'string', format: 'email' }, currency: { type: 'string', enum: ['USD','COP','ARS','EUR'] }, amount: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$' }, note: { type: 'string', maxLength: 140 } } } } } },
-        responses: { '200': { description: 'Transferencia registrada; devuelve movimiento, destinatario y saldos.' }, '400': { description: 'Payload o clave inválidos.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' }, '409': { description: 'Clave idempotente reutilizada.' }, '422': { description: 'Fondos insuficientes, transferencia propia o importe convertido demasiado pequeño.' }, '503': { description: 'Conversión no disponible.' } },
+        responses: { '200': { description: 'Transferencia registrada; devuelve movimiento, destinatario y saldos.' }, '400': { description: 'Payload o clave inválidos.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' }, '409': { description: 'IDEMPOTENCY_CONFLICT: clave idempotente reutilizada; TRANSFER_WALLET_STATE_CHANGED: cambió el estado de una wallet; TRANSFER_WALLET_CURRENCY_CHANGED: cambió la moneda destinataria. Reintentá la transferencia en los dos últimos casos.' }, '422': { description: 'Fondos insuficientes, transferencia propia o importe convertido demasiado pequeño.' }, '503': { description: 'Conversión no disponible.' } },
+      },
+    },
+    '/wallet/deposits': {
+      post: {
+        summary: 'Registrar un depósito en la wallet',
+        description:
+          'Acredita un ingreso en la moneda principal de la wallet del usuario autenticado. Si la moneda del ingreso difiere de la principal, la conversión usa la tasa vigente. No hay pasarela: se registra contra la cuenta interna `external`. El depósito es de prueba y no representa una transferencia bancaria.',
+        operationId: 'deposit',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 }, example: 'deposito-orden-123' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['currency', 'amount'],
+                properties: {
+                  currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                  amount: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$', description: 'Importe positivo en la moneda enviada, hasta dos decimales.' },
+                },
+              },
+              example: { currency: 'USD', amount: '100.00' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Depósito registrado o respuesta original de una repetición idempotente.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['transaction', 'source', 'balances'],
+                  properties: {
+                    transaction: {
+                      type: 'object',
+                      required: ['id', 'type', 'status', 'currency', 'amount', 'created_at', 'description', 'counterparty', 'exchange'],
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        type: { type: 'string', enum: ['deposit'] },
+                        status: { type: 'string', enum: ['completed'] },
+                        currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'], description: 'Moneda principal de la wallet y monto acreditado.' },
+                        amount: { type: 'string' },
+                        created_at: { type: 'string', format: 'date-time' },
+                        description: { type: 'string' },
+                        counterparty: { type: 'object', nullable: true, properties: { nombre: { type: 'string' }, email: { type: 'string', format: 'email' } } },
+                        exchange: { type: 'object', nullable: true, properties: { to_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] }, to_amount: { type: 'string' }, rate: { type: 'string' } } },
+                      },
+                    },
+                    source: {
+                      type: 'object',
+                      required: ['currency', 'amount', 'rate'],
+                      properties: {
+                        currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                        amount: { type: 'string' },
+                        rate: { type: 'string', description: 'Tasa aplicada; "1" cuando no hay conversión.' },
+                      },
+                    },
+                    balances: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          wallet_id: { type: 'string', format: 'uuid' },
+                          currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                          balance: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Payload o Idempotency-Key inválidos.' },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de operar.' },
+          '404': { description: 'La wallet no existe o no tiene cuenta para la moneda principal.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'La clave idempotente ya se usó con otra solicitud.' },
+          '422': { description: 'El importe convertido redondea a cero o supera el máximo.' },
+          '503': { description: 'No hay una tasa de cambio vigente disponible.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/wallet/exchange/quote': {
+      get: {
+        summary: 'Cotizar un cambio de moneda',
+        description:
+          'Fija la tasa de cambio entre dos monedas distintas durante 60 segundos y devuelve el importe convertido. La cotización queda asociada al titular que la pidió.',
+        operationId: 'getExchangeQuote',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'from', in: 'query', required: true, schema: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] }, example: 'ARS' },
+          { name: 'to', in: 'query', required: true, schema: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] }, example: 'USD' },
+          { name: 'amount', in: 'query', required: true, schema: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$' }, example: '100000.00' },
+        ],
+        responses: {
+          '200': {
+            description: 'Cotización creada con la tasa fijada y el vencimiento a los 60 segundos.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['quote_id', 'from', 'to', 'from_amount', 'rate', 'to_amount', 'expires_at'],
+                  properties: {
+                    quote_id: { type: 'string', format: 'uuid' },
+                    from: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                    to: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                    from_amount: { type: 'string' },
+                    rate: { type: 'string' },
+                    to_amount: { type: 'string', description: 'Importe convertido con redondeo HALF_UP a 2 decimales.' },
+                    expires_at: { type: 'string', format: 'date-time' },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Monedas iguales o importe inválido.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '410': { description: 'La cotización venció.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '422': { description: 'El importe convertido redondea a cero.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '429': { description: 'Demasiadas cotizaciones; intenta más tarde.' },
+          '503': { description: 'No hay una tasa vigente disponible.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/wallet/exchanges': {
+      post: {
+        summary: 'Ejecutar un cambio de moneda con una cotización',
+        description:
+          'Ejecuta el cambio fijado por la cotización: debita la moneda de origen del usuario y acredita la convertida en la moneda destino, creando la cuenta destino si no existía. La cotización se consume en la misma operación.',
+        operationId: 'exchange',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 }, example: 'cambio-orden-123' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['quote_id'],
+                properties: { quote_id: { type: 'string', format: 'uuid' } },
+              },
+              example: { quote_id: '40000000-0000-4000-8000-000000000401' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Cambio ejecutado o respuesta original de una repetición idempotente.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['transaction', 'balances'],
+                  properties: {
+                    transaction: {
+                      type: 'object',
+                      required: ['id', 'type', 'status', 'currency', 'amount', 'created_at', 'description', 'counterparty', 'exchange'],
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        type: { type: 'string', enum: ['exchange'] },
+                        status: { type: 'string', enum: ['completed'] },
+                        currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                        amount: { type: 'string' },
+                        created_at: { type: 'string', format: 'date-time' },
+                        description: { type: 'string' },
+                        counterparty: { type: 'object', nullable: true, properties: { nombre: { type: 'string' }, email: { type: 'string', format: 'email' } } },
+                        exchange: { type: 'object', required: ['to_currency', 'to_amount', 'rate'], properties: { to_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] }, to_amount: { type: 'string' }, rate: { type: 'string' } } },
+                      },
+                    },
+                    balances: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          wallet_id: { type: 'string', format: 'uuid' },
+                          currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                          balance: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Payload o Idempotency-Key inválidos.' },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de operar.' },
+          '404': { description: 'La cotización o la wallet no existen.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'La cotización ya fue usada o la clave idempotente reutilizada.' },
+          '410': { description: 'La cotización venció.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '422': { description: 'Fondos insuficientes, importe convertido demasiado pequeño o demasiado grande.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '503': { description: 'No hay una tasa vigente disponible.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
       },
     },
     '/wallet/transactions': {
@@ -688,6 +1060,9 @@ export const openApiSpec = {
       },
       post: {
         summary: 'Registrar un ingreso y convertirlo a la moneda principal de la wallet',
+        deprecated: true,
+        description:
+          'Ruta legada de registro de ingresos con conversión a la moneda principal. Los nuevos consumidores deben usar `POST /wallet/deposits`.',
         operationId: 'createIncoming',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -1259,3 +1634,4 @@ export const openApiSpec = {
     },
   },
 } as const;
+

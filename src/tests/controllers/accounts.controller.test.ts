@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { openApiSpec } from '../config/swagger.js';
+import { openApiSpec } from '../../config/swagger.js';
 
 const {
   getAccountsByUserId,
@@ -15,17 +15,17 @@ const {
   recordIncomingConversion: vi.fn(),
   withdrawFromAccount: vi.fn(),
 }));
-vi.mock('../services/accounts.service.js', () => ({
+vi.mock('../../services/accounts.service.js', () => ({
   getAccountsByUserId,
   getAccountById,
   getBalanceByAccountId,
 }));
-vi.mock('../services/incoming-conversion.service.js', () => ({
+vi.mock('../../services/incoming-conversion.service.js', () => ({
   recordIncomingConversion,
 }));
-vi.mock('../services/withdrawal.service.js', () => ({ withdrawFromAccount }));
+vi.mock('../../services/withdrawal.service.js', () => ({ withdrawFromAccount }));
 
-import { getAccounts, withdrawAccount } from './accounts.controller.js';
+import { getAccounts, withdrawAccount } from '../../controllers/accounts.controller.js';
 
 const accountId = '10000000-0000-4000-8000-000000000001';
 const userId = '20000000-0000-4000-8000-000000000001';

@@ -5,10 +5,10 @@ vi.stubEnv('DB_NAME', 'test');
 vi.stubEnv('DB_USER', 'test');
 vi.stubEnv('DB_PASSWORD', 'test');
 
-let getExchangeRate: typeof import('./exchange-rate.service.js').getExchangeRate;
+let getExchangeRate: typeof import('../../services/exchange-rate.service.js').getExchangeRate;
 
 beforeAll(async () => {
-  ({ getExchangeRate } = await import('./exchange-rate.service.js'));
+  ({ getExchangeRate } = await import('../../services/exchange-rate.service.js'));
 });
 
 afterAll(() => vi.unstubAllEnvs());

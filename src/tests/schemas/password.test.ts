@@ -4,7 +4,7 @@ import {
   PASSWORD_MIN_LENGTH,
   loginPasswordSchema,
   passwordSchema,
-} from './password.js';
+} from '../../schemas/password.js';
 
 describe('passwordSchema', () => {
   it('rejects passwords shorter than the minimum', () => {

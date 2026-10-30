@@ -125,6 +125,11 @@ repositorio.
 | `EXCHANGE_RATE_TIMEOUT_MS` | Timeout por proveedor de tasas | `3000` |
 | `EXCHANGE_RATE_MAX_AGE_HOURS` | Antigüedad máxima aceptada para tasas | `24` |
 | `PORT` | Puerto HTTP de Express | `3000` |
+| `EMAIL_PROVIDER` | Proveedor de envío de correos para la recuperación de contraseña: `console` o `resend` | `console` |
+| `RESEND_API_KEY` | API key de Resend; requerida con `EMAIL_PROVIDER=resend` | — |
+| `EMAIL_FROM` | Remitente del correo de recuperación | `Latin Zumi <no-reply@latinzumi.com>` |
+| `PASSWORD_RESET_URL` | URL del frontend donde se construye el enlace de recuperación | `http://localhost:5173/restablecer-contrasena` |
+| `PASSWORD_RESET_TTL_MINUTES` | Validez del token de recuperación en minutos | `30` |
 
 ## Inicializar el esquema
 
@@ -160,7 +165,15 @@ detalle auditable de cada ingreso convertido. La migración
 agrega el perfil (`nombre`, `pais`, `moneda_preferida`, `foto_url`), los roles
 y el estado del usuario, deja `password_hash` nullable para usuarios solo-Google
 y agrega los checks de país, moneda, estado y método de acceso, además de los
-índices únicos de `google_uid` y de email sin distinguir mayúsculas.
+índices únicos de `google_uid` y de email sin distinguir mayúsculas. La migración
+[`010_password_reset_tokens.sql`](./migrations/010_password_reset_tokens.sql)
+crea la tabla `password_reset_tokens` con el hash SHA-256 del token, su
+vencimiento, la marca de uso y el índice parcial de tokens activos por usuario;
+la consumen los endpoints públicos `POST /auth/forgot-password` y
+`POST /auth/reset-password`. La migración
+[`011_exchange_quotes.sql`](./migrations/011_exchange_quotes.sql) crea la tabla
+`exchange_quotes` con la tasa y el importe fijados para un cambio de moneda, su
+vencimiento a los 60 segundos y el consumo asociado a la transacción del cambio.
 
 ## Cargar datos de demostración
 
@@ -210,6 +223,8 @@ db/
 ├── migrations/006_wallet_container.sql wallet lógica y saldos por moneda
 ├── migrations/007_currency_conversions.sql auditoría de conversiones
 ├── migrations/008_google_auth_profile.sql perfil, roles y acceso Google
+├── migrations/010_password_reset_tokens.sql tokens de recuperación de contraseña
+├── migrations/011_exchange_quotes.sql cotizaciones de cambio y consumo
 ├── seeds/001_demo_data.sql    cuentas únicas y movimientos demo
 ├── scripts/init-db.ts         ejecuta esquema/migraciones
 └── scripts/seed-db.ts         ejecuta los seeds en orden
@@ -220,5 +235,7 @@ del esquema se ejecuta dentro de una transacción. En una base existente,
 `npm run db:init` omite la creación inicial y aplica las migraciones
 incrementales `002_users.sql`, `003_auth_sessions.sql`,
 `004_supported_currencies.sql`, `005_single_user_account.sql`,
-`006_wallet_container.sql`, `007_currency_conversions.sql` y
-`008_google_auth_profile.sql`; después puedes ejecutar `npm run db:seed`.
+`006_wallet_container.sql`, `007_currency_conversions.sql`,
+`008_google_auth_profile.sql`, `010_password_reset_tokens.sql` y
+`011_exchange_quotes.sql`; después puedes
+ejecutar `npm run db:seed`.
