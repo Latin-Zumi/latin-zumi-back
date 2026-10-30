@@ -1,12 +1,19 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { findUserByEmail, registerUser } from '../services/users.service.js';
+import {
+  findUserByEmail,
+  registerUser,
+  updateUserProfile,
+} from '../services/users.service.js';
 import {
   firstIssueMessage,
   passwordSchema,
 } from '../schemas/password.js';
+import { nombreSchema, paisSchema } from '../schemas/profile.js';
 import { AppError } from '../utils/AppError.js';
 import { hashPassword } from '../utils/password.js';
+import { getAuthContext } from '../middleware/requireAuth.js';
+import { toAuthUser } from '../services/auth.service.js';
 
 export async function lookupUser(req: Request, res: Response) {
   const parsed = z.string().trim().email().max(254).safeParse(req.query.email);
@@ -72,4 +79,25 @@ export async function createUser(req: Request, res: Response) {
     }
     throw error;
   }
+}
+
+const updateProfileSchema = z.object({
+  nombre: nombreSchema.optional(),
+  pais: paisSchema,
+});
+
+export async function updateMe(req: Request, res: Response) {
+  const parsed = updateProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new AppError(
+      firstIssueMessage(parsed.error, 'Datos de perfil inválidos'),
+      400,
+    );
+  }
+
+  const updatedUser = await updateUserProfile(
+    getAuthContext(req).userId,
+    parsed.data,
+  );
+  return res.status(200).json({ user: toAuthUser(updatedUser) });
 }

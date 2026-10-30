@@ -3,6 +3,7 @@ import {
   changePassword,
   forgotPassword,
   login,
+  loginGoogle,
   logout,
   register,
   resetPasswordHandler,
@@ -11,6 +12,7 @@ import { asyncHandler } from '../handlers/asyncHandler.js';
 import {
   loginIdentifierRateLimit,
   loginRateLimit,
+  googleLoginRateLimit,
   passwordResetEmailRateLimit,
   passwordResetRequestRateLimit,
   registrationRateLimit,
@@ -31,6 +33,9 @@ authRouter.post(
   asyncHandler(login),
 );
 authRouter.post(
+  '/auth/google',
+  googleLoginRateLimit,
+  asyncHandler(loginGoogle),
   '/auth/forgot-password',
   passwordResetRequestRateLimit,
   passwordResetEmailRateLimit,

@@ -10,6 +10,10 @@ const commonOptions = {
 };
 
 export const loginRateLimit = rateLimit(commonOptions);
+export const googleLoginRateLimit = rateLimit({
+  ...commonOptions,
+  limit: 10,
+});
 export const loginIdentifierRateLimit = rateLimit({
   ...commonOptions,
   keyGenerator: (req) => {

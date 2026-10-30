@@ -84,9 +84,12 @@ const envSchema = z.object({
     z.string().min(1).optional(),
   ),
   GEMINI_MODEL: z.preprocess(
-    (value) => (value === '' ? 'gemini-2.5-flash' : value),
-    z.string().min(1).default('gemini-2.5-flash'),
+    (value) => (value === '' ? 'gemini-3.5-flash-lite' : value),
+    z.string().min(1).default('gemini-3.5-flash-lite'),
   ),
+  FIREBASE_PROJECT_ID: optionalEnvString,
+  FIREBASE_CLIENT_EMAIL: optionalEnvString,
+  FIREBASE_PRIVATE_KEY: optionalEnvString,
 
   EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
   RESEND_API_KEY: optionalEnvString,
@@ -107,6 +110,20 @@ const envSchema = z.object({
   {
     message: 'Configura DATABASE_URL o todos los campos DB_* requeridos',
     path: ['DATABASE_URL'],
+  },
+).refine(
+  ({ FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY }) => {
+    const values = [
+      FIREBASE_PROJECT_ID,
+      FIREBASE_CLIENT_EMAIL,
+      FIREBASE_PRIVATE_KEY,
+    ];
+    return values.every(Boolean) || values.every((value) => !value);
+  },
+  {
+    message:
+      'Configurá FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL y FIREBASE_PRIVATE_KEY juntas, o ninguna',
+    path: ['FIREBASE_PROJECT_ID'],
   },
 );
 
