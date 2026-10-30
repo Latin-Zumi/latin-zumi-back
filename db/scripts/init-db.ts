@@ -78,6 +78,12 @@ try {
   );
   await client.query(passwordResetMigration);
 
+  const exchangeQuotesMigration = await readFile(
+    new URL('../migrations/011_exchange_quotes.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(exchangeQuotesMigration);
+
   await client.query('COMMIT');
   transactionCommitted = true;
   console.log('Schema y migraciones aplicados');

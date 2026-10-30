@@ -44,3 +44,13 @@ export const passwordResetEmailRateLimit = rateLimit({
     return `${ipKeyGenerator(clientIp)}:${emailHash}`;
   },
 });
+
+// Las cotizaciones consultan al proveedor de tasas y se pueden agotar rápido
+export const quoteRateLimit = rateLimit({
+  ...commonOptions,
+  limit: 30,
+  keyGenerator: (req) => {
+    const token = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
+    return createHash('sha256').update(token).digest('hex');
+  },
+});

@@ -36,6 +36,24 @@ interface ExistingConversion extends IncomingConversionResult {
   account_id: string;
 }
 
+export interface TransactionSummaryRow {
+  id: string;
+  description: string | null;
+  occurred_at: Date;
+}
+
+export async function findTransactionSummary(
+  transactionId: string,
+): Promise<TransactionSummaryRow> {
+  const result = await pool.query<TransactionSummaryRow>(
+    `SELECT id, description, occurred_at FROM transactions WHERE id = $1`,
+    [transactionId],
+  );
+  const row = result.rows[0];
+  if (!row) throw new AppError('Transacción no encontrada', 404);
+  return row;
+}
+
 function resultFromRow(row: ExistingConversion): IncomingConversionResult {
   const sourceAmount = multiplyAndRoundHalfUp(row.source.amount, '1', 2);
   const destinationAmount = multiplyAndRoundHalfUp(row.destination.amount, '1', 2);
@@ -96,7 +114,7 @@ export async function recordIncomingConversion(
         && row.account_id === input.accountId
         && row.source.currency.trim() === input.sourceCurrency
         && normalizeDecimal(row.source.amount, 2) === normalizeDecimal(input.sourceAmount, 2);
-      if (!sameRequest) throw new AppError('Idempotency-Key ya usado con otra solicitud', 409);
+      if (!sameRequest) throw new AppError('Idempotency-Key ya usado con otra solicitud', 409, 'IDEMPOTENCY_CONFLICT');
       await client.query('COMMIT');
       return resultFromRow(row);
     }
@@ -111,7 +129,7 @@ export async function recordIncomingConversion(
         rateSource = quote.source;
         observedAt = quote.observedAt;
       } catch {
-        throw new AppError('No hay una tasa de cambio vigente disponible; reintenta más tarde', 503);
+        throw new AppError('No hay una tasa de cambio vigente disponible; reintenta más tarde', 503, 'CONVERSION_UNAVAILABLE');
       }
     }
 
@@ -119,10 +137,10 @@ export async function recordIncomingConversion(
       ? multiplyAndRoundHalfUp(input.sourceAmount, '1', 2)
       : multiplyAndRoundHalfUp(input.sourceAmount, rate, 2);
     if (convertedAmount === '0.00') {
-      throw new AppError('El importe convertido es menor a 0.01', 422);
+      throw new AppError('El importe convertido es menor a 0.01', 422, 'AMOUNT_TOO_SMALL');
     }
     if (convertedAmount.split('.')[0].length > 12) {
-      throw new AppError('El importe convertido supera el máximo permitido', 422);
+      throw new AppError('El importe convertido supera el máximo permitido', 422, 'AMOUNT_TOO_LARGE');
     }
 
     const destinationAccount = await client.query<{ id: string }>(
@@ -136,10 +154,14 @@ export async function recordIncomingConversion(
       throw new AppError('La wallet no tiene una cuenta para su moneda principal', 500);
     }
 
+    const description = input.sourceCurrency === wallet.primary_currency
+      ? `Ingreso ${input.sourceCurrency}`
+      : `Ingreso ${input.sourceCurrency} convertido a ${wallet.primary_currency}`;
+
     const transactionResult = await client.query<{ id: string }>(
       `INSERT INTO transactions (idempotency_key, description, type)
        VALUES ($1, $2, 'deposit') RETURNING id`,
-      [input.idempotencyKey, `Ingreso ${input.sourceCurrency} convertido a ${wallet.primary_currency}`],
+      [input.idempotencyKey, description],
     );
     const transactionId = transactionResult.rows[0].id;
     const externalSource = await getInternalAccount(client, input.sourceCurrency, 'external');

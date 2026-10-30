@@ -527,6 +527,68 @@ no existe o no pertenece al usuario, `409` si se reutiliza una clave con otra
 solicitud, `422` si el importe convertido redondea a cero y `503` si no hay
 una tasa vigente. Los errores internos no controlados responden `500`.
 
+> La ruta `POST /accounts/:id/incoming` está marcada como `deprecated` en
+> Swagger: el consumidor vigente del front es `POST /wallet/deposits`.
+
+#### Depósitos y cambios de moneda
+
+El front llama a tres endpoints nuevos del wallet:
+
+- `POST /wallet/deposits` registra un depósito en la moneda principal de la
+  wallet del usuario autenticado. Si el importe se manda en otra moneda, se
+  convierte con la tasa vigente y se guarda la conversión. No hay pasarela: se
+  acredita contra la cuenta interna `external`. Requiere `Idempotency-Key`.
+- `GET /wallet/exchange/quote?from=...&to=...&amount=...` fija la tasa de
+  cambio entre dos monedas distintas por 60 segundos y devuelve el importe
+  convertido con redondeo `HALF_UP`.
+- `POST /wallet/exchanges` ejecuta un cambio con una cotización: debita la
+  moneda de origen, acredita la convertida en la moneda destino (creando la
+  cuenta destino si no existía) y consume la cotización.
+
+```sh
+curl -i -X POST http://localhost:3000/wallet/deposits \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Idempotency-Key: deposito-orden-123' \
+  -H 'Content-Type: application/json' \
+  -d '{"currency":"USD","amount":"100.00"}'
+```
+
+```json
+{
+  "transaction": {
+    "id": "30000000-0000-4000-8000-000000000301",
+    "type": "deposit",
+    "status": "completed",
+    "currency": "ARS",
+    "amount": "385000.00",
+    "created_at": "2026-10-29T15:10:00.000Z",
+    "description": "Ingreso USD convertido a ARS",
+    "counterparty": null,
+    "exchange": null
+  },
+  "source": { "currency": "USD", "amount": "100.00", "rate": "3850.000000000000" },
+  "balances": [
+    {
+      "id": "10000000-0000-4000-8000-000000000005",
+      "user_id": "20000000-0000-4000-8000-000000000001",
+      "wallet_id": "50000000-0000-4000-8000-000000000001",
+      "currency": "ARS",
+      "account_type": "user",
+      "allow_negative": false,
+      "balance": "385000.00000000"
+    }
+  ]
+}
+```
+
+El error `INVALID_AMOUNT` cubre importes no numéricos, con más de dos decimales
+o no mayores a cero; `SAME_CURRENCY` para cambios entre monedas iguales;
+`INVALID_IDEMPOTENCY_KEY` para claves mal formadas; `QUOTE_NOT_FOUND`,
+`WALLET_NOT_FOUND`, `QUOTE_ALREADY_USED`, `QUOTE_EXPIRED`,
+`IDEMPOTENCY_CONFLICT`, `INSUFFICIENT_FUNDS`, `AMOUNT_TOO_SMALL`,
+`AMOUNT_TOO_LARGE` y `CONVERSION_UNAVAILABLE` completan el ciclo de errores.
+Los depósitos son de prueba: no hay pasarela ni confirmación bancaria.
+
 #### Registrar un retiro
 
 `POST /accounts/:id/withdraw` requiere sesión Bearer y una clave

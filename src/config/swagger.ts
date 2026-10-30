@@ -370,6 +370,209 @@ export const openApiSpec = {
         responses: { '200': { description: 'Transferencia registrada; devuelve movimiento, destinatario y saldos.' }, '400': { description: 'Payload o clave inválidos.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' }, '409': { description: 'Clave idempotente reutilizada.' }, '422': { description: 'Fondos insuficientes, transferencia propia o importe convertido demasiado pequeño.' }, '503': { description: 'Conversión no disponible.' } },
       },
     },
+    '/wallet/deposits': {
+      post: {
+        summary: 'Registrar un depósito en la wallet',
+        description:
+          'Acredita un ingreso en la moneda principal de la wallet del usuario autenticado. Si la moneda del ingreso difiere de la principal, la conversión usa la tasa vigente. No hay pasarela: se registra contra la cuenta interna `external`. El depósito es de prueba y no representa una transferencia bancaria.',
+        operationId: 'deposit',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 }, example: 'deposito-orden-123' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['currency', 'amount'],
+                properties: {
+                  currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                  amount: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$', description: 'Importe positivo en la moneda enviada, hasta dos decimales.' },
+                },
+              },
+              example: { currency: 'USD', amount: '100.00' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Depósito registrado o respuesta original de una repetición idempotente.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['transaction', 'source', 'balances'],
+                  properties: {
+                    transaction: {
+                      type: 'object',
+                      required: ['id', 'type', 'status', 'currency', 'amount', 'created_at', 'description', 'counterparty', 'exchange'],
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        type: { type: 'string', enum: ['deposit'] },
+                        status: { type: 'string', enum: ['completed'] },
+                        currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'], description: 'Moneda principal de la wallet y monto acreditado.' },
+                        amount: { type: 'string' },
+                        created_at: { type: 'string', format: 'date-time' },
+                        description: { type: 'string' },
+                        counterparty: { type: 'object', nullable: true, properties: { nombre: { type: 'string' }, email: { type: 'string', format: 'email' } } },
+                        exchange: { type: 'object', nullable: true, properties: { to_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] }, to_amount: { type: 'string' }, rate: { type: 'string' } } },
+                      },
+                    },
+                    source: {
+                      type: 'object',
+                      required: ['currency', 'amount', 'rate'],
+                      properties: {
+                        currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                        amount: { type: 'string' },
+                        rate: { type: 'string', description: 'Tasa aplicada; "1" cuando no hay conversión.' },
+                      },
+                    },
+                    balances: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          wallet_id: { type: 'string', format: 'uuid' },
+                          currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                          balance: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Payload o Idempotency-Key inválidos.' },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de operar.' },
+          '404': { description: 'La wallet no existe o no tiene cuenta para la moneda principal.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'La clave idempotente ya se usó con otra solicitud.' },
+          '422': { description: 'El importe convertido redondea a cero o supera el máximo.' },
+          '503': { description: 'No hay una tasa de cambio vigente disponible.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/wallet/exchange/quote': {
+      get: {
+        summary: 'Cotizar un cambio de moneda',
+        description:
+          'Fija la tasa de cambio entre dos monedas distintas durante 60 segundos y devuelve el importe convertido. La cotización queda asociada al titular que la pidió.',
+        operationId: 'getExchangeQuote',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'from', in: 'query', required: true, schema: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] }, example: 'ARS' },
+          { name: 'to', in: 'query', required: true, schema: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] }, example: 'USD' },
+          { name: 'amount', in: 'query', required: true, schema: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$' }, example: '100000.00' },
+        ],
+        responses: {
+          '200': {
+            description: 'Cotización creada con la tasa fijada y el vencimiento a los 60 segundos.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['quote_id', 'from', 'to', 'from_amount', 'rate', 'to_amount', 'expires_at'],
+                  properties: {
+                    quote_id: { type: 'string', format: 'uuid' },
+                    from: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                    to: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                    from_amount: { type: 'string' },
+                    rate: { type: 'string' },
+                    to_amount: { type: 'string', description: 'Importe convertido con redondeo HALF_UP a 2 decimales.' },
+                    expires_at: { type: 'string', format: 'date-time' },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Monedas iguales o importe inválido.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '410': { description: 'La cotización venció.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '422': { description: 'El importe convertido redondea a cero.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '429': { description: 'Demasiadas cotizaciones; intenta más tarde.' },
+          '503': { description: 'No hay una tasa vigente disponible.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/wallet/exchanges': {
+      post: {
+        summary: 'Ejecutar un cambio de moneda con una cotización',
+        description:
+          'Ejecuta el cambio fijado por la cotización: debita la moneda de origen del usuario y acredita la convertida en la moneda destino, creando la cuenta destino si no existía. La cotización se consume en la misma operación.',
+        operationId: 'exchange',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 }, example: 'cambio-orden-123' },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['quote_id'],
+                properties: { quote_id: { type: 'string', format: 'uuid' } },
+              },
+              example: { quote_id: '40000000-0000-4000-8000-000000000401' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Cambio ejecutado o respuesta original de una repetición idempotente.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['transaction', 'balances'],
+                  properties: {
+                    transaction: {
+                      type: 'object',
+                      required: ['id', 'type', 'status', 'currency', 'amount', 'created_at', 'description', 'counterparty', 'exchange'],
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        type: { type: 'string', enum: ['exchange'] },
+                        status: { type: 'string', enum: ['completed'] },
+                        currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                        amount: { type: 'string' },
+                        created_at: { type: 'string', format: 'date-time' },
+                        description: { type: 'string' },
+                        counterparty: { type: 'object', nullable: true, properties: { nombre: { type: 'string' }, email: { type: 'string', format: 'email' } } },
+                        exchange: { type: 'object', required: ['to_currency', 'to_amount', 'rate'], properties: { to_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] }, to_amount: { type: 'string' }, rate: { type: 'string' } } },
+                      },
+                    },
+                    balances: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          wallet_id: { type: 'string', format: 'uuid' },
+                          currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                          balance: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Payload o Idempotency-Key inválidos.' },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de operar.' },
+          '404': { description: 'La cotización o la wallet no existen.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'La cotización ya fue usada o la clave idempotente reutilizada.' },
+          '410': { description: 'La cotización venció.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '422': { description: 'Fondos insuficientes, importe convertido demasiado pequeño o demasiado grande.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '503': { description: 'No hay una tasa vigente disponible.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
     '/wallet/transactions': {
       get: {
         summary: 'Consultar actividad de la wallet', operationId: 'getWalletTransactions', security: [{ bearerAuth: [] }],
@@ -760,6 +963,9 @@ export const openApiSpec = {
       },
       post: {
         summary: 'Registrar un ingreso y convertirlo a la moneda principal de la wallet',
+        deprecated: true,
+        description:
+          'Ruta legada de registro de ingresos con conversión a la moneda principal. Los nuevos consumidores deben usar `POST /wallet/deposits`.',
         operationId: 'createIncoming',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -1331,3 +1537,4 @@ export const openApiSpec = {
     },
   },
 } as const;
+

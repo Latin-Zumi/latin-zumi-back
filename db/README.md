@@ -170,7 +170,10 @@ y agrega los checks de país, moneda, estado y método de acceso, además de los
 crea la tabla `password_reset_tokens` con el hash SHA-256 del token, su
 vencimiento, la marca de uso y el índice parcial de tokens activos por usuario;
 la consumen los endpoints públicos `POST /auth/forgot-password` y
-`POST /auth/reset-password`.
+`POST /auth/reset-password`. La migración
+[`011_exchange_quotes.sql`](./migrations/011_exchange_quotes.sql) crea la tabla
+`exchange_quotes` con la tasa y el importe fijados para un cambio de moneda, su
+vencimiento a los 60 segundos y el consumo asociado a la transacción del cambio.
 
 ## Cargar datos de demostración
 
@@ -221,6 +224,7 @@ db/
 ├── migrations/007_currency_conversions.sql auditoría de conversiones
 ├── migrations/008_google_auth_profile.sql perfil, roles y acceso Google
 ├── migrations/010_password_reset_tokens.sql tokens de recuperación de contraseña
+├── migrations/011_exchange_quotes.sql cotizaciones de cambio y consumo
 ├── seeds/001_demo_data.sql    cuentas únicas y movimientos demo
 ├── scripts/init-db.ts         ejecuta esquema/migraciones
 └── scripts/seed-db.ts         ejecuta los seeds en orden
@@ -232,5 +236,6 @@ del esquema se ejecuta dentro de una transacción. En una base existente,
 incrementales `002_users.sql`, `003_auth_sessions.sql`,
 `004_supported_currencies.sql`, `005_single_user_account.sql`,
 `006_wallet_container.sql`, `007_currency_conversions.sql`,
-`008_google_auth_profile.sql` y `010_password_reset_tokens.sql`; después puedes
+`008_google_auth_profile.sql`, `010_password_reset_tokens.sql` y
+`011_exchange_quotes.sql`; después puedes
 ejecutar `npm run db:seed`.
