@@ -10,6 +10,7 @@ import { getAuthContext } from '../middleware/requireAuth.js';
 import { recordIncomingConversion } from '../services/incoming-conversion.service.js';
 import { multiplyAndRoundHalfUp } from '../utils/decimal.js';
 import { withdrawFromAccount } from '../services/withdrawal.service.js';
+import { requireIdempotencyKey } from '../utils/idempotency.js';
 
 const accountIdSchema = z.string().uuid();
 const incomingSchema = z.object({
@@ -64,10 +65,7 @@ export async function createIncoming(req: Request, res: Response) {
   if (!parsed.success || /^0+(?:\.0+)?$/.test(parsed.success ? parsed.data.source_amount : '')) {
     throw new AppError('Datos de ingreso inválidos', 400);
   }
-  const idempotencyKey = req.header('Idempotency-Key');
-  if (!idempotencyKey || idempotencyKey.length > 200 || !/^[\x21-\x7E]+$/.test(idempotencyKey)) {
-    throw new AppError('Se requiere un Idempotency-Key válido (máximo 200 caracteres)', 400);
-  }
+  const idempotencyKey = requireIdempotencyKey(req);
   const result = await recordIncomingConversion({
     accountId,
     userId: getAuthContext(req).userId,
@@ -85,10 +83,7 @@ export async function withdrawAccount(req: Request, res: Response) {
   if (!parsed.success || /^0+(?:\.0+)?$/.test(parsed.success ? parsed.data.amount : '')) {
     throw new AppError('Datos de retiro inválidos', 400);
   }
-  const idempotencyKey = req.header('Idempotency-Key');
-  if (!idempotencyKey || idempotencyKey.length > 200 || !/^[\x21-\x7E]+$/.test(idempotencyKey)) {
-    throw new AppError('Se requiere un Idempotency-Key válido (máximo 200 caracteres)', 400);
-  }
+  const idempotencyKey = requireIdempotencyKey(req);
   const result = await withdrawFromAccount({
     accountId,
     userId: getAuthContext(req).userId,
