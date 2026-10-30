@@ -239,6 +239,78 @@ export const openApiSpec = {
         },
       },
     },
+    '/auth/forgot-password': {
+      post: {
+        summary: 'Solicitar recuperación de contraseña',
+        description:
+          'Genera un token de un solo uso para el email y envía el enlace de restablecimiento por el proveedor configurado. Responde 202 con un mensaje constante para no revelar si el email está registrado.',
+        operationId: 'forgotPassword',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['email'],
+                properties: {
+                  email: { type: 'string', format: 'email', maxLength: 254, example: 'ana@example.com' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '202': {
+            description: 'Solicitud procesada; el correo se envía en segundo plano.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['message'],
+                  properties: {
+                    message: {
+                      type: 'string',
+                      example: 'Si el email está registrado, te enviamos instrucciones para restablecer la contraseña.',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Email inválido.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
+          '503': { description: 'El envío de correos no está configurado.' },
+        },
+      },
+    },
+    '/auth/reset-password': {
+      post: {
+        summary: 'Restablecer contraseña con token',
+        description:
+          'Consume el token de un solo uso y actualiza la contraseña; revoca todas las sesiones del usuario. El token viaja por el enlace del correo, no por la API.',
+        operationId: 'resetPassword',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['token', 'password'],
+                properties: {
+                  token: { type: 'string', minLength: 32, maxLength: 128, description: 'Token recibido por el correo, en base64url.' },
+                  password: { type: 'string', format: 'password', minLength: 8, maxLength: 128 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '204': { description: 'Contraseña actualizada; las sesiones previas quedaron revocadas.' },
+          '400': { description: 'Token vencido, usado o inválido, o contraseña fuera de rango.' },
+          '429': { description: 'Demasiados intentos; intenta más tarde.' },
+        },
+      },
+    },
     '/auth/change-password': {
       post: {
         summary: 'Cambiar contraseña',

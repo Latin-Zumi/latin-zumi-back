@@ -23,3 +23,7 @@ services:
         sync: false
       - key: DB_CONNECTION_TIMEOUT_MILLIS
         value: 10000
+      - key: EMAIL_PROVIDER
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

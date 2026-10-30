@@ -72,6 +72,12 @@ try {
   );
   await client.query(transactionTypeMigration);
 
+  const passwordResetMigration = await readFile(
+    new URL('../migrations/010_password_reset_tokens.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(passwordResetMigration);
+
   await client.query('COMMIT');
   transactionCommitted = true;
   console.log('Schema y migraciones aplicados');

@@ -26,3 +26,21 @@ export const registrationRateLimit = rateLimit({
   ...commonOptions,
   limit: 10,
 });
+
+export const passwordResetRequestRateLimit = rateLimit({
+  ...commonOptions,
+  limit: 5,
+});
+
+export const passwordResetEmailRateLimit = rateLimit({
+  ...commonOptions,
+  keyGenerator: (req) => {
+    const email =
+      typeof req.body?.email === 'string'
+        ? req.body.email.trim().toLowerCase()
+        : '';
+    const emailHash = createHash('sha256').update(email).digest('hex');
+    const clientIp = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+    return `${ipKeyGenerator(clientIp)}:${emailHash}`;
+  },
+});

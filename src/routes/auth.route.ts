@@ -1,14 +1,18 @@
 import { Router } from 'express';
 import {
   changePassword,
+  forgotPassword,
   login,
   logout,
   register,
+  resetPasswordHandler,
 } from '../controllers/auth.controller.js';
 import { asyncHandler } from '../handlers/asyncHandler.js';
 import {
   loginIdentifierRateLimit,
   loginRateLimit,
+  passwordResetEmailRateLimit,
+  passwordResetRequestRateLimit,
   registrationRateLimit,
 } from '../middleware/loginRateLimit.js';
 import { requireAuth } from '../middleware/requireAuth.js';
@@ -25,6 +29,17 @@ authRouter.post(
   loginRateLimit,
   loginIdentifierRateLimit,
   asyncHandler(login),
+);
+authRouter.post(
+  '/auth/forgot-password',
+  passwordResetRequestRateLimit,
+  passwordResetEmailRateLimit,
+  asyncHandler(forgotPassword),
+);
+authRouter.post(
+  '/auth/reset-password',
+  passwordResetRequestRateLimit,
+  asyncHandler(resetPasswordHandler),
 );
 authRouter.post(
   '/auth/change-password',

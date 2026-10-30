@@ -88,7 +88,20 @@ const envSchema = z.object({
     z.string().min(1).default('gemini-2.5-flash'),
   ),
 
+  EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
+  RESEND_API_KEY: optionalEnvString,
+  EMAIL_FROM: z.string().min(3).default('Latin Zumi <no-reply@latinzumi.com>'),
+  PASSWORD_RESET_URL: z.string().url().default('http://localhost:5173/restablecer-contrasena'),
+  PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
+
 }).refine(
+  ({ EMAIL_PROVIDER, RESEND_API_KEY }) =>
+    EMAIL_PROVIDER !== 'resend' || Boolean(RESEND_API_KEY),
+  {
+    message: 'RESEND_API_KEY es obligatoria con EMAIL_PROVIDER=resend',
+    path: ['RESEND_API_KEY'],
+  },
+).refine(
   ({ DATABASE_URL, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD }) =>
     Boolean(DATABASE_URL || (DB_HOST && DB_NAME && DB_USER && DB_PASSWORD)),
   {
