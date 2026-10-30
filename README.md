@@ -116,6 +116,58 @@ Con la configuración predeterminada, la API queda disponible en
 Para un deploy, usa `/health/ready` como health check si la plataforma debe
 esperar también la disponibilidad de la base de datos.
 
+## Servidor MCP
+
+El backend expone un servidor MCP Streamable HTTP en `/mcp`, integrado en la
+aplicación Express. El router delega en el handler del SDK la decisión final
+sobre métodos HTTP: los mensajes MCP se envían mediante `POST`; en el modo sin
+estado actual, `GET`, `DELETE` y los métodos no admitidos responden `405`. Cada
+solicitud HTTP se autentica de nuevo y no se conserva una sesión MCP entre
+solicitudes. El SDK y los tests usan la línea v2 2.4.0; los tests de ruta
+incluyen una negociación explícita del protocolo `2025-11-25`.
+
+El cliente debe enviar en cada solicitud el bearer de una sesión LATIN ZUMI
+vigente en `Authorization`. La ruta usa `requireAuth` y valida la sesión
+existente; sin una sesión válida responde `401`, y las sesiones bloqueadas por
+cambio de contraseña responden `403`. No hay acceso anónimo, OAuth ni flujo de
+intercambio de tokens. No coloques credenciales en URLs, argumentos MCP ni
+logs.
+
+Las únicas herramientas disponibles son `get_my_profile`,
+`list_my_accounts`, `get_my_account_balance`, `list_my_wallet_activity` y
+`get_my_transaction`. Todas consultan exclusivamente datos del usuario
+autenticado, limitan los campos devueltos y son de solo lectura. El servidor no
+ofrece tools de transferencias, depósitos, retiros, cambios de moneda ni
+modificación del perfil.
+
+La integración se delimita en [`src/mcp/auth.ts`](./src/mcp/auth.ts) mediante
+`McpAuthProvider`. El adaptador incluido usa la sesión de LATIN ZUMI existente.
+Si se conecta otra fuente interna de identidad, reemplaza ese proveedor con
+middleware que valide la credencial en servidor y resuelva `userId` desde el
+contexto autenticado; no aceptes `userId` del cliente. Si la autenticación no
+puede producir una identidad, el acceso debe seguir fallando cerrado.
+
+El servidor utiliza los paquetes oficiales MCP v2 `@modelcontextprotocol/server`
+2.4.0 y `@modelcontextprotocol/node` 2.1.2. La dependencia de desarrollo
+`@modelcontextprotocol/client` 2.4.0 permite verificar el protocolo en tests
+sin conectarse a un cliente externo. Para ejecutar pruebas y build:
+
+```sh
+npm test
+npm run build
+```
+
+Configura el cliente MCP para usar la URL de API seguida de `/mcp` y enviar el
+bearer vigente como header de autorización en cada solicitud. El backend
+rechaza `Origin` no permitido usando `CORS_ORIGINS`. La implementación no
+configura ni almacena credenciales del cliente; la gestión de tokens y su
+rotación quedan a cargo del operador.
+
+El parser JSON global limita los cuerpos a **100 KB**; los cuerpos mayores
+responden `413`. El endpoint permite **60 solicitudes por minuto por IP y por
+proceso**, con contadores en memoria que no se comparten entre instancias. Si
+se despliega más de una instancia, el límite no constituye una cuota global.
+
 ## Despliegue e integración
 
 El backend está desplegado en Render con PostgreSQL en Neon. El Blueprint de

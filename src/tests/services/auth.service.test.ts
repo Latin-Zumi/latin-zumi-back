@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { clientQuery, poolQuery, release, client, connect } = vi.hoisted(() => {
@@ -38,6 +39,7 @@ vi.mock('../../services/firebase-admin.service.js', () => ({
 import {
   changeUserPassword,
   createSessionForUser,
+  findActiveSession,
   loginWithGoogle,
   loginWithPassword,
   toAuthUser,
@@ -123,7 +125,7 @@ describe('createSessionForUser', () => {
     expect(clientQuery.mock.calls[0][0]).toContain('INSERT INTO auth_sessions');
     expect(clientQuery.mock.calls[0][1]).toEqual([
       userId,
-      expect.any(String),
+      createHash('sha256').update(session.token).digest('hex'),
       false,
     ]);
     expect(session.token).toEqual(expect.any(String));
@@ -139,6 +141,53 @@ describe('createSessionForUser', () => {
     expect(poolQuery.mock.calls[0][0]).toContain('INSERT INTO auth_sessions');
     expect(poolQuery.mock.calls[0][1][2]).toBe(true);
   });
+});
+
+describe('findActiveSession', () => {
+  const token = 'session-token-for-hash-test';
+
+  beforeEach(() => {
+    poolQuery.mockReset();
+  });
+
+  it('looks up a session by the SHA-256 token hash and returns its auth context', async () => {
+    const authContext = {
+      userId,
+      sessionId: '30000000-0000-4000-8000-000000000001',
+      passwordChangeRequired: false,
+    };
+    poolQuery.mockResolvedValueOnce({ rows: [authContext] });
+
+    await expect(findActiveSession(token)).resolves.toEqual(authContext);
+
+    const [statement, parameters] = poolQuery.mock.calls[0];
+    expect(statement).toContain('token_hash = $1');
+    expect(statement).toContain('revoked_at IS NULL');
+    expect(statement).toContain('expires_at > now()');
+    expect(parameters).toEqual([
+      createHash('sha256').update(token).digest('hex'),
+    ]);
+    expect(parameters).not.toContain(token);
+  });
+
+  it('rejects a revoked session returned as absent by the active-session query', async () => {
+    poolQuery.mockResolvedValueOnce({ rows: [] });
+
+    await expect(findActiveSession(token)).resolves.toBeNull();
+
+    const [statement] = poolQuery.mock.calls[0];
+    expect(statement).toContain('revoked_at IS NULL');
+  });
+
+  it('rejects an expired session returned as absent by the active-session query', async () => {
+    poolQuery.mockResolvedValueOnce({ rows: [] });
+
+    await expect(findActiveSession(token)).resolves.toBeNull();
+
+    const [statement] = poolQuery.mock.calls[0];
+    expect(statement).toContain('expires_at > now()');
+  });
+
 });
 
 describe('loginWithPassword', () => {

@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/Latin-Zumi/latin-zumi-back#readme",
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
@@ -33,6 +34,8 @@
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
+    "@modelcontextprotocol/node": "2.1.2",
+    "@modelcontextprotocol/server": "2.4.0",
     "@neon/config": "^1.9.5",
     "@neon/env": "^1.6.6",
     "cors": "^2.8.6",

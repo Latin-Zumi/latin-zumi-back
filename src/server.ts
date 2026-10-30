@@ -13,13 +13,14 @@ import swaggerUi from 'swagger-ui-express';
 import { openApiSpec } from './config/swagger.js';
 import { pool } from './config/db.js';
 import { corsMiddleware } from './config/cors.js';
+import { createMcpRouter } from './mcp/router.js';
 
 export const app = express();
 
 // Render terminates TLS at a single trusted reverse proxy.
 app.set('trust proxy', 1);
 app.use(corsMiddleware);
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
@@ -42,6 +43,7 @@ app.use(usersRouter);
 app.use(walletRouter);
 app.use(authRouter);
 app.use(chatRouter);
+app.use(createMcpRouter());
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
   next(new AppError('Ruta no encontrada', 404));

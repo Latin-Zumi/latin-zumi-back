@@ -50,10 +50,10 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 037 | [Pantalla de cambio de contraseña y fin del bloqueo por 403](./autenticacion/2026-10-29-cambio-contrasena-front.md) | Agrega `password_change_required` al login, la ruta protegida `/cambiar-contrasena` y códigos de error del cambio. Revisa una decisión del spec 026. |
 | 038 | [Acceso con Google y completar perfil](./autenticacion/2026-10-29-acceso-google-y-perfil.md) | Implementa `POST /auth/google` con Firebase Admin y `PATCH /users/me`; enciende la bandera del front. Depende de la migración 008 y del spec 037. |
 | 039 | [Depósitos y cambios de moneda (implementación)](./cuentas-y-wallet/2026-10-29-depositos-y-cambios-implementacion.md) | Implementa las tres rutas que el front ya llama: `POST /wallet/deposits`, `GET /wallet/exchange/quote` y `POST /wallet/exchanges`. Reutiliza `recordIncomingConversion`, agrega `exchange_quotes` (migración 011) y completa el feed. Ajusta el front: `TRANSACTIONS_ENABLED`, normalización de `balances` y códigos de error. Ejecuta el spec 030 sin editarlo. |
+| 040 | [Servidor MCP de solo lectura](./plataforma-y-documentacion/2026-10-30-servidor-mcp-solo-lectura.md) | Implementa Streamable HTTP autenticado con sesión LATIN ZUMI, contexto aislado por solicitud y cinco herramientas de solo lectura. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
 implementar cambios de wallet, comprobar si un spec posterior reemplaza o
 extiende la decisión anterior y actualizar esta nota si el equipo decide otro
 orden. No renumerar los identificadores ya publicados.
-
