@@ -13,6 +13,7 @@ import {
   loginIdentifierRateLimit,
   loginRateLimit,
   googleLoginRateLimit,
+  changePasswordRateLimit,
   passwordResetEmailRateLimit,
   passwordResetRequestRateLimit,
   registrationRateLimit,
@@ -36,6 +37,8 @@ authRouter.post(
   '/auth/google',
   googleLoginRateLimit,
   asyncHandler(loginGoogle),
+);
+authRouter.post(
   '/auth/forgot-password',
   passwordResetRequestRateLimit,
   passwordResetEmailRateLimit,
@@ -48,6 +51,7 @@ authRouter.post(
 );
 authRouter.post(
   '/auth/change-password',
+  changePasswordRateLimit,
   asyncHandler(requireAuth),
   asyncHandler(changePassword),
 );

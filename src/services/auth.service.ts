@@ -218,7 +218,11 @@ export async function createSessionForUser(
 export async function loginWithPassword(
   identifier: string,
   password: string,
-): Promise<{ token: string; user: AuthUser }> {
+): Promise<{
+  token: string;
+  user: AuthUser;
+  passwordChangeRequired: boolean;
+}> {
   const normalized = identifier.trim().toLowerCase();
 
   const userResult = await pool.query<
@@ -269,7 +273,11 @@ export async function loginWithPassword(
     });
     await client.query('COMMIT');
 
-    return { token: session.token, user: toAuthUser(user) };
+    return {
+      token: session.token,
+      user: toAuthUser(user),
+      passwordChangeRequired: session.passwordChangeRequired,
+    };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -366,8 +374,22 @@ export async function changeUserPassword(
     );
   }
 
+  if (currentPassword === newPassword) {
+    throw new AppError(
+      'La nueva contraseña debe ser distinta de la actual',
+      400,
+      'PASSWORD_UNCHANGED',
+    );
+  }
+
   const verification = await verifyPassword(currentPassword, user.password_hash);
-  if (!verification.valid) throw new AppError('Credenciales inválidas', 401);
+  if (!verification.valid) {
+    throw new AppError(
+      'La contraseña actual es incorrecta',
+      401,
+      'INVALID_CURRENT_PASSWORD',
+    );
+  }
 
   const newHash = await hashPassword(newPassword);
   const client = await pool.connect();
@@ -380,7 +402,11 @@ export async function changeUserPassword(
       [context.userId, newHash, user.password_hash],
     );
     if (updateResult.rowCount !== 1) {
-      throw new AppError('La contraseña cambió; inicia sesión de nuevo', 409);
+      throw new AppError(
+        'La contraseña cambió; inicia sesión de nuevo',
+        409,
+        'CONFLICT',
+      );
     }
 
     await client.query(
