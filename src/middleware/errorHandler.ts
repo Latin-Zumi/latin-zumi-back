@@ -24,6 +24,13 @@ export function errorHandler(
     return res.status(400).json({ code: 'INVALID_JSON', message: "JSON inválido en el body" });
   }
 
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({
+      code: 'PAYLOAD_TOO_LARGE',
+      message: "El cuerpo de la solicitud supera el límite permitido de 100 KB",
+    });
+  }
+
   if (err.code === "23505") {
     return res.status(400).json({ code: 'DUPLICATE_VALUE', message: "El valor ya existe (violación de unicidad)" });
   }

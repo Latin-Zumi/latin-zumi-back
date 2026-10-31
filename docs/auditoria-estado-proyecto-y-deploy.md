@@ -1,6 +1,6 @@
 # Estado del proyecto y preparación para deploy
 
-Fecha de revisión: 2026-10-30  
+Fecha de revisión: 2026-10-30
 Alcance: revisión estática del repositorio, contraste de contratos documentados
 y verificación de la configuración de despliegue. Esta revisión reemplaza la del
 2026-10-27, que describía un estado previo a la implementación de CORS, la

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { clientQuery, release, client, connect } = vi.hoisted(() => {
+const { clientQuery, release, client, connect, query } = vi.hoisted(() => {
   const clientQuery = vi.fn();
   const release = vi.fn();
   const client = { query: clientQuery, release };
@@ -9,14 +9,15 @@ const { clientQuery, release, client, connect } = vi.hoisted(() => {
     release,
     client,
     connect: vi.fn(async () => client),
+    query: vi.fn(),
   };
 });
 
 vi.mock('../../config/db.js', () => ({
-  pool: { connect },
+  pool: { connect, query },
 }));
 
-import { updateUserProfile } from '../../services/users.service.js';
+import { getMyProfile, updateUserProfile } from '../../services/users.service.js';
 
 const userId = '20000000-0000-4000-8000-000000000001';
 const walletId = '40000000-0000-4000-8000-000000000001';
@@ -31,6 +32,37 @@ const updatedUser = {
   estado: 'activo',
   foto_url: null,
 };
+
+describe('getMyProfile', () => {
+  beforeEach(() => query.mockReset());
+
+  it('selects only the authenticated user profile fields', async () => {
+    const profile = {
+      nombre: 'Ana Pérez',
+      email: 'ana@example.com',
+      pais: 'Argentina',
+      moneda_preferida: 'ARS',
+      foto_url: null,
+    };
+    query.mockResolvedValueOnce({ rows: [profile] });
+
+    await expect(getMyProfile(userId)).resolves.toEqual(profile);
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE id = $1'),
+      [userId],
+    );
+    expect(query.mock.calls[0][0]).toContain('COALESCE(NULLIF(trim(nombre), \'\'), username)');
+    expect(query.mock.calls[0][0]).not.toContain('password_hash');
+    expect(query.mock.calls[0][0]).not.toContain('google_uid');
+  });
+
+  it('returns null when the authenticated profile does not exist', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(getMyProfile(userId)).resolves.toBeNull();
+  });
+});
 
 describe('updateUserProfile', () => {
   beforeEach(() => {
