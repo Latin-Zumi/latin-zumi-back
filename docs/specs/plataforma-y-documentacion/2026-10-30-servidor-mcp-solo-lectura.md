@@ -3,7 +3,7 @@
 ## Fecha
 2026-10-30
 
-## Orden de ejecución: 040
+## Orden de ejecución: 042
 
 ## Estado
 Implementado y verificado en la rama `feat/mcp-server`.
