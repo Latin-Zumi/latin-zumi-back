@@ -440,7 +440,7 @@ export const openApiSpec = {
         tags: ['users'],
         summary: 'Completar o actualizar el perfil del usuario autenticado',
         description:
-          'Actualiza nombre y país. Cambia la moneda de wallet/cuenta solo si la wallet no tiene movimientos; de lo contrario conserva la moneda real y alinea moneda_preferida.',
+          'Actualiza nombre y país y mantiene alineada la moneda preferida de la wallet con el usuario. No renombra cuentas con saldo.',
         operationId: 'updateMe',
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -477,7 +477,6 @@ export const openApiSpec = {
           '401': { description: 'Se requiere una sesión válida.' },
           '403': { description: 'La sesión debe completar un cambio de contraseña.' },
           '404': { description: 'No se encontró el usuario o su wallet/cuenta.' },
-          '409': { description: 'PROFILE_CURRENCY_CONFLICT: no se pudo actualizar la moneda de la wallet.' },
         },
       },
     },
@@ -487,7 +486,7 @@ export const openApiSpec = {
         summary: 'Transferir entre usuarios', operationId: 'transfer', security: [{ bearerAuth: [] }],
         parameters: [{ name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', maxLength: 200 } }],
         requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['recipient_email','currency','amount'], properties: { recipient_email: { type: 'string', format: 'email' }, currency: { type: 'string', enum: ['USD','COP','ARS','EUR'] }, amount: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$' }, note: { type: 'string', maxLength: 140 } } } } } },
-        responses: { '200': { description: 'Transferencia registrada; devuelve movimiento, destinatario y saldos.' }, '400': { description: 'Payload o clave inválidos.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' }, '409': { description: 'IDEMPOTENCY_CONFLICT: clave idempotente reutilizada; TRANSFER_WALLET_STATE_CHANGED: cambió el estado de una wallet; TRANSFER_WALLET_CURRENCY_CHANGED: cambió la moneda destinataria. Reintentá la transferencia en los dos últimos casos.' }, '422': { description: 'Fondos insuficientes, transferencia propia o importe convertido demasiado pequeño.' }, '503': { description: 'Conversión no disponible.' } },
+        responses: { '200': { description: 'Transferencia registrada; devuelve movimiento, destinatario y saldos.' }, '400': { description: 'Payload o clave inválidos.' }, '401': { description: 'Sesión inválida.' }, '404': { description: 'Destinatario no encontrado.' }, '409': { description: 'IDEMPOTENCY_CONFLICT: clave idempotente reutilizada.' }, '422': { description: 'Fondos insuficientes, transferencia propia o importe inválido.' }, '503': { description: 'No aplica para transferencias sin conversión.' } },
       },
     },
     '/wallet/deposits': {
@@ -495,7 +494,7 @@ export const openApiSpec = {
         tags: ['wallet'],
         summary: 'Registrar un depósito en la wallet',
         description:
-          'Acredita un ingreso en la moneda principal de la wallet del usuario autenticado. Si la moneda del ingreso difiere de la principal, la conversión usa la tasa vigente. No hay pasarela: se registra contra la cuenta interna `external`. El depósito es de prueba y no representa una transferencia bancaria.',
+          'Acredita un ingreso en la moneda enviada por el usuario autenticado. No hay pasarela: se registra contra la cuenta interna `external`. El depósito es de prueba y no representa una transferencia bancaria.',
         operationId: 'deposit',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -533,7 +532,7 @@ export const openApiSpec = {
                         id: { type: 'string', format: 'uuid' },
                         type: { type: 'string', enum: ['deposit'] },
                         status: { type: 'string', enum: ['completed'] },
-                        currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'], description: 'Moneda principal de la wallet y monto acreditado.' },
+                        currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'], description: 'Moneda en la que se acreditó el depósito.' },
                         amount: { type: 'string' },
                         created_at: { type: 'string', format: 'date-time' },
                         description: { type: 'string' },
@@ -570,10 +569,9 @@ export const openApiSpec = {
           '400': { description: 'Payload o Idempotency-Key inválidos.' },
           '401': { description: 'Se requiere una sesión válida.' },
           '403': { description: 'Debes actualizar tu contraseña antes de operar.' },
-          '404': { description: 'La wallet no existe o no tiene cuenta para la moneda principal.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'La wallet no existe o no tiene cuenta para la moneda del depósito.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '409': { description: 'La clave idempotente ya se usó con otra solicitud.' },
-          '422': { description: 'El importe convertido redondea a cero o supera el máximo.' },
-          '503': { description: 'No hay una tasa de cambio vigente disponible.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '422': { description: 'El importe es inválido o supera el máximo.' },
         },
       },
     },
@@ -1075,10 +1073,10 @@ export const openApiSpec = {
     '/accounts/{id}/incoming': {
       post: {
         tags: ['accounts'],
-        summary: 'Registrar un ingreso y convertirlo a la moneda principal de la wallet',
+        summary: 'Registrar un ingreso en la moneda enviada',
         deprecated: true,
         description:
-          'Ruta legada de registro de ingresos con conversión a la moneda principal. Los nuevos consumidores deben usar `POST /wallet/deposits`.',
+          'Ruta legada de registro de ingresos. Los nuevos consumidores deben usar `POST /wallet/deposits`.',
         operationId: 'createIncoming',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -1096,7 +1094,7 @@ export const openApiSpec = {
                 properties: {
                   source_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
                   source_amount: { type: 'string', pattern: '^\\d{1,12}(?:\\.\\d{1,2})?$' },
-                  destination_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'], description: 'Opcional; si se envía debe coincidir con la moneda principal de la wallet.' },
+                  destination_currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'], description: 'Opcional; si se envía debe coincidir con la moneda del ingreso.' },
                 },
               },
             },
@@ -1113,8 +1111,8 @@ export const openApiSpec = {
                     transaction_id: '30000000-0000-4000-8000-000000000123',
                     wallet_id: '20000000-0000-4000-8000-000000000123',
                     source: { currency: 'EUR', amount: '100.00' },
-                    destination: { currency: 'ARS', amount: '123456.78' },
-                    rate: '1234.56780000', rate_source: 'exchangeRate-api',
+                    destination: { currency: 'EUR', amount: '100.00' },
+                    rate: '1', rate_source: 'identity',
                     rate_observed_at: '2026-10-26T12:00:00.000Z', rounding: 'HALF_UP_2',
                   } },
                 },

@@ -53,6 +53,7 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 040 | [Script de desarrollo con recarga automática](./plataforma-y-documentacion/2026-10-30-script-desarrollo-watch.md) | Agrega `npm run dev` con `tsx watch src/index.ts` y documenta el flujo de desarrollo frente a la validación con `npm run build && npm start`. |
 | 041 | [Actualizar Swagger con la estructura actual](./plataforma-y-documentacion/2026-10-30-swagger-estructura-actual.md) | Alinea `src/config/swagger.ts` con los routers montados: corrige `/accounts/{id}/incoming`, agrega `tags`/`servers`, usa `ErrorResponse` y documenta los filtros de actividad. |
 | 042 | [Servidor MCP de solo lectura](./plataforma-y-documentacion/2026-10-30-servidor-mcp-solo-lectura.md) | Implementa Streamable HTTP autenticado con sesión LATIN ZUMI, contexto aislado por solicitud y cinco herramientas de solo lectura. |
+| 043 | [Wallet multimoneda: realineación de depósitos y transferencias](./cuentas-y-wallet/2026-11-03-wallet-multimoneda-realineacion.md) | Revierte la conversión automática a `primary_currency` de los specs 029/039: depósitos y transferencias acreditan en la moneda elegida, con una cuenta `user` por moneda creada bajo demanda. La única conversión es el cambio explícito. Incluye `PATCH` en CORS. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de

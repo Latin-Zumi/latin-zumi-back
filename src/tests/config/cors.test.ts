@@ -90,7 +90,7 @@ describe('CORS allowlist', () => {
     });
     expect(preflightResponse.status).toBe(204);
     expect(preflightResponse.headers.get('access-control-allow-origin')).toBe('https://frontend.example');
-    expect(preflightResponse.headers.get('access-control-allow-methods')).toContain('POST');
+    expect(preflightResponse.headers.get('access-control-allow-methods')).toContain('PATCH');
     const allowedHeaders = preflightResponse.headers.get('access-control-allow-headers')?.toLowerCase();
     expect(allowedHeaders).toContain('authorization');
     expect(allowedHeaders).toContain('content-type');

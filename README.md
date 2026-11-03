@@ -9,7 +9,7 @@ PostgreSQL.
 Actualmente el proyecto incluye:
 
 - Persistencia PostgreSQL basada en un ledger contable append-only.
-- Wallets con una moneda principal y cuentas de saldo por moneda.
+- Wallets con moneda preferida y cuentas de saldo por moneda.
 - Registro de usuario, login, cambio de contraseña y logout con sesiones Bearer.
 - Recuperación de contraseña con tokens de un solo uso y proveedor de email.
 - Consultas autenticadas de cuentas, saldos y transacciones propias.
@@ -347,9 +347,8 @@ verificarlo con Google; al migrar a otro proyecto Firebase, el usuario puede
 volver a vincularse por ese email verificado.
 
 `PATCH /users/me` requiere una sesión Bearer y `pais`; `nombre` es opcional.
-Si la wallet aún no tiene movimientos, actualiza su moneda y la cuenta activa
-al valor derivado del país. Si ya hay movimientos, conserva la moneda real de
-la wallet y alinea `moneda_preferida` con ella.
+Actualiza la moneda preferida (wallet y usuario) al valor derivado del país,
+sin renombrar cuentas con saldo.
 Las cuentas solo-Google no tienen contraseña; `POST /auth/change-password`
 responde `409 PASSWORD_NOT_SET`.
 
@@ -379,7 +378,7 @@ Los errores de validación, email duplicado y límite de intentos responden
 una sesión. Para nuevas integraciones usa `POST /auth/register`.
 
 Registra un username y email, almacena un hash de la contraseña y crea una
-wallet lógica y su cuenta inicial en la moneda principal. La contraseña debe
+wallet lógica y su cuenta inicial en la moneda preferida. La contraseña debe
 tener entre 8 y 128 caracteres; `currency` es opcional, acepta `USD`, `COP`,
 `ARS` o `EUR` y usa `COP` por defecto.
 
@@ -509,8 +508,8 @@ Variables de entorno relacionadas con el envío de correos:
 
 `GET /users/lookup?email=...` requiere sesión y responde solo `{ nombre }`.
 `POST /wallet/transfers` recibe `recipient_email`, `currency`, `amount` y una
-`Idempotency-Key`; acredita al destinatario en la moneda principal de su wallet
-y, si hace falta, registra la conversión. La respuesta incluye la transacción,
+`Idempotency-Key`; acredita al destinatario en la moneda de la transferencia.
+Las wallets pueden tener cuentas por moneda. La respuesta incluye la transacción,
 la cantidad recibida y los saldos actualizados del emisor.
 
 ```sh
@@ -607,7 +606,7 @@ curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/bala
 
 `POST /accounts/:id/incoming` requiere una sesión Bearer y una clave
 `Idempotency-Key` entregada por el sistema que confirmó el ingreso. El importe
-se acredita en la moneda principal de la wallet. `destination_currency` es
+se acredita en la moneda enviada. `destination_currency` es
 opcional y, si se envía, debe coincidir con esa moneda.
 
 ```sh
@@ -642,10 +641,9 @@ una tasa vigente. Los errores internos no controlados responden `500`.
 
 El front llama a tres endpoints nuevos del wallet:
 
-- `POST /wallet/deposits` registra un depósito en la moneda principal de la
-  wallet del usuario autenticado. Si el importe se manda en otra moneda, se
-  convierte con la tasa vigente y se guarda la conversión. No hay pasarela: se
-  acredita contra la cuenta interna `external`. Requiere `Idempotency-Key`.
+- `POST /wallet/deposits` registra un depósito en la moneda enviada por el
+  usuario autenticado. No hay pasarela: se acredita contra la cuenta interna
+  `external`. Requiere `Idempotency-Key`.
 - `GET /wallet/exchange/quote?from=...&to=...&amount=...` fija la tasa de
   cambio entre dos monedas distintas por 60 segundos y devuelve el importe
   convertido con redondeo `HALF_UP`.
@@ -667,23 +665,23 @@ curl -i -X POST http://localhost:3000/wallet/deposits \
     "id": "30000000-0000-4000-8000-000000000301",
     "type": "deposit",
     "status": "completed",
-    "currency": "ARS",
-    "amount": "385000.00",
+    "currency": "USD",
+    "amount": "100.00",
     "created_at": "2026-10-29T15:10:00.000Z",
-    "description": "Ingreso USD convertido a ARS",
+    "description": "Ingreso USD",
     "counterparty": null,
     "exchange": null
   },
-  "source": { "currency": "USD", "amount": "100.00", "rate": "3850.000000000000" },
+  "source": { "currency": "USD", "amount": "100.00", "rate": "1" },
   "balances": [
     {
       "id": "10000000-0000-4000-8000-000000000005",
       "user_id": "20000000-0000-4000-8000-000000000001",
       "wallet_id": "50000000-0000-4000-8000-000000000001",
-      "currency": "ARS",
+      "currency": "USD",
       "account_type": "user",
       "allow_negative": false,
-      "balance": "385000.00000000"
+      "balance": "100.00000000"
     }
   ]
 }

@@ -1,9 +1,9 @@
 
 import { pool } from '../config/db.js';
-import { getExchangeRate } from './exchange-rate.service.js';
-import { multiplyAndRoundHalfUp, normalizeDecimal } from '../utils/decimal.js';
+import type { PoolClient } from 'pg';
 import { AppError } from '../utils/AppError.js';
 import { getInternalAccount } from './internal-account.service.js';
+import { multiplyAndRoundHalfUp, normalizeDecimal } from '../utils/decimal.js';
 
 export interface IncomingConversionInput {
   accountId: string;
@@ -31,9 +31,13 @@ interface WalletAccountRow {
   user_id: string;
 }
 
-interface ExistingConversion extends IncomingConversionResult {
+interface ExistingIncoming extends IncomingConversionResult {
   user_id: string;
   account_id: string;
+  source_currency: string;
+  source_amount: string;
+  destination_currency: string;
+  destination_amount: string;
 }
 
 export interface TransactionSummaryRow {
@@ -54,7 +58,7 @@ export async function findTransactionSummary(
   return row;
 }
 
-function resultFromRow(row: ExistingConversion): IncomingConversionResult {
+function resultFromRow(row: ExistingIncoming): IncomingConversionResult {
   const sourceAmount = multiplyAndRoundHalfUp(row.source.amount, '1', 2);
   const destinationAmount = multiplyAndRoundHalfUp(row.destination.amount, '1', 2);
   return {
@@ -75,6 +79,7 @@ export async function recordIncomingConversion(
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
     const accountResult = await client.query<WalletAccountRow>(
       `SELECT w.id AS wallet_id, RTRIM(w.primary_currency) AS primary_currency,
               w.user_id
@@ -87,123 +92,81 @@ export async function recordIncomingConversion(
     );
     const wallet = accountResult.rows[0];
     if (!wallet) throw new AppError('Cuenta no encontrada', 404);
-    if (input.destinationCurrency && input.destinationCurrency !== wallet.primary_currency) {
-      throw new AppError('destination_currency debe coincidir con la moneda principal de la wallet', 400);
+
+    const destinationCurrency = input.destinationCurrency ?? input.sourceCurrency;
+    if (destinationCurrency !== input.sourceCurrency) {
+      throw new AppError(
+        'La moneda del ingreso debe coincidir con la moneda destino',
+        400,
+        'CURRENCY_MISMATCH',
+      );
     }
+
+    const amount = normalizeDecimal(input.sourceAmount, 2);
+    if (amount === '0.00') throw new AppError('El importe convertido es menor a 0.01', 422, 'AMOUNT_TOO_SMALL');
+    if (amount.split('.')[0].length > 12) throw new AppError('El importe convertido supera el máximo permitido', 422, 'AMOUNT_TOO_LARGE');
 
     await client.query(
       'SELECT pg_advisory_xact_lock(hashtext($1))',
       [`operation:${input.idempotencyKey}`],
     );
-    const previous = await client.query<ExistingConversion>(
-      `SELECT t.id AS transaction_id, c.wallet_id, c.user_id, c.account_id,
-              jsonb_build_object('currency', RTRIM(c.source_currency), 'amount', c.source_amount::text) AS source,
-              jsonb_build_object('currency', RTRIM(c.destination_currency), 'amount', c.destination_amount::text) AS destination,
-              c.rate::text AS rate, c.rate_source,
-              c.rate_observed_at, c.rounding
+    const previous = await client.query<ExistingIncoming>(
+      `SELECT t.id AS transaction_id,
+              a.wallet_id,
+              a.user_id,
+              e.account_id,
+              e.currency AS source_currency,
+              e.amount::text AS source_amount,
+              e.currency AS destination_currency,
+              e.amount::text AS destination_amount,
+              '1'::text AS rate,
+              'identity'::text AS rate_source,
+              now() AS rate_observed_at,
+              'HALF_UP_2' AS rounding
          FROM transactions t
-         JOIN currency_conversions c ON c.transaction_id = t.id
+         JOIN entries e ON e.transaction_id = t.id
+         JOIN accounts a ON a.id = e.account_id
         WHERE t.idempotency_key = $1
-        FOR UPDATE OF t`,
-      [input.idempotencyKey],
+          AND e.account_id = $2
+          AND e.direction = 'credit'
+        LIMIT 1`,
+      [input.idempotencyKey, input.accountId],
     );
     if (previous.rows[0]) {
       const row = previous.rows[0];
       const sameRequest = row.user_id === input.userId
         && row.wallet_id === wallet.wallet_id
         && row.account_id === input.accountId
-        && row.source.currency.trim() === input.sourceCurrency
-        && normalizeDecimal(row.source.amount, 2) === normalizeDecimal(input.sourceAmount, 2);
+        && row.source_currency.trim() === input.sourceCurrency
+        && normalizeDecimal(row.source_amount, 2) === normalizeDecimal(input.sourceAmount, 2);
       if (!sameRequest) throw new AppError('Idempotency-Key ya usado con otra solicitud', 409, 'IDEMPOTENCY_CONFLICT');
       await client.query('COMMIT');
       return resultFromRow(row);
     }
 
-    let rate = '1';
-    let rateSource = 'identity';
-    let observedAt = new Date();
-    if (input.sourceCurrency !== wallet.primary_currency) {
-      try {
-        const quote = await getExchangeRate(input.sourceCurrency, wallet.primary_currency);
-        rate = normalizeDecimal(quote.rate, 12);
-        rateSource = quote.source;
-        observedAt = quote.observedAt;
-      } catch {
-        throw new AppError('No hay una tasa de cambio vigente disponible; reintenta más tarde', 503, 'CONVERSION_UNAVAILABLE');
-      }
-    }
-
-    const convertedAmount = input.sourceCurrency === wallet.primary_currency
-      ? multiplyAndRoundHalfUp(input.sourceAmount, '1', 2)
-      : multiplyAndRoundHalfUp(input.sourceAmount, rate, 2);
-    if (convertedAmount === '0.00') {
-      throw new AppError('El importe convertido es menor a 0.01', 422, 'AMOUNT_TOO_SMALL');
-    }
-    if (convertedAmount.split('.')[0].length > 12) {
-      throw new AppError('El importe convertido supera el máximo permitido', 422, 'AMOUNT_TOO_LARGE');
-    }
-
-    const destinationAccount = await client.query<{ id: string }>(
-      `SELECT id FROM accounts
-        WHERE wallet_id = $1 AND currency = $2 AND account_type = 'user'
-          AND closed_at IS NULL
-        LIMIT 1`,
-      [wallet.wallet_id, wallet.primary_currency],
-    );
-    if (!destinationAccount.rows[0]) {
-      throw new AppError('La wallet no tiene una cuenta para su moneda principal', 500);
-    }
-
-    const description = input.sourceCurrency === wallet.primary_currency
-      ? `Ingreso ${input.sourceCurrency}`
-      : `Ingreso ${input.sourceCurrency} convertido a ${wallet.primary_currency}`;
+    const rate = '1';
+    const rateSource = 'identity';
+    const observedAt = new Date();
 
     const transactionResult = await client.query<{ id: string }>(
       `INSERT INTO transactions (idempotency_key, description, type)
        VALUES ($1, $2, 'deposit') RETURNING id`,
-      [input.idempotencyKey, description],
+      [input.idempotencyKey, `Ingreso ${input.sourceCurrency}`],
     );
     const transactionId = transactionResult.rows[0].id;
     const externalSource = await getInternalAccount(client, input.sourceCurrency, 'external');
-
     await client.query(
-      `INSERT INTO currency_conversions
-        (transaction_id, wallet_id, account_id, user_id,
-         source_currency, source_amount, destination_currency, destination_amount,
-         rate, rate_source, rate_observed_at, rounding)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'HALF_UP_2')`,
-      [transactionId, wallet.wallet_id, input.accountId, input.userId,
-       input.sourceCurrency, input.sourceAmount, wallet.primary_currency,
-       convertedAmount, rate, rateSource, observedAt],
+      `INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
+       VALUES ($1, $2, $3, 'debit', $4), ($1, $5, $3, 'credit', $4)`,
+      [transactionId, externalSource, amount, input.sourceCurrency, input.accountId],
     );
-
-    if (input.sourceCurrency === wallet.primary_currency) {
-      await client.query(
-        `INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
-         VALUES ($1, $2, $3, 'debit', $4), ($1, $5, $3, 'credit', $4)`,
-        [transactionId, externalSource, convertedAmount, input.sourceCurrency, destinationAccount.rows[0].id],
-      );
-    } else {
-      const sourceTreasury = await getInternalAccount(client, input.sourceCurrency, 'treasury');
-      const destinationTreasury = await getInternalAccount(client, wallet.primary_currency, 'treasury');
-      await client.query(
-        `INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
-         VALUES ($1, $2, $3, 'debit', $4),
-                ($1, $5, $3, 'credit', $4),
-                ($1, $6, $7, 'debit', $8),
-                ($1, $9, $7, 'credit', $8)`,
-        [transactionId, externalSource, input.sourceAmount, input.sourceCurrency,
-         sourceTreasury, destinationTreasury, convertedAmount, wallet.primary_currency,
-         destinationAccount.rows[0].id],
-      );
-    }
 
     await client.query('COMMIT');
     return {
       transaction_id: transactionId,
       wallet_id: wallet.wallet_id,
-      source: { currency: input.sourceCurrency, amount: input.sourceAmount },
-      destination: { currency: wallet.primary_currency, amount: convertedAmount },
+      source: { currency: input.sourceCurrency, amount },
+      destination: { currency: destinationCurrency, amount },
       rate,
       rate_source: rateSource,
       rate_observed_at: observedAt,
@@ -212,7 +175,7 @@ export async function recordIncomingConversion(
   } catch (error) {
     await client.query('ROLLBACK');
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505') {
-      throw new AppError('Idempotency-Key ya usado con otra solicitud', 409);
+      throw new AppError('Idempotency-Key ya usado con otra solicitud', 409, 'IDEMPOTENCY_CONFLICT');
     }
     throw error;
   } finally {
