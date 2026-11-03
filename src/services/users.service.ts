@@ -44,6 +44,30 @@ export async function findUserByEmail(email: string): Promise<{ id: string; nomb
   return row ? { id: row.id, nombre: row.nombre?.trim() || row.username, email: row.email } : null;
 }
 
+export interface MyProfile {
+  nombre: string;
+  email: string;
+  pais: string | null;
+  moneda_preferida: string;
+  foto_url: string | null;
+}
+
+export async function getMyProfile(
+  userId: string,
+): Promise<MyProfile | null> {
+  const result = await pool.query<MyProfile>(
+    `SELECT COALESCE(NULLIF(trim(nombre), ''), username) AS nombre,
+            email, pais,
+            RTRIM(moneda_preferida) AS moneda_preferida,
+            foto_url
+       FROM users
+      WHERE id = $1`,
+    [userId],
+  );
+
+  return result.rows[0] ?? null;
+}
+
 export interface RegisteredUser {
   user: {
     id: string;

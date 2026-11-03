@@ -52,10 +52,10 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 039 | [Depósitos y cambios de moneda (implementación)](./cuentas-y-wallet/2026-10-29-depositos-y-cambios-implementacion.md) | Implementa las tres rutas que el front ya llama: `POST /wallet/deposits`, `GET /wallet/exchange/quote` y `POST /wallet/exchanges`. Reutiliza `recordIncomingConversion`, agrega `exchange_quotes` (migración 011) y completa el feed. Ajusta el front: `TRANSACTIONS_ENABLED`, normalización de `balances` y códigos de error. Ejecuta el spec 030 sin editarlo. |
 | 040 | [Script de desarrollo con recarga automática](./plataforma-y-documentacion/2026-10-30-script-desarrollo-watch.md) | Agrega `npm run dev` con `tsx watch src/index.ts` y documenta el flujo de desarrollo frente a la validación con `npm run build && npm start`. |
 | 041 | [Actualizar Swagger con la estructura actual](./plataforma-y-documentacion/2026-10-30-swagger-estructura-actual.md) | Alinea `src/config/swagger.ts` con los routers montados: corrige `/accounts/{id}/incoming`, agrega `tags`/`servers`, usa `ErrorResponse` y documenta los filtros de actividad. |
+| 042 | [Servidor MCP de solo lectura](./plataforma-y-documentacion/2026-10-30-servidor-mcp-solo-lectura.md) | Implementa Streamable HTTP autenticado con sesión LATIN ZUMI, contexto aislado por solicitud y cinco herramientas de solo lectura. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
 implementar cambios de wallet, comprobar si un spec posterior reemplaza o
 extiende la decisión anterior y actualizar esta nota si el equipo decide otro
 orden. No renumerar los identificadores ya publicados.
-
