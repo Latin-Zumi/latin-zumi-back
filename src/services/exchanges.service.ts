@@ -3,7 +3,7 @@ import { pool } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
 import { getAccountsByUserId } from './accounts.service.js';
 import { getInternalAccount } from './internal-account.service.js';
-import { normalizeDecimal } from '../utils/decimal.js';
+import { normalizeDecimal, multiplyAndRoundHalfUp, subtractDecimal } from '../utils/decimal.js';
 
 export interface ExchangeTransaction {
   id: string;
@@ -49,11 +49,14 @@ interface ExchangeQuoteRecord {
   rate_observed_at: Date;
   expires_at: Date;
   used_transaction_id: string | null;
+  market_rate: string | null;
+  spread_percent: string;
 }
 
 async function findExistingExchange(
   client: PoolClient,
   idempotencyKey: string,
+  userId: string,
 ): Promise<ExistingExchange | null> {
   const result = await client.query<ExistingExchange>(
     `SELECT t.id, t.occurred_at, t.description,
@@ -65,8 +68,8 @@ async function findExistingExchange(
             q.rate::text AS rate
        FROM transactions t
        JOIN exchange_quotes q ON q.used_transaction_id = t.id
-      WHERE t.idempotency_key = $1`,
-    [idempotencyKey],
+      WHERE t.idempotency_key = $1 AND t.initiator_user_id = $2`,
+    [idempotencyKey, userId],
   );
   return result.rows[0] ?? null;
 }
@@ -108,10 +111,10 @@ export async function executeExchange(input: {
 
     await client.query(
       'SELECT pg_advisory_xact_lock(hashtext($1))',
-      [`operation:${input.idempotencyKey}`],
+      [`operation:${input.userId}:${input.idempotencyKey}`],
     );
 
-    const previous = await findExistingExchange(client, input.idempotencyKey);
+    const previous = await findExistingExchange(client, input.idempotencyKey, input.userId);
     if (previous) {
       if (previous.quote_id !== input.quoteId) {
         throw new AppError('Idempotency-Key ya usado con otra solicitud', 409, 'IDEMPOTENCY_CONFLICT');
@@ -125,7 +128,8 @@ export async function executeExchange(input: {
       `SELECT id, user_id, RTRIM(from_currency) AS from_currency,
               RTRIM(to_currency) AS to_currency, from_amount::text AS from_amount,
               to_amount::text AS to_amount, rate::text AS rate,
-              rate_source, rate_observed_at, expires_at, used_transaction_id
+              rate_source, rate_observed_at, expires_at, used_transaction_id,
+              market_rate::text, spread_percent::text
          FROM exchange_quotes
         WHERE id = $1 AND user_id = $2
         FOR UPDATE`,
@@ -174,20 +178,23 @@ export async function executeExchange(input: {
     }
 
     const transactionResult = await client.query<{ id: string; occurred_at: Date }>(
-      `INSERT INTO transactions (idempotency_key, description, type)
-       VALUES ($1, $2, 'exchange') RETURNING id, occurred_at`,
-      [input.idempotencyKey, `Cambio ${quote.from_currency} a ${quote.to_currency}`],
+      `INSERT INTO transactions (idempotency_key, description, type, initiator_user_id)
+       VALUES ($1, $2, 'exchange', $3) RETURNING id, occurred_at`,
+      [input.idempotencyKey, `Cambio ${quote.from_currency} a ${quote.to_currency}`, input.userId],
     );
     const transactionId = transactionResult.rows[0].id;
 
     const sourceTreasury = await getInternalAccount(client, quote.from_currency, 'treasury');
     const destinationTreasury = await getInternalAccount(client, quote.to_currency, 'treasury');
+    const marketAmount = multiplyAndRoundHalfUp(quote.from_amount, quote.market_rate ?? quote.rate, 2);
+    const feeAmount = subtractDecimal(marketAmount, quote.to_amount, 2);
+    const feeAccount = feeAmount === '0.00' ? null : await getInternalAccount(client, quote.to_currency, 'fee');
     await client.query(
       `INSERT INTO entries (transaction_id, account_id, amount, direction, currency)
        VALUES ($1, $2, $3, 'debit', $4),
               ($1, $5, $3, 'credit', $4),
               ($1, $6, $7, 'debit', $8),
-              ($1, $9, $7, 'credit', $8)`,
+              ($1, $9, $10, 'credit', $8)${feeAmount === '0.00' ? '' : ", ($1, $11, $12, 'credit', $8)"}`,
       [
         transactionId,
         source.rows[0].account_id,
@@ -195,10 +202,13 @@ export async function executeExchange(input: {
         quote.from_currency,
         sourceTreasury,
         destinationTreasury,
-        quote.to_amount,
+        marketAmount,
         quote.to_currency,
         destination.rows[0].id,
-      ],
+        quote.to_amount,
+        feeAccount ?? destination.rows[0].id,
+        feeAmount,
+      ].slice(0, feeAmount === '0.00' ? 10 : 12),
     );
 
     await client.query(

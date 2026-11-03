@@ -8,7 +8,7 @@ export function createCorsMiddleware(origins: readonly string[] = env.CORS_ORIGI
     origin(origin, callback) {
       callback(null, origin === undefined || allowedOrigins.has(origin));
     },
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PATCH'],
     allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key'],
     credentials: false,
   };

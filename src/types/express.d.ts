@@ -5,6 +5,7 @@ declare global {
         userId: string;
         sessionId: string;
         passwordChangeRequired: boolean;
+        roles: string[];
       };
     }
   }

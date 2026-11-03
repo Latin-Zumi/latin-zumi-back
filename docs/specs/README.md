@@ -21,7 +21,7 @@ En vez de pedirle cosas sueltas al agente, le pedimos que **primero escriba el s
 
 Hay dos formas prácticas de organizar los specs:
 
-1. **Por tema (adoptada):** `autenticacion/`, `cuentas-y-wallet/`, `ledger-y-transacciones/` y `plataforma-y-documentacion/`. Facilita encontrar decisiones relacionadas aunque sean de fechas distintas.
+1. **Por tema (adoptada):** `administracion/`, `autenticacion/`, `cuentas-y-wallet/`, `ledger-y-transacciones/` y `plataforma-y-documentacion/`. Facilita encontrar decisiones relacionadas aunque sean de fechas distintas.
 2. **Por fecha:** `YYYY/MM/` o `YYYY/` y luego los archivos fechados. Conserva la secuencia temporal a simple vista, pero separa specs del mismo tema.
 
 Se usa la organización por tema porque este repositorio ya tiene varios cambios relacionados en autenticación, wallet y ledger. El orden histórico se conserva en [`index-specs.md`](./index-specs.md).
@@ -31,6 +31,7 @@ docs/specs/
 ├── README.md
 ├── index-specs.md
 ├── _plantilla.md
+├── administracion/
 ├── autenticacion/
 ├── cuentas-y-wallet/
 ├── ledger-y-transacciones/

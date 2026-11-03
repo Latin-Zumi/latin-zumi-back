@@ -14,6 +14,8 @@ import { openApiSpec } from './config/swagger.js';
 import { pool } from './config/db.js';
 import { corsMiddleware } from './config/cors.js';
 import { createMcpRouter } from './mcp/router.js';
+import { adminRouter } from './routes/admin.route.js';
+import { internalRouter } from './routes/internal.route.js';
 
 export const app = express();
 
@@ -44,6 +46,8 @@ app.use(walletRouter);
 app.use(authRouter);
 app.use(chatRouter);
 app.use(createMcpRouter());
+app.use(adminRouter);
+app.use(internalRouter);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
   next(new AppError('Ruta no encontrada', 404));

@@ -2,6 +2,7 @@ import { toNodeHandler } from '@modelcontextprotocol/node';
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import { Router, type RequestHandler } from 'express';
 import { rateLimit } from 'express-rate-limit';
+import { rateLimitHandler } from '../middleware/rateLimitHandler.js';
 import { z } from 'zod';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
@@ -36,6 +37,7 @@ const mcpRateLimiter = rateLimit({
   limit: 60,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  handler: rateLimitHandler,
 });
 
 export function createMcpRouter(options: McpRouterOptions = {}): Router {

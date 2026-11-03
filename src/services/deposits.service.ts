@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { getWalletByUserId, getAccountsByUserId } from './accounts.service.js';
+import { getOrCreateUserAccount, getAccountsByUserId, getWalletByUserId } from './accounts.service.js';
 import { recordIncomingConversion, findTransactionSummary } from './incoming-conversion.service.js';
 import { AppError } from '../utils/AppError.js';
 import { normalizeDecimal } from '../utils/decimal.js';
@@ -31,31 +31,15 @@ export async function depositToWallet(input: {
     throw new AppError('Wallet no encontrada', 404, 'WALLET_NOT_FOUND');
   }
 
-  const accountResult = await pool.query<{ id: string }>(
-    `SELECT a.id
-       FROM accounts a
-      WHERE a.wallet_id = $1
-        AND RTRIM(a.currency) = $2
-        AND a.account_type = 'user'
-        AND a.closed_at IS NULL
-      LIMIT 1`,
-    [wallet.id, wallet.primaryCurrency],
-  );
-  const account = accountResult.rows[0];
-  if (!account) {
-    throw new AppError(
-      'La wallet no tiene una cuenta para su moneda principal',
-      500,
-      'WALLET_ACCOUNT_MISSING',
-    );
-  }
+  const accountId = await getOrCreateUserAccount(pool, wallet.id, input.userId, input.currency);
 
   const result = await recordIncomingConversion({
-    accountId: account.id,
+    accountId,
     userId: input.userId,
     idempotencyKey: input.idempotencyKey,
     sourceCurrency: input.currency,
     sourceAmount: normalizeDecimal(input.amount, 2),
+    destinationCurrency: input.currency,
   });
 
   const transaction = await findTransactionSummary(result.transaction_id);
