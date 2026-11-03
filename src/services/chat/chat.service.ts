@@ -11,6 +11,8 @@ export interface ChatMessageInput {
   message: string;
   conversationId?: string;
   history?: ChatHistoryEntry[];
+  authorizationHeader?: string;
+  mcpServerUrl?: string;
 }
 
 export interface ChatServiceReply extends ChatProviderReply {}
@@ -33,7 +35,14 @@ export async function sendChatMessage(input: ChatMessageInput): Promise<ChatServ
     limit: 5,
   });
 
-  const provider = createGeminiProvider(env.GEMINI_API_KEY ?? '', env.GEMINI_MODEL);
+  const provider = createGeminiProvider(
+    env.GEMINI_API_KEY ?? '',
+    env.GEMINI_MODEL,
+    {
+      authorizationHeader: input.authorizationHeader,
+      mcpServerUrl: input.mcpServerUrl ?? env.MCP_SERVER_URL ?? `http://127.0.0.1:${env.PORT}`,
+    },
+  );
   try {
     const response = await provider.generateReply({
       conversationId,
