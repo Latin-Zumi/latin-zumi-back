@@ -1,11 +1,15 @@
 import { pool } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
+import { getAccountsByUserId } from './accounts.service.js';
+import { listWalletTransactions } from './wallet-transactions.service.js';
 
 const CURRENCIES = ['ARS', 'COP', 'USD', 'EUR'] as const;
 
 export async function getAdminSettings() {
   const [settings, rates] = await Promise.all([
-    pool.query(`SELECT exchange_spread_percent::text, updated_at, updated_by FROM app_settings WHERE id = 1`),
+    pool.query(`SELECT s.exchange_spread_percent::text, s.updated_at,
+      CASE WHEN u.id IS NULL THEN NULL ELSE json_build_object('id',u.id,'nombre',u.nombre,'email',u.email) END updated_by
+      FROM app_settings s LEFT JOIN users u ON u.id=s.updated_by WHERE s.id = 1`),
     pool.query(`SELECT RTRIM(currency) currency, annual_percent::text FROM interest_rates ORDER BY currency`),
   ]);
   const row = settings.rows[0];
@@ -63,9 +67,18 @@ export async function listAdminUsers(query: Record<string, unknown>) {
 export async function getAdminUser(id: string) {
   const user = await pool.query(`SELECT id,nombre,username,email,pais,RTRIM(moneda_preferida) moneda_preferida,estado,roles,created_at FROM users WHERE id=$1`, [id]);
   if (!user.rows[0]) throw new AppError('Usuario no encontrado',404,'USER_NOT_FOUND');
-  const balances = await pool.query(`SELECT a.id account_id,RTRIM(a.currency) currency,COALESCE(b.balance,0)::text balance FROM accounts a LEFT JOIN account_balances b ON b.account_id=a.id WHERE a.user_id=$1 AND a.account_type='user' AND a.closed_at IS NULL ORDER BY a.currency`,[id]);
-  const transactions = await pool.query(`SELECT DISTINCT t.id,t.type,t.description,t.occurred_at FROM transactions t JOIN entries e ON e.transaction_id=t.id JOIN accounts a ON a.id=e.account_id WHERE a.user_id=$1 ORDER BY t.occurred_at DESC LIMIT 10`,[id]);
-  return { user:user.rows[0], balances:balances.rows, recent_transactions:transactions.rows };
+  const [accounts, transactions] = await Promise.all([
+    getAccountsByUserId(id),
+    listWalletTransactions({ userId: id, page: 1, limit: 10 }),
+  ]);
+  const balances = accounts.map((account) => ({
+    id: account.id,
+    wallet_id: account.wallet_id,
+    account_id: account.id,
+    currency: account.currency,
+    balance: account.balance,
+  }));
+  return { user:user.rows[0], balances, recent_transactions:transactions.items };
 }
 
 export async function setAdminUserState(id: string, estado: unknown, actorId: string) {
@@ -93,6 +106,8 @@ export async function getAdminMetrics(period: unknown) {
 
 export async function getSettingsHistory(query: Record<string, unknown>) {
   const {page,limit,offset}=paging(query);
-  const result=await pool.query(`SELECT id,field,old_value,new_value,changed_at,changed_by,count(*) OVER()::int total FROM settings_history ORDER BY changed_at DESC LIMIT $1 OFFSET $2`,[limit,offset]);
+  const result=await pool.query(`SELECT h.id,h.field,h.old_value,h.new_value,h.changed_at,
+    CASE WHEN u.id IS NULL THEN NULL ELSE json_build_object('id',u.id,'nombre',u.nombre,'email',u.email) END changed_by,
+    count(*) OVER()::int total FROM settings_history h LEFT JOIN users u ON u.id=h.changed_by ORDER BY h.changed_at DESC LIMIT $1 OFFSET $2`,[limit,offset]);
   return {items:result.rows.map(({total,...item})=>item),page,total:result.rows[0]?.total??0};
 }

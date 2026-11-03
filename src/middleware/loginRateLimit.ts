@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
+import { rateLimitHandler } from './rateLimitHandler.js';
 
 const commonOptions = {
   windowMs: 15 * 60 * 1000,
   limit: 5,
   standardHeaders: 'draft-8' as const,
   legacyHeaders: false,
-  message: { error: 'Demasiados intentos; intenta más tarde' },
+  handler: rateLimitHandler,
 };
 
 export const loginRateLimit = rateLimit(commonOptions);
