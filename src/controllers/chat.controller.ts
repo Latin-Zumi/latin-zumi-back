@@ -26,6 +26,7 @@ export async function postChatMessage(req: Request, res: Response): Promise<void
     message: parsed.data.message,
     conversationId: parsed.data.conversationId,
     history: parsed.data.history,
+    authorizationHeader: req.headers.authorization,
   });
 
   res.status(200).json({ data: reply });

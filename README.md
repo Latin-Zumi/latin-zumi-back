@@ -146,6 +146,11 @@ autenticado, limitan los campos devueltos y son de solo lectura. El servidor no
 ofrece tools de transferencias, depósitos, retiros, cambios de moneda ni
 modificación del perfil.
 
+El chatbot de Gemini reutiliza el mismo backend y reenvía la sesión vigente
+como bearer al endpoint MCP interno. El servicio de chat conserva la identidad
+real del usuario autenticado y habilita estas tools solo durante la ejecución del
+modelo, sin exponer la API key ni una identidad global.
+
 La integración se delimita en [`src/mcp/auth.ts`](./src/mcp/auth.ts) mediante
 `McpAuthProvider`. El adaptador incluido usa la sesión de LATIN ZUMI existente.
 Si se conecta otra fuente interna de identidad, reemplaza ese proveedor con
