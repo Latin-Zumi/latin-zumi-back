@@ -79,6 +79,7 @@ const envSchema = z.object({
   ),
   EXCHANGE_RATE_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
   EXCHANGE_RATE_MAX_AGE_HOURS: z.coerce.number().positive().default(24),
+  EXCHANGE_RATE_FALLBACK_CACHE_TTL_HOURS: z.coerce.number().min(1).max(6).default(6),
   GEMINI_API_KEY: z.preprocess(
     (value) => (value === '' ? undefined : String(value)),
     z.string().min(1).optional(),

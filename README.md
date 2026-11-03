@@ -651,6 +651,12 @@ El front llama a tres endpoints nuevos del wallet:
   moneda de origen, acredita la convertida en la moneda destino (creando la
   cuenta destino si no existía) y consume la cotización.
 
+Las cotizaciones usan ExchangeRate-API como fuente principal y el feed diario
+USD de fawazahmed0 como fallback (jsDelivr y luego pages.dev). El JSON fallback
+se conserva en memoria durante 6 horas por proceso de forma predeterminada;
+`EXCHANGE_RATE_FALLBACK_CACHE_TTL_HOURS` permite configurarlo entre 1 y 6. El
+timeout de cada proveedor se controla con `EXCHANGE_RATE_TIMEOUT_MS`.
+
 ```sh
 curl -i -X POST http://localhost:3000/wallet/deposits \
   -H 'Authorization: Bearer <token>' \
