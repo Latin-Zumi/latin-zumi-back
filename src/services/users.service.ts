@@ -6,13 +6,6 @@ import { currencyForCountry, type Pais } from '../utils/country.js';
 
 type Queryable = Pick<PoolClient, 'query'>;
 
-export interface NewUser {
-  username: string;
-  email: string;
-  passwordHash: string;
-  currency: string;
-}
-
 export interface CreateUserWithWalletInput {
   username: string;
   email: string;
@@ -67,23 +60,6 @@ export async function getMyProfile(
   );
 
   return result.rows[0] ?? null;
-}
-
-export interface RegisteredUser {
-  user: {
-    id: string;
-    username: string;
-    email: string;
-  };
-  account: {
-    id: string;
-    user_id: string;
-    currency: string;
-    account_type: string;
-    allow_negative: boolean;
-    balance: string;
-  };
-  wallet_id: string;
 }
 
 interface WalletRow { id: string }
@@ -213,38 +189,6 @@ export async function updateUserProfile(
 
     await client.query('COMMIT');
     return user;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-export async function registerUser(input: NewUser): Promise<RegisteredUser> {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const created = await createUserWithWallet(client, {
-      username: input.username,
-      email: input.email,
-      passwordHash: input.passwordHash,
-      nombre: input.username,
-      pais: null,
-      monedaPreferida: input.currency,
-      retryUsernameConflict: false,
-    });
-
-    await client.query('COMMIT');
-    return {
-      user: {
-        id: created.user.id,
-        username: created.user.username,
-        email: created.user.email,
-      },
-      account: { ...created.account, balance: '0' },
-      wallet_id: created.wallet_id,
-    };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

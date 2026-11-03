@@ -3,19 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   findUserByEmail,
-  registerUser,
   updateUserProfile,
   getAuthContext,
 } = vi.hoisted(() => ({
   findUserByEmail: vi.fn(),
-  registerUser: vi.fn(),
   updateUserProfile: vi.fn(),
   getAuthContext: vi.fn(),
 }));
 
 vi.mock('../../services/users.service.js', () => ({
   findUserByEmail,
-  registerUser,
   updateUserProfile,
 }));
 

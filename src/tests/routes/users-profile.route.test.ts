@@ -5,13 +5,11 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 const {
   findActiveSession,
   findUserByEmail,
-  registerUser,
   updateUserProfile,
   toAuthUser,
 } = vi.hoisted(() => ({
   findActiveSession: vi.fn(),
   findUserByEmail: vi.fn(),
-  registerUser: vi.fn(),
   updateUserProfile: vi.fn(),
   toAuthUser: vi.fn((row: {
     id: string;
@@ -42,7 +40,6 @@ vi.mock('../../services/auth.service.js', () => ({
 
 vi.mock('../../services/users.service.js', () => ({
   findUserByEmail,
-  registerUser,
   updateUserProfile,
 }));
 
