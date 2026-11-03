@@ -4,7 +4,6 @@ import type { Request, Response, NextFunction } from 'express';
 import { errorHandler } from './middleware/errorHandler.js';
 import { AppError } from './utils/AppError.js';
 import { accountsRouter } from './routes/accounts.route.js';
-import { transactionsRouter } from './routes/transactions.route.js';
 import { usersRouter } from './routes/users.route.js';
 import { authRouter } from './routes/auth.route.js';
 import { chatRouter } from './routes/chat.route.js';
@@ -40,7 +39,6 @@ app.get('/health/ready', async (_req, res) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
 app.use(accountsRouter);
-app.use(transactionsRouter);
 app.use(usersRouter);
 app.use(walletRouter);
 app.use(authRouter);
