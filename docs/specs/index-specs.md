@@ -56,6 +56,7 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 043 | [Wallet multimoneda: realineación de depósitos y transferencias](./cuentas-y-wallet/2026-11-03-wallet-multimoneda-realineacion.md) | Revierte la conversión automática a `primary_currency` de los specs 029/039: depósitos y transferencias acreditan en la moneda elegida, con una cuenta `user` por moneda creada bajo demanda. La única conversión es el cambio explícito. Incluye `PATCH` en CORS. |
 | 044 | [Panel de administración (backend)](./administracion/2026-11-03-panel-admin-backend.md) | Implementa `requireAdmin`, migración 012 (`settings`, `interest_rates`, `interest_runs`), endpoints `/admin/*`, spread en cotizaciones e intereses. Depende del contrato del front y del spec 043. |
 | 045 | [Endurecimiento del contrato de wallet y endpoints legados](./plataforma-y-documentacion/2026-11-03-endurecimiento-contrato-wallet.md) | Hace la `Idempotency-Key` única por usuario, marca los endpoints legados como `deprecated` y corrige el `total` del historial. No depende de la migración del panel. |
+| 046 | [Fallback de tasas con fawazahmed0](./cuentas-y-wallet/2026-11-03-fallback-fawazahmed0.md) | Reemplaza Frankfurter por el feed USD de fawazahmed0 vía jsDelivr y pages.dev, con tasas cruzadas y caché fallback; conserva contrato y persistencia de cotizaciones. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
