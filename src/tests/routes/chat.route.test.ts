@@ -109,6 +109,7 @@ describe('POST /chat/messages', () => {
       message: '¿Cuánto dinero tengo?',
       conversationId: 'cf998d0b-7af7-4d46-ae47-0e7b39f0d85c',
       history: undefined,
+      authorizationHeader: 'Bearer valid-token',
     });
   });
 

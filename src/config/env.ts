@@ -88,6 +88,10 @@ const envSchema = z.object({
     (value) => (value === '' ? 'gemini-3.5-flash-lite' : value),
     z.string().min(1).default('gemini-3.5-flash-lite'),
   ),
+  MCP_SERVER_URL: z.preprocess(
+    (value) => (value === '' ? undefined : String(value)),
+    z.string().url().optional(),
+  ),
   FIREBASE_PROJECT_ID: optionalEnvString,
   FIREBASE_CLIENT_EMAIL: optionalEnvString,
   FIREBASE_PRIVATE_KEY: optionalEnvString,
