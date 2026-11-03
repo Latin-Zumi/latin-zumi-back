@@ -11,6 +11,7 @@ export interface ExchangeQuote {
   rate: string;
   to_amount: string;
   expires_at: string;
+  spread_percent: string;
 }
 
 interface ExchangeQuoteRow {
@@ -49,7 +50,11 @@ export async function createExchangeQuote(input: {
     );
   }
 
-  const toAmount = multiplyAndRoundHalfUp(amount, quote.rate, 2);
+  const settings = await pool.query<{ spread: string }>(`SELECT exchange_spread_percent::text spread FROM app_settings WHERE id=1`);
+  const spread = settings.rows[0]?.spread ?? '0.00';
+  const factor = (1 - Number(spread) / 100).toFixed(4);
+  const effectiveRate = multiplyAndRoundHalfUp(normalizeDecimal(quote.rate, 12), factor, 12);
+  const toAmount = multiplyAndRoundHalfUp(amount, effectiveRate, 2);
   if (toAmount === '0.00') {
     throw new AppError('El importe convertido es menor a 0.01', 422, 'AMOUNT_TOO_SMALL');
   }
@@ -57,22 +62,24 @@ export async function createExchangeQuote(input: {
   const result = await pool.query<ExchangeQuoteRow>(
     `INSERT INTO exchange_quotes
        (user_id, from_currency, to_currency, from_amount, to_amount,
-        rate, rate_source, rate_observed_at, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now() + interval '60 seconds')
+        rate, rate_source, rate_observed_at, expires_at, market_rate, spread_percent)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now() + interval '60 seconds', $9, $10)
      RETURNING id, user_id,
                RTRIM(from_currency) AS from_currency,
                RTRIM(to_currency) AS to_currency,
                from_amount::text, to_amount::text, rate::text,
-               rate_source, rate_observed_at, expires_at, used_transaction_id`,
+               rate_source, rate_observed_at, expires_at, used_transaction_id, spread_percent::text`,
     [
       input.userId,
       input.from,
       input.to,
       amount,
       toAmount,
-      normalizeDecimal(quote.rate, 12),
+      effectiveRate,
       quote.source,
       quote.observedAt,
+      normalizeDecimal(quote.rate, 12),
+      spread,
     ],
   );
 
@@ -85,5 +92,6 @@ export async function createExchangeQuote(input: {
     rate: row.rate,
     to_amount: row.to_amount,
     expires_at: row.expires_at.toISOString(),
+    spread_percent: spread,
   };
 }

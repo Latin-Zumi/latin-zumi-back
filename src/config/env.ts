@@ -96,6 +96,7 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().min(3).default('Latin Zumi <no-reply@latinzumi.com>'),
   PASSWORD_RESET_URL: z.string().url().default('http://localhost:5173/restablecer-contrasena'),
   PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
+  INTERNAL_CRON_SECRET: optionalEnvString,
 
 }).refine(
   ({ EMAIL_PROVIDER, RESEND_API_KEY }) =>

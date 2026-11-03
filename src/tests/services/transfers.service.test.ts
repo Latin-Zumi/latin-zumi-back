@@ -36,14 +36,6 @@ vi.mock('../../services/accounts.service.js', () => ({
   getWalletByUserId,
 }));
 
-vi.mock('../../services/exchange-rate.service.js', () => ({
-  getExchangeRate,
-}));
-
-vi.mock('../../services/internal-account.service.js', () => ({
-  getInternalAccount,
-}));
-
 vi.mock('../../services/users.service.js', () => ({
   findUserByEmail,
 }));
@@ -54,43 +46,29 @@ const senderWalletId = '10000000-0000-4000-8000-000000000001';
 const recipientWalletId = '20000000-0000-4000-8000-000000000001';
 const occurredAt = new Date('2026-10-30T00:00:00.000Z');
 
-let initialCurrencies: Map<string, string>;
-let currentCurrencies: Map<string, string>;
-
-function configureLedgerQueries(
-  beforeWalletLock?: (walletId: string) => Promise<void>,
-) {
+function configureLedgerQueries() {
   query.mockImplementation(async (statement: string, values?: unknown[]) => {
     if (statement === 'BEGIN' || statement === 'COMMIT' || statement === 'ROLLBACK') {
       return { rows: [] };
     }
-
     if (statement.includes('SELECT id FROM wallets WHERE id=$1 FOR UPDATE')) {
       const walletId = String(values?.[0]);
-      await beforeWalletLock?.(walletId);
       return { rows: [{ id: walletId }] };
     }
-
-    if (statement.includes('SELECT id, RTRIM(primary_currency) AS primary_currency')) {
-      return {
-        rows: [...currentCurrencies.entries()]
-          .map(([id, primary_currency]) => ({ id, primary_currency }))
-          .sort((left, right) => left.id.localeCompare(right.id)),
-      };
+    if (statement.startsWith('SELECT t.id, t.description')) {
+      return { rows: [] };
     }
-
-    if (statement.includes('pg_advisory_xact_lock')) return { rows: [] };
-    if (statement.startsWith('SELECT t.id, t.description')) return { rows: [] };
     if (statement.includes('SELECT a.id AS account_id')) {
       return { rows: [{ account_id: 'sender-account', sufficient: true }] };
     }
-    if (statement.includes('SELECT id FROM accounts WHERE wallet_id')) {
+    if (statement.includes('SELECT id FROM accounts')) {
       return { rows: [{ id: 'recipient-account' }] };
     }
     if (statement.includes('INSERT INTO transactions')) {
       return { rows: [{ id: 'transaction-id', occurred_at: occurredAt }] };
     }
     if (statement.includes('INSERT INTO entries')) return { rows: [] };
+    if (statement.includes('INSERT INTO accounts')) return { rows: [{ id: 'created-recipient-account' }] };
     return { rows: [] };
   });
 }
@@ -105,7 +83,7 @@ function transferInput(currency = 'USD') {
   };
 }
 
-describe('transferBetweenUsers wallet currency locking', () => {
+describe('transferBetweenUsers', () => {
   beforeEach(() => {
     query.mockReset();
     release.mockReset();
@@ -119,107 +97,67 @@ describe('transferBetweenUsers wallet currency locking', () => {
       const walletId = userId === 'sender-user' ? senderWalletId : recipientWalletId;
       return {
         id: walletId,
-        primaryCurrency: initialCurrencies.get(walletId),
+        primaryCurrency: 'USD',
       };
     });
     getAccountsByUserId.mockReset().mockResolvedValue([]);
-    getExchangeRate.mockReset().mockResolvedValue({
-      rate: '1.250000000000',
-      source: 'test',
-      observedAt: occurredAt,
-    });
+    getExchangeRate.mockReset();
     getInternalAccount.mockReset();
-    initialCurrencies = new Map([
-      [senderWalletId, 'USD'],
-      [recipientWalletId, 'USD'],
-    ]);
-    currentCurrencies = new Map(initialCurrencies);
   });
 
-  it('uses the locked wallet state when the currency did not change', async () => {
+  it('transfers in the same currency without conversion', async () => {
     configureLedgerQueries();
 
-    const result = await transferBetweenUsers(transferInput());
+    const result = await transferBetweenUsers(transferInput('USD'));
 
-    expect(result.recipient.currency).toBe('USD');
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('SELECT id, RTRIM(primary_currency) AS primary_currency'),
-      [[senderWalletId, recipientWalletId]],
-    );
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('RTRIM(currency)=$2'),
-      [recipientWalletId, 'USD'],
-    );
-    expect(query).toHaveBeenCalledWith('COMMIT');
+    expect(result.recipient).toEqual({ currency: 'USD', amount: '10.00', rate: '1.000000000000' });
     expect(getExchangeRate).not.toHaveBeenCalled();
-    expect(release).toHaveBeenCalledOnce();
-  });
-
-  it('detects a destination currency change while waiting for the wallet lock and rolls back', async () => {
-    let releaseWalletLock!: () => void;
-    let signalLockAttempt!: () => void;
-    const walletLockAttempted = new Promise<void>((resolve) => {
-      signalLockAttempt = resolve;
-    });
-    const walletLockWait = new Promise<void>((resolve) => {
-      releaseWalletLock = resolve;
-    });
-    configureLedgerQueries(async (walletId) => {
-      if (walletId !== recipientWalletId) return;
-      signalLockAttempt();
-      await walletLockWait;
-    });
-
-    const pendingTransfer = transferBetweenUsers(transferInput('EUR'));
-    await walletLockAttempted;
-    currentCurrencies.set(recipientWalletId, 'ARS');
-    releaseWalletLock();
-
-    await expect(pendingTransfer).rejects.toMatchObject({
-      statusCode: 409,
-      code: 'TRANSFER_WALLET_CURRENCY_CHANGED',
-      message: 'La moneda de la wallet destinataria cambió; reintentá la transferencia',
-    });
-
-    expect(getExchangeRate).toHaveBeenCalledOnce();
-    expect(getExchangeRate).toHaveBeenCalledWith('EUR', 'USD');
+    expect(getInternalAccount).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledWith('COMMIT');
+    const lockCall = query.mock.calls.find(([statement]) => String(statement).includes('pg_advisory_xact_lock'));
+    expect(lockCall?.[1]).toEqual(['operation:sender-user:transfer-idempotency-key']);
+    const priorLookup = query.mock.calls.find(([statement]) => String(statement).startsWith('SELECT t.id, t.description'));
+    expect(priorLookup?.[0]).toContain('t.initiator_user_id=$2');
+    expect(priorLookup?.[1]).toEqual(['transfer-idempotency-key', 'sender-user']);
+    const transactionInsert = query.mock.calls.find(([statement]) => String(statement).includes('INSERT INTO transactions'));
+    expect(transactionInsert?.[0]).toContain('initiator_user_id');
+    expect(transactionInsert?.[1]).toEqual(['transfer-idempotency-key', null, 'sender-user']);
     expect(query.mock.calls.some(([statement]) =>
-      String(statement).includes('INSERT INTO transactions')
-      || String(statement).includes('INSERT INTO entries'),
+      String(statement).includes('currency_conversions'),
     )).toBe(false);
-    expect(query).toHaveBeenCalledWith('ROLLBACK');
-    expect(query).not.toHaveBeenCalledWith('COMMIT');
-    expect(release).toHaveBeenCalledOnce();
   });
 
-  it('rolls back when the locked wallet re-read omits the sender wallet', async () => {
+  it('creates the recipient account in the transfer currency and moves the balance', async () => {
     configureLedgerQueries();
     query.mockImplementation(async (statement: string, values?: unknown[]) => {
-      if (statement.includes('SELECT id, RTRIM(primary_currency) AS primary_currency')) {
-        return {
-          rows: [{ id: recipientWalletId, primary_currency: 'USD' }],
-        };
+      if (statement.includes('SELECT id FROM accounts')) return { rows: [] };
+      if (statement.includes('INSERT INTO accounts')) return { rows: [{ id: 'created-recipient-account' }] };
+      if (statement === 'BEGIN' || statement === 'COMMIT' || statement === 'ROLLBACK') return { rows: [] };
+      if (statement.includes('SELECT id FROM wallets WHERE id=$1 FOR UPDATE')) {
+        const walletId = String(values?.[0]);
+        return { rows: [{ id: walletId }] };
       }
-      if (
-        statement === 'BEGIN'
-        || statement === 'ROLLBACK'
-        || statement.includes('SELECT id FROM wallets WHERE id=$1 FOR UPDATE')
-      ) {
-        return { rows: [] };
+      if (statement.startsWith('SELECT t.id, t.description')) return { rows: [] };
+      if (statement.includes('SELECT a.id AS account_id')) {
+        return { rows: [{ account_id: 'sender-account', sufficient: true }] };
       }
+      if (statement.includes('INSERT INTO transactions')) {
+        return { rows: [{ id: 'transaction-id', occurred_at: occurredAt }] };
+      }
+      if (statement.includes('INSERT INTO entries')) return { rows: [] };
       return { rows: [] };
     });
 
-    await expect(transferBetweenUsers(transferInput())).rejects.toMatchObject({
-      statusCode: 409,
-      code: 'TRANSFER_WALLET_STATE_CHANGED',
-    });
-    expect(query).toHaveBeenCalledWith('ROLLBACK');
-    expect(query).not.toHaveBeenCalledWith('COMMIT');
+    const result = await transferBetweenUsers(transferInput('USD'));
+
+    expect(result.recipient.currency).toBe('USD');
+    const insertCall = query.mock.calls.find(([statement]) =>
+      String(statement).includes('INSERT INTO accounts'),
+    );
+    expect(insertCall?.[0]).toContain('INSERT INTO accounts');
+    expect(insertCall?.[1]).toEqual(['recipient-user', recipientWalletId, 'USD']);
     expect(query.mock.calls.some(([statement]) =>
-      String(statement).includes('INSERT INTO transactions')
-      || String(statement).includes('INSERT INTO entries'),
+      String(statement).includes('currency_conversions'),
     )).toBe(false);
-    expect(release).toHaveBeenCalledOnce();
   });
 });

@@ -52,10 +52,13 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 039 | [Depósitos y cambios de moneda (implementación)](./cuentas-y-wallet/2026-10-29-depositos-y-cambios-implementacion.md) | Implementa las tres rutas que el front ya llama: `POST /wallet/deposits`, `GET /wallet/exchange/quote` y `POST /wallet/exchanges`. Reutiliza `recordIncomingConversion`, agrega `exchange_quotes` (migración 011) y completa el feed. Ajusta el front: `TRANSACTIONS_ENABLED`, normalización de `balances` y códigos de error. Ejecuta el spec 030 sin editarlo. |
 | 040 | [Script de desarrollo con recarga automática](./plataforma-y-documentacion/2026-10-30-script-desarrollo-watch.md) | Agrega `npm run dev` con `tsx watch src/index.ts` y documenta el flujo de desarrollo frente a la validación con `npm run build && npm start`. |
 | 041 | [Actualizar Swagger con la estructura actual](./plataforma-y-documentacion/2026-10-30-swagger-estructura-actual.md) | Alinea `src/config/swagger.ts` con los routers montados: corrige `/accounts/{id}/incoming`, agrega `tags`/`servers`, usa `ErrorResponse` y documenta los filtros de actividad. |
+| 042 | [Servidor MCP de solo lectura](./plataforma-y-documentacion/2026-10-30-servidor-mcp-solo-lectura.md) | Implementa Streamable HTTP autenticado con sesión LATIN ZUMI, contexto aislado por solicitud y cinco herramientas de solo lectura. |
+| 043 | [Wallet multimoneda: realineación de depósitos y transferencias](./cuentas-y-wallet/2026-11-03-wallet-multimoneda-realineacion.md) | Revierte la conversión automática a `primary_currency` de los specs 029/039: depósitos y transferencias acreditan en la moneda elegida, con una cuenta `user` por moneda creada bajo demanda. La única conversión es el cambio explícito. Incluye `PATCH` en CORS. |
+| 044 | [Panel de administración (backend)](./administracion/2026-11-03-panel-admin-backend.md) | Implementa `requireAdmin`, migración 012 (`settings`, `interest_rates`, `interest_runs`), endpoints `/admin/*`, spread en cotizaciones e intereses. Depende del contrato del front y del spec 043. |
+| 045 | [Endurecimiento del contrato de wallet y endpoints legados](./plataforma-y-documentacion/2026-11-03-endurecimiento-contrato-wallet.md) | Hace la `Idempotency-Key` única por usuario, marca los endpoints legados como `deprecated` y corrige el `total` del historial. No depende de la migración del panel. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
 implementar cambios de wallet, comprobar si un spec posterior reemplaza o
 extiende la decisión anterior y actualizar esta nota si el equipo decide otro
 orden. No renumerar los identificadores ya publicados.
-

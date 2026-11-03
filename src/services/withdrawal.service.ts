@@ -34,6 +34,7 @@ interface ExistingOperation {
 async function findExistingOperation(
   client: PoolClient,
   idempotencyKey: string,
+  userId: string,
 ): Promise<ExistingOperation | null> {
   const result = await client.query<ExistingOperation>(
     `SELECT t.id AS transaction_id, t.description,
@@ -41,10 +42,10 @@ async function findExistingOperation(
        FROM transactions t
        LEFT JOIN entries e
          ON e.transaction_id = t.id AND e.direction = 'debit'
-      WHERE t.idempotency_key = $1
+      WHERE t.idempotency_key = $1 AND t.initiator_user_id = $2
       ORDER BY e.id
       LIMIT 1`,
-    [idempotencyKey],
+    [idempotencyKey, userId],
   );
   return result.rows[0] ?? null;
 }
@@ -85,9 +86,9 @@ export async function withdrawFromAccount(
 
     await client.query(
       'SELECT pg_advisory_xact_lock(hashtext($1))',
-      [`operation:${input.idempotencyKey}`],
+      [`operation:${input.userId}:${input.idempotencyKey}`],
     );
-    const existing = await findExistingOperation(client, input.idempotencyKey);
+    const existing = await findExistingOperation(client, input.idempotencyKey, input.userId);
     if (existing) {
       if (!isSameWithdrawal(existing, input, account.currency, amount)) {
         throw new AppError('Idempotency-Key ya usado con otra solicitud', 409);
@@ -114,9 +115,9 @@ export async function withdrawFromAccount(
     }
 
     const transactionResult = await client.query<{ id: string }>(
-      `INSERT INTO transactions (idempotency_key, description, type)
-       VALUES ($1, 'Retiro de cuenta', 'withdrawal') RETURNING id`,
-      [input.idempotencyKey],
+      `INSERT INTO transactions (idempotency_key, description, type, initiator_user_id)
+       VALUES ($1, 'Retiro de cuenta', 'withdrawal', $2) RETURNING id`,
+      [input.idempotencyKey, input.userId],
     );
     const transactionId = transactionResult.rows[0].id;
     const externalAccountId = await getInternalAccount(

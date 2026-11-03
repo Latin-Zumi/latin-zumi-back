@@ -1,5 +1,6 @@
 import { pool } from '../config/db.js';
 import type { PoolClient } from 'pg';
+import { AppError } from '../utils/AppError.js';
 
 type Queryable = Pick<PoolClient, 'query'>;
 
@@ -48,6 +49,34 @@ export async function getWalletByUserId(userId: string, db: Queryable = pool): P
   );
   const row = result.rows[0];
   return row ? { id: row.id, primaryCurrency: row.primary_currency } : null;
+}
+
+export async function getOrCreateUserAccount(
+  db: Queryable,
+  walletId: string,
+  userId: string,
+  currency: string,
+): Promise<string> {
+  await db.query(
+    `INSERT INTO accounts (user_id, wallet_id, currency, account_type, allow_negative)
+     VALUES ($1, $2, $3, 'user', false)
+     ON CONFLICT (wallet_id, currency)
+       WHERE account_type = 'user' AND closed_at IS NULL
+     DO NOTHING`,
+    [userId, walletId, currency],
+  );
+  const result = await db.query<{ id: string }>(
+    `SELECT id FROM accounts
+      WHERE wallet_id = $1 AND RTRIM(currency) = $2
+        AND account_type = 'user' AND closed_at IS NULL
+      LIMIT 1`,
+    [walletId, currency],
+  );
+  const account = result.rows[0];
+  if (!account) {
+    throw new AppError('La wallet no tiene una cuenta para su moneda', 500, 'ACCOUNT_NOT_FOUND');
+  }
+  return account.id;
 }
 
 export async function getAccountById(
