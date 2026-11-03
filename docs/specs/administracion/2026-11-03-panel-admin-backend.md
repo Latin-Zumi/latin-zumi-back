@@ -183,7 +183,8 @@ Los pasos 1 a 4 alcanzan para encender el panel; el 5 y el 6 aplican los paráme
 - [ ] Las métricas cuentan cada transferencia una sola vez y muestran las cuatro monedas.
 - [ ] Correr el interés dos veces el mismo día no duplica pagos.
 - [ ] Un cambio de tasa hoy no afecta la acreditación de ayer.
-- [ ] `npm run build` y `npm test` pasan.
+- [x] `npm run build` pasa.
+- [ ] `npm test` pasa. La ejecución local dio 141 pasados, 34 omitidos y 2 fallidos; 6 suites HTTP tampoco pudieron iniciar su servidor por restricciones de red del entorno de ejecución.
 
 ## Riesgos / notas
 

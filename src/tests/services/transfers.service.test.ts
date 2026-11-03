@@ -114,6 +114,14 @@ describe('transferBetweenUsers', () => {
     expect(getExchangeRate).not.toHaveBeenCalled();
     expect(getInternalAccount).not.toHaveBeenCalled();
     expect(query).toHaveBeenCalledWith('COMMIT');
+    const lockCall = query.mock.calls.find(([statement]) => String(statement).includes('pg_advisory_xact_lock'));
+    expect(lockCall?.[1]).toEqual(['operation:sender-user:transfer-idempotency-key']);
+    const priorLookup = query.mock.calls.find(([statement]) => String(statement).startsWith('SELECT t.id, t.description'));
+    expect(priorLookup?.[0]).toContain('t.initiator_user_id=$2');
+    expect(priorLookup?.[1]).toEqual(['transfer-idempotency-key', 'sender-user']);
+    const transactionInsert = query.mock.calls.find(([statement]) => String(statement).includes('INSERT INTO transactions'));
+    expect(transactionInsert?.[0]).toContain('initiator_user_id');
+    expect(transactionInsert?.[1]).toEqual(['transfer-idempotency-key', null, 'sender-user']);
     expect(query.mock.calls.some(([statement]) =>
       String(statement).includes('currency_conversions'),
     )).toBe(false);

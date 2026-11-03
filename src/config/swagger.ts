@@ -1,3 +1,18 @@
+const adminPathDocs = {
+  '/admin/metrics': { get: { tags: ['admin'], security: [{ bearerAuth: [] }], summary: 'Consultar métricas administrativas', parameters: [{ name: 'period', in: 'query', schema: { type: 'string', enum: ['day','month'] } }], responses: { '200': { description: 'Métricas del periodo.' }, '403': { description: 'Se requiere rol admin.' } } } },
+  '/admin/settings': {
+    get: { tags: ['admin'], security: [{ bearerAuth: [] }], summary: 'Consultar parámetros', responses: { '200': { description: 'Spread y tasas de interés.' } } },
+    patch: { tags: ['admin'], security: [{ bearerAuth: [] }], summary: 'Actualizar parámetros', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { exchange_spread_percent: { type: 'number', minimum: 0, maximum: 10 }, interest_rates: { type: 'object', additionalProperties: { type: 'number', minimum: 0, maximum: 50 } } } } } } }, responses: { '200': { description: 'Parámetros actualizados.' }, '400': { description: 'INVALID_SETTINGS.' } } },
+  },
+  '/admin/settings/history': { get: { tags: ['admin'], security: [{ bearerAuth: [] }], summary: 'Consultar historial de parámetros', responses: { '200': { description: 'Cambios paginados.' } } } },
+  '/admin/users': { get: { tags: ['admin'], security: [{ bearerAuth: [] }], summary: 'Listar usuarios', parameters: [{ name: 'search', in: 'query', schema: { type: 'string' } }, { name: 'estado', in: 'query', schema: { type: 'string', enum: ['activo','bloqueado'] } }, { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1 } }, { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100 } }], responses: { '200': { description: 'Usuarios paginados.' } } } },
+  '/admin/users/{id}': {
+    get: { tags: ['admin'], security: [{ bearerAuth: [] }], summary: 'Consultar usuario y actividad', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Usuario, saldos y movimientos recientes.' }, '404': { description: 'USER_NOT_FOUND.' } } },
+    patch: { tags: ['admin'], security: [{ bearerAuth: [] }], summary: 'Cambiar estado de usuario', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['estado'], properties: { estado: { type: 'string', enum: ['activo','bloqueado'] } } } } } }, responses: { '200': { description: 'Usuario actualizado.' }, '422': { description: 'CANNOT_BLOCK_SELF.' } } },
+  },
+  '/internal/accrue-interest': { post: { tags: ['admin'], summary: 'Procesar intereses pendientes', parameters: [{ name: 'X-Internal-Secret', in: 'header', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Días procesados y movimientos generados.' }, '401': { description: 'Secreto interno inválido.' } } } },
+};
+
 export const openApiSpec = {
   openapi: '3.0.3',
   info: {
@@ -14,8 +29,10 @@ export const openApiSpec = {
     { name: 'accounts', description: 'Cuentas, saldos e ingresos/retiros.' },
     { name: 'transactions', description: 'Historial del ledger.' },
     { name: 'chat', description: 'Asistente de inteligencia artificial.' },
+    { name: 'admin', description: 'Administración de usuarios, parámetros e intereses.' },
   ],
   paths: {
+    ...adminPathDocs,
     '/health': {
       get: {
         tags: ['health'],
@@ -968,6 +985,8 @@ export const openApiSpec = {
     '/accounts/{id}': {
       get: {
         tags: ['accounts'],
+        deprecated: true,
+        description: 'Ruta legada. Usa `GET /accounts` para consultar las cuentas del titular.',
         summary: 'Consultar una cuenta activa del usuario',
         operationId: 'getAccount',
         security: [{ bearerAuth: [] }],
@@ -1132,6 +1151,8 @@ export const openApiSpec = {
     '/accounts/{id}/balance': {
       get: {
         tags: ['accounts'],
+        deprecated: true,
+        description: 'Ruta legada. Usa `GET /accounts` para consultar cuentas y saldos.',
         summary: 'Consultar el saldo de una cuenta activa',
         operationId: 'getAccountBalance',
         security: [{ bearerAuth: [] }],
@@ -1223,6 +1244,8 @@ export const openApiSpec = {
     '/accounts/{id}/withdraw': {
       post: {
         tags: ['accounts'],
+        deprecated: true,
+        description: 'Ruta legada sin reemplazo público disponible.',
         summary: 'Retirar saldo de la cuenta autenticada',
         operationId: 'withdrawAccount',
         security: [{ bearerAuth: [] }],
@@ -1295,6 +1318,8 @@ export const openApiSpec = {
     '/transactions': {
       get: {
         tags: ['transactions'],
+        deprecated: true,
+        description: 'Ruta legada. Usa `GET /wallet/transactions` para la actividad de wallet.',
         summary: 'Listar el historial del usuario autenticado',
         operationId: 'getTransactions',
         security: [{ bearerAuth: [] }],
@@ -1445,6 +1470,8 @@ export const openApiSpec = {
     '/transactions/{id}': {
       get: {
         tags: ['transactions'],
+        deprecated: true,
+        description: 'Ruta legada; el detalle completo del ledger queda como consulta interna.',
         summary: 'Consultar una transacción',
         operationId: 'getTransaction',
         security: [{ bearerAuth: [] }],

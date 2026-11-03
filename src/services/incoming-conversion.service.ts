@@ -108,7 +108,7 @@ export async function recordIncomingConversion(
 
     await client.query(
       'SELECT pg_advisory_xact_lock(hashtext($1))',
-      [`operation:${input.idempotencyKey}`],
+      [`operation:${input.userId}:${input.idempotencyKey}`],
     );
     const previous = await client.query<ExistingIncoming>(
       `SELECT t.id AS transaction_id,
@@ -127,10 +127,11 @@ export async function recordIncomingConversion(
          JOIN entries e ON e.transaction_id = t.id
          JOIN accounts a ON a.id = e.account_id
         WHERE t.idempotency_key = $1
+          AND t.initiator_user_id = $3
           AND e.account_id = $2
           AND e.direction = 'credit'
         LIMIT 1`,
-      [input.idempotencyKey, input.accountId],
+      [input.idempotencyKey, input.accountId, input.userId],
     );
     if (previous.rows[0]) {
       const row = previous.rows[0];
@@ -149,9 +150,9 @@ export async function recordIncomingConversion(
     const observedAt = new Date();
 
     const transactionResult = await client.query<{ id: string }>(
-      `INSERT INTO transactions (idempotency_key, description, type)
-       VALUES ($1, $2, 'deposit') RETURNING id`,
-      [input.idempotencyKey, `Ingreso ${input.sourceCurrency}`],
+      `INSERT INTO transactions (idempotency_key, description, type, initiator_user_id)
+       VALUES ($1, $2, 'deposit', $3) RETURNING id`,
+      [input.idempotencyKey, `Ingreso ${input.sourceCurrency}`, input.userId],
     );
     const transactionId = transactionResult.rows[0].id;
     const externalSource = await getInternalAccount(client, input.sourceCurrency, 'external');

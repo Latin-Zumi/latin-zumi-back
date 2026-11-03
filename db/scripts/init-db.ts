@@ -84,6 +84,18 @@ try {
   );
   await client.query(exchangeQuotesMigration);
 
+  const adminMigration = await readFile(
+    new URL('../migrations/012_admin.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(adminMigration);
+
+  const idempotencyMigration = await readFile(
+    new URL('../migrations/013_idempotency_per_user.sql', import.meta.url),
+    'utf8',
+  );
+  await client.query(idempotencyMigration);
+
   await client.query('COMMIT');
   transactionCommitted = true;
   console.log('Schema y migraciones aplicados');

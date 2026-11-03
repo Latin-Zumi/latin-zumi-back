@@ -57,7 +57,7 @@ describe('withdrawFromAccount', () => {
     expect(sql[0]).toBe('BEGIN');
     expect(sql[1]).toContain('FOR UPDATE OF w');
     expect(sql[2]).toContain('pg_advisory_xact_lock');
-    expect(query.mock.calls[2][1]).toEqual(['operation:withdrawal-123']);
+    expect(query.mock.calls[2][1]).toEqual([`operation:${userId}:withdrawal-123`]);
     expect(sql[4]).toContain('COALESCE(b.balance, 0) >= $2::numeric');
     expect(sql[5]).toContain('INSERT INTO transactions');
     expect(sql[8]).toContain("'debit'");

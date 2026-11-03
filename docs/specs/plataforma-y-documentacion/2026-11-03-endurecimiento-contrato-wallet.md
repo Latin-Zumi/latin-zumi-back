@@ -113,7 +113,7 @@ una página fuera de rango devuelve `items: []` y el `total` real.
 
 - `db/migrations/013_idempotency_per_user.sql`, `db/scripts/init-db.ts`.
 - `src/services/transfers.service.ts`, `exchanges.service.ts`, `incoming-conversion.service.ts`,
-  `interest.service.ts` (si ya existe por el spec 044).
+  `interest.service.ts`, `withdrawal.service.ts` (clave idempotente en endpoint público legado).
 - `src/services/wallet-transactions.service.ts`.
 - `src/config/swagger.ts`, `README.md`.
 - Tests: `src/tests/services/transfers.service.test.ts`, `exchanges`/`wallet-transactions` y
@@ -135,8 +135,9 @@ una página fuera de rango devuelve `items: []` y el `total` real.
 - [ ] Un depósito, un cambio, una transferencia y un interés guardan su `initiator_user_id`.
 - [ ] `GET /wallet/transactions?page=999` devuelve `items: []` y el `total` real.
 - [ ] `GET /wallet/transactions` sigue devolviendo el orden y los filtros actuales.
-- [ ] Swagger marca los legados como `deprecated` y el README explica el reemplazo.
-- [ ] `npm run build` y `npm test` pasan.
+- [x] Swagger marca los legados como `deprecated` y el README explica el reemplazo.
+- [x] `npm run build` pasa.
+- [ ] `npm test` pasa. Los tests dirigidos de transferencias, retiros e historial pasan (10/10); la suite completa conserva fallos de inicio de servidores locales en el entorno.
 
 ## Riesgos / notas
 

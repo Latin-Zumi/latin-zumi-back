@@ -3,7 +3,7 @@ import type { PoolClient } from 'pg';
 export async function getInternalAccount(
   client: PoolClient,
   currency: string,
-  type: 'external' | 'treasury',
+  type: 'external' | 'treasury' | 'fee' | 'expense',
 ): Promise<string> {
   await client.query(
     'SELECT pg_advisory_xact_lock(hashtext($1))',

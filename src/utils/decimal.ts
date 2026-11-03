@@ -43,6 +43,20 @@ export function normalizeDecimal(value: string, decimalPlaces = 12): string {
   return formatScaled(parsed.coefficient * 10n ** BigInt(decimalPlaces - parsed.scale), decimalPlaces);
 }
 
+export function subtractDecimal(left: string, right: string, decimalPlaces = 2): string {
+  const a = parseDecimal(left);
+  const b = parseDecimal(right);
+  const scale = Math.max(a.scale, b.scale, decimalPlaces);
+  const difference = a.coefficient * 10n ** BigInt(scale - a.scale)
+    - b.coefficient * 10n ** BigInt(scale - b.scale);
+  const negative = difference < 0n;
+  const magnitude = negative ? -difference : difference;
+  const divisor = 10n ** BigInt(scale - decimalPlaces);
+  const rounded = (magnitude + divisor / 2n) / divisor;
+  const formatted = formatScaled(rounded, decimalPlaces);
+  return negative ? `-${formatted}` : formatted;
+}
+
 function formatScaled(coefficient: bigint, scale: number): string {
   const unit = 10n ** BigInt(scale);
   return `${coefficient / unit}.${(coefficient % unit).toString().padStart(scale, '0')}`;

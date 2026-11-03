@@ -10,7 +10,6 @@ interface Row {
   amount: string;
   direction: string;
   currency: string;
-  total: number;
   counterparty_nombre: string | null;
   counterparty_email: string | null;
   destination_currency: string | null;
@@ -20,6 +19,20 @@ interface Row {
 
 export async function listWalletTransactions(filters: WalletTransactionFilters) {
   const offset = (filters.page - 1) * filters.limit;
+  const countResult = await pool.query<{ total: number }>(
+    `WITH me AS (
+       SELECT t.id,t.type,t.occurred_at,e.amount::text AS amount,e.direction,RTRIM(e.currency) AS currency
+         FROM transactions t JOIN LATERAL (
+           SELECT e.amount,e.direction,e.currency FROM entries e JOIN accounts a ON a.id=e.account_id
+            WHERE e.transaction_id=t.id AND a.user_id=$1 AND a.account_type='user' AND a.closed_at IS NULL
+            ORDER BY (e.direction='debit') DESC,e.id LIMIT 1
+         ) e ON true
+     )
+     SELECT COUNT(*)::int AS total FROM me
+      WHERE ($2::text IS NULL OR CASE WHEN me.type='transfer' AND me.direction='debit' THEN 'transfer_sent' WHEN me.type='transfer' THEN 'transfer_received' ELSE me.type END=$2)
+        AND ($3::text IS NULL OR me.currency=$3) AND ($4::timestamptz IS NULL OR me.occurred_at >= $4) AND ($5::timestamptz IS NULL OR me.occurred_at <= $5)`,
+    [filters.userId, filters.type ?? null, filters.currency ?? null, filters.from ?? null, filters.to ?? null],
+  );
   const result = await pool.query<Row>(
     `WITH me AS (
        SELECT t.id,t.type,t.description,t.occurred_at,e.amount::text AS amount,e.direction,RTRIM(e.currency) AS currency
@@ -29,7 +42,7 @@ export async function listWalletTransactions(filters: WalletTransactionFilters) 
             ORDER BY (e.direction='debit') DESC,e.id LIMIT 1
          ) e ON true
      )
-     SELECT me.*,COUNT(*) OVER()::int AS total,cp.nombre AS counterparty_nombre,cp.email AS counterparty_email,
+     SELECT me.*,cp.nombre AS counterparty_nombre,cp.email AS counterparty_email,
             c.destination_currency,c.destination_amount::text AS destination_amount,c.rate::text AS rate
        FROM me
         LEFT JOIN LATERAL (
@@ -43,7 +56,7 @@ export async function listWalletTransactions(filters: WalletTransactionFilters) 
     [filters.userId, filters.type ?? null, filters.currency ?? null, filters.from ?? null, filters.to ?? null, filters.limit, offset],
   );
   const rows = result.rows;
-  const total = rows[0]?.total ?? 0;
+  const total = countResult.rows[0]?.total ?? 0;
   const items = rows.map((row) => {
     const type = row.type === 'transfer' ? (row.direction === 'debit' ? 'transfer_sent' : 'transfer_received') : row.type;
     const nombre = row.counterparty_nombre ?? row.counterparty_email;

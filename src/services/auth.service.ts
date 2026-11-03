@@ -37,6 +37,7 @@ export interface AuthContext {
   userId: string;
   sessionId: string;
   passwordChangeRequired: boolean;
+  roles: string[];
 }
 
 export interface CreatedSession {
@@ -246,7 +247,7 @@ export async function loginWithPassword(
   }
 
   if (user.estado !== 'activo') {
-    throw new AppError('Tu cuenta no está habilitada', 403, 'USER_BLOCKED');
+    throw new AppError('Tu cuenta no está habilitada', 403, 'ACCOUNT_BLOCKED');
   }
 
   const passwordChangeRequired = Array.from(password).length < PASSWORD_MIN_LENGTH;
@@ -298,7 +299,7 @@ export async function loginWithGoogle(idToken: string): Promise<{
     await client.query('BEGIN');
     const user = await findOrCreateGoogleUser(client, identity);
     if (user.estado !== 'activo') {
-      throw new AppError('Tu cuenta no está habilitada', 403, 'USER_BLOCKED');
+      throw new AppError('Tu cuenta no está habilitada', 403, 'ACCOUNT_BLOCKED');
     }
 
     const session = await createSessionForUser(user.id, {
@@ -329,10 +330,12 @@ export async function loginWithGoogle(idToken: string): Promise<{
 
 export async function findActiveSession(token: string): Promise<AuthContext | null> {
   const result = await pool.query<AuthContext>(
-    `SELECT user_id AS "userId",
-            id AS "sessionId",
-            password_change_required AS "passwordChangeRequired"
-       FROM auth_sessions
+    `SELECT auth_sessions.user_id AS "userId",
+            auth_sessions.id AS "sessionId",
+            password_change_required AS "passwordChangeRequired",
+            u.roles
+        FROM auth_sessions
+       JOIN users u ON u.id = auth_sessions.user_id
       WHERE token_hash = $1
         AND revoked_at IS NULL
         AND expires_at > now()`,

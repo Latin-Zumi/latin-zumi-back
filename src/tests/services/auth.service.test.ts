@@ -263,7 +263,7 @@ describe('loginWithPassword', () => {
         loginWithPassword('ana@example.com', 'correct-password'),
       ).rejects.toMatchObject({
         statusCode: 403,
-        code: 'USER_BLOCKED',
+        code: 'ACCOUNT_BLOCKED',
         message: 'Tu cuenta no está habilitada',
       });
 
@@ -636,7 +636,7 @@ describe('loginWithGoogle', () => {
 
     await expect(loginWithGoogle('firebase-id-token')).rejects.toMatchObject({
       statusCode: 403,
-      code: 'USER_BLOCKED',
+      code: 'ACCOUNT_BLOCKED',
     });
     expect(clientQuery.mock.calls.some(([statement]) =>
       statement.includes('INSERT INTO auth_sessions'),
@@ -659,7 +659,7 @@ describe('changeUserPassword', () => {
 
     await expect(
       changeUserPassword(
-        { userId, sessionId: 'session-id', passwordChangeRequired: false },
+        { userId, sessionId: 'session-id', passwordChangeRequired: false, roles: ['user'] },
         'current-password',
         'a-new-long-password-123',
       ),

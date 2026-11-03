@@ -16,7 +16,7 @@ export interface TransferInput {
 
 type Tx = Pick<PoolClient, 'query'>;
 
-async function existingTransfer(db: Tx, key: string) {
+async function existingTransfer(db: Tx, key: string, userId: string) {
   return db.query<{
     id: string;
     description: string | null;
@@ -32,8 +32,8 @@ async function existingTransfer(db: Tx, key: string) {
             (SELECT RTRIM(e.currency) FROM entries e JOIN accounts a ON a.id=e.account_id WHERE e.transaction_id=t.id AND e.direction='debit' AND a.account_type='user' LIMIT 1) AS currency,
             (SELECT e.amount::text FROM entries e JOIN accounts a ON a.id=e.account_id WHERE e.transaction_id=t.id AND e.direction='debit' AND a.account_type='user' LIMIT 1) AS amount
        FROM transactions t
-      WHERE t.idempotency_key=$1`,
-    [key],
+      WHERE t.idempotency_key=$1 AND t.initiator_user_id=$2`,
+    [key, userId],
   );
 }
 
@@ -57,8 +57,8 @@ export async function transferBetweenUsers(input: TransferInput) {
       if (!locked.rows[0]) throw new AppError('Wallet no encontrada', 404, 'WALLET_NOT_FOUND');
     }
 
-    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`operation:${input.idempotencyKey}`]);
-    const prior = (await existingTransfer(client, input.idempotencyKey)).rows[0];
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`operation:${input.userId}:${input.idempotencyKey}`]);
+    const prior = (await existingTransfer(client, input.idempotencyKey, input.userId)).rows[0];
     if (prior) {
       const same = prior.sender === input.userId
         && prior.recipient === recipient.id
@@ -116,9 +116,9 @@ export async function transferBetweenUsers(input: TransferInput) {
     }
 
     const tx = await client.query<{ id: string; occurred_at: Date }>(
-      `INSERT INTO transactions (idempotency_key, description, type)
-       VALUES ($1, $2, 'transfer') RETURNING id, occurred_at`,
-      [input.idempotencyKey, input.note || null],
+      `INSERT INTO transactions (idempotency_key, description, type, initiator_user_id)
+       VALUES ($1, $2, 'transfer', $3) RETURNING id, occurred_at`,
+      [input.idempotencyKey, input.note || null, input.userId],
     );
     const txid = tx.rows[0].id;
     await client.query(

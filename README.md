@@ -808,6 +808,21 @@ de PostgreSQL. Las rutas específicas `/accounts/:id/balance`,
 `/accounts/:id/incoming` y `/accounts/:id/withdraw` se registran antes de
 `/accounts/:id`.
 
+## Endpoints legados
+
+Estas rutas se mantienen para no romper consumidores existentes, pero no son la
+interfaz recomendada para nuevas integraciones:
+
+| Endpoint legado | Reemplazo |
+| --- | --- |
+| `POST /users` | `POST /auth/register` |
+| `GET /transactions`, `GET /transactions/:id` | `GET /wallet/transactions` para la actividad del usuario; el detalle completo del ledger es interno. |
+| `POST /accounts/:id/incoming` | `POST /wallet/deposits` |
+| `GET /accounts/:id`, `GET /accounts/:id/balance` | `GET /accounts` |
+| `POST /accounts/:id/withdraw` | Sin reemplazo público disponible. |
+
+OpenAPI marca estas operaciones como obsoletas (`deprecated`).
+
 ## Pruebas y validación
 
 ```sh
