@@ -275,11 +275,7 @@ las cuentas con `wallet_id` y saldo, incluido `"0"`; el logout debe responder
 Los endpoints no comparten un único sobre de respuesta. Conviene que el cliente
 lea el contrato de cada uno:
 
-- `{ "data": ... }`: `GET /accounts`, `GET /accounts/:id`,
-  `GET /accounts/:id/balance`, `GET /transactions/:id`,
-  `POST /accounts/:id/incoming`, `POST /accounts/:id/withdraw` y
-  `POST /chat/messages`.
-- `{ "data": [...], "meta": {...} }`: `GET /transactions`.
+- `{ "data": ... }`: `GET /accounts` y `POST /chat/messages`.
 - `{ "items": [...], "page", "limit", "total", "totalPages" }`:
   `GET /wallet/transactions`.
 - Objeto plano, sin sobre: `POST /wallet/transfers`,
@@ -372,26 +368,6 @@ para usar el token como Bearer.
 Los errores de validación, email duplicado y límite de intentos responden
 `400`, `409` y `429`, respectivamente.
 
-#### Registrar usuario y billetera (legado)
-
-`POST /users` está obsoleto; se conserva para clientes existentes y no crea
-una sesión. Para nuevas integraciones usa `POST /auth/register`.
-
-Registra un username y email, almacena un hash de la contraseña y crea una
-wallet lógica y su cuenta inicial en la moneda preferida. La contraseña debe
-tener entre 8 y 128 caracteres; `currency` es opcional, acepta `USD`, `COP`,
-`ARS` o `EUR` y usa `COP` por defecto.
-
-```sh
-curl -X POST http://localhost:3000/users \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"usuario.prueba","email":"usuario@example.com","password":"una-frase-de-acceso-larga","currency":"COP"}'
-```
-
-La respuesta `201` contiene los datos públicos del usuario y la cuenta creada.
-No incluye la contraseña ni su hash. La cuenta inicia con saldo `"0"`. Luego
-inicia sesión para obtener un token y consultar datos privados.
-
 #### Iniciar sesión
 
 `POST /auth/login`
@@ -423,11 +399,11 @@ caso las rutas protegidas piden cambiarla antes de continuar:
 }
 ```
 
-Usa el `token` devuelto como Bearer token en las rutas de cuenta, saldo y
-transacciones:
+Usa el `token` devuelto como Bearer token en las rutas protegidas. Para
+consultar cuentas usa `GET /accounts`:
 
 ```sh
-curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
+curl -i http://localhost:3000/accounts \
   -H 'Authorization: Bearer <token>'
 ```
 
@@ -554,89 +530,6 @@ curl -i http://localhost:3000/accounts \
 }
 ```
 
-#### Consultar una cuenta
-
-`GET /accounts/:id`
-
-Devuelve los datos de la cuenta y su saldo. El `id` debe ser un UUID válido.
-
-```sh
-curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001 \
-  -H 'Authorization: Bearer <token>'
-```
-
-```json
-{
-  "data": {
-    "id": "10000000-0000-4000-8000-000000000001",
-    "user_id": "20000000-0000-4000-8000-000000000001",
-    "wallet_id": "40000000-0000-4000-8000-000000000001",
-    "currency": "USD",
-    "account_type": "user",
-    "allow_negative": false,
-    "balance": "325.00000000"
-  }
-}
-```
-
-#### Consultar el saldo
-
-`GET /accounts/:id/balance`
-
-Devuelve el saldo, la moneda y el `wallet_id` (identificador de la wallet lógica
-que contiene la cuenta) de una cuenta:
-
-```sh
-curl -i http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/balance \
-  -H 'Authorization: Bearer <token>'
-```
-
-```json
-{
-  "data": {
-    "account_id": "10000000-0000-4000-8000-000000000001",
-    "wallet_id": "40000000-0000-4000-8000-000000000001",
-    "currency": "USD",
-    "balance": "325.00000000"
-  }
-}
-```
-
-#### Registrar un ingreso convertido
-
-`POST /accounts/:id/incoming` requiere una sesión Bearer y una clave
-`Idempotency-Key` entregada por el sistema que confirmó el ingreso. El importe
-se acredita en la moneda enviada. `destination_currency` es
-opcional y, si se envía, debe coincidir con esa moneda.
-
-```sh
-curl -X POST http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/incoming \
-  -H 'Authorization: Bearer <token>' \
-  -H 'Idempotency-Key: ingreso-externo-123' \
-  -H 'Content-Type: application/json' \
-  -d '{"source_currency":"EUR","source_amount":"100.00"}'
-```
-
-La respuesta informa importes y monedas, tasa, proveedor y fecha de observación.
-No se cobra comisión; el importe acreditado se redondea `HALF_UP` a 2
-decimales. Una repetición idéntica devuelve el resultado original; reutilizar
-la clave con otro ingreso responde `409`. Si ambos proveedores fallan o la tasa
-supera las 24 horas, responde `503` sin crear entries. Las tasas son referencias
-indicativas, no precios bancarios garantizados. ExchangeRate-API Open Access
-requiere atribución; consulta sus [condiciones](https://www.exchangerate-api.com/terms).
-
-Para probar el flujo completo, desde registro hasta verificar las entries del
-ledger, sigue la [guía de prueba de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).
-
-Errores relevantes: `400` para payload o UUID inválido, `401` sin una sesión
-válida, `403` si una contraseña legada debe actualizarse, `404` si la cuenta
-no existe o no pertenece al usuario, `409` si se reutiliza una clave con otra
-solicitud, `422` si el importe convertido redondea a cero y `503` si no hay
-una tasa vigente. Los errores internos no controlados responden `500`.
-
-> La ruta `POST /accounts/:id/incoming` está marcada como `deprecated` en
-> Swagger: el consumidor vigente del front es `POST /wallet/deposits`.
-
 #### Depósitos y cambios de moneda
 
 El front llama a tres endpoints nuevos del wallet:
@@ -701,90 +594,6 @@ o no mayores a cero; `SAME_CURRENCY` para cambios entre monedas iguales;
 `AMOUNT_TOO_LARGE` y `CONVERSION_UNAVAILABLE` completan el ciclo de errores.
 Los depósitos son de prueba: no hay pasarela ni confirmación bancaria.
 
-#### Registrar un retiro
-
-`POST /accounts/:id/withdraw` requiere sesión Bearer y una clave
-`Idempotency-Key`. Debita la cuenta indicada y registra el contrapeso en una
-cuenta interna `external`; no ejecuta un desembolso bancario real.
-
-```sh
-curl -X POST http://localhost:3000/accounts/10000000-0000-4000-8000-000000000001/withdraw \
-  -H 'Authorization: Bearer <token>' \
-  -H 'Idempotency-Key: retiro-123' \
-  -H 'Content-Type: application/json' \
-  -d '{"amount":"50.00"}'
-```
-
-La respuesta incluye `transaction_id`, `account_id` y el importe retirado. Si el
-saldo es insuficiente responde `422` sin crear la transacción. Repetir la misma
-clave con el mismo importe devuelve el resultado original; reutilizarla con otro
-importe u otra operación responde `409`. El retiro queda serializado por wallet
-para evitar saldos negativos con solicitudes concurrentes.
-
-### Actividad del ledger
-
-#### Listar transacciones
-
-`GET /transactions`
-
-Devuelve el historial paginado de transacciones con asientos en cuentas activas
-del usuario autenticado. Parámetros opcionales:
-
-| Parámetro | Descripción |
-| --- | --- |
-| `page` | Página solicitada; default `1`. |
-| `limit` | Resultados por página; default `20`, máximo `100`. |
-| `account_id` | UUID de una cuenta propia para filtrar sus movimientos. |
-| `from` | Fecha/hora ISO 8601 mínima (`occurred_at >= from`). |
-| `to` | Fecha/hora ISO 8601 máxima (`occurred_at <= to`). |
-
-```sh
-curl -i 'http://localhost:3000/transactions?page=1&limit=20' \
-  -H 'Authorization: Bearer <token>'
-```
-
-La respuesta usa `{ "data": [...], "meta": {...} }` directamente, sin el sobre
-`data` adicional:
-
-```json
-{
-  "data": [
-    {
-      "id": "30000000-0000-4000-8000-000000000101",
-      "description": "Movimiento demo USD 1",
-      "occurred_at": "2026-02-01T12:00:00.000Z",
-      "entries": [
-        {
-          "id": "2",
-          "account_id": "10000000-0000-4000-8000-000000000001",
-          "amount": "125.00000000",
-          "direction": "credit",
-          "currency": "USD",
-          "created_at": "2026-02-01T12:00:00.000Z"
-        }
-      ]
-    }
-  ],
-  "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
-}
-```
-
-Solo se incluyen asientos de cuentas activas del titular. Una cuenta ajena,
-inexistente o cerrada responde `404`; filtros inválidos responden `400`.
-Actualmente la respuesta también incluye `idempotency_key`, aunque el spec de
-autenticación prevé retirarla de la representación pública.
-
-#### Consultar una transacción
-
-`GET /transactions/:id`
-
-Devuelve solo los asientos asociados a las cuentas del usuario autenticado:
-
-```sh
-curl -i http://localhost:3000/transactions/30000000-0000-4000-8000-000000000101 \
-  -H 'Authorization: Bearer <token>'
-```
-
 ### Swagger
 
 Con el servidor iniciado, abre [`http://localhost:3000/api-docs`](http://localhost:3000/api-docs)
@@ -810,55 +619,17 @@ route → asyncHandler/requireAuth → controller → service → PostgreSQL
 ```
 
 Las rutas no contienen SQL y los controllers no acceden directamente al pool
-de PostgreSQL. Las rutas específicas `/accounts/:id/balance`,
-`/accounts/:id/incoming` y `/accounts/:id/withdraw` se registran antes de
-`/accounts/:id`.
+de PostgreSQL.
 
-## Endpoints legados
+## Rutas retiradas
 
-Estas rutas se mantienen para no romper consumidores existentes, pero no son la
-interfaz recomendada para nuevas integraciones:
+Las siguientes operaciones marcadas como obsoletas en el contrato anterior se
+retiraron porque el frontend actual no las consume:
 
-| Endpoint legado | Reemplazo |
+| Ruta retirada | Reemplazo vigente |
 | --- | --- |
 | `POST /users` | `POST /auth/register` |
-| `GET /transactions`, `GET /transactions/:id` | `GET /wallet/transactions` para la actividad del usuario; el detalle completo del ledger es interno. |
+| `GET /transactions`, `GET /transactions/:id` | `GET /wallet/transactions` para la actividad; el detalle interno sigue disponible para MCP. |
 | `POST /accounts/:id/incoming` | `POST /wallet/deposits` |
 | `GET /accounts/:id`, `GET /accounts/:id/balance` | `GET /accounts` |
-| `POST /accounts/:id/withdraw` | Sin reemplazo público disponible. |
-
-OpenAPI marca estas operaciones como obsoletas (`deprecated`).
-
-## Pruebas y validación
-
-```sh
-npm run build
-npm test
-```
-
-`npm test` ejecuta la suite completa con Vitest.
-
-La validación manual de integración con PostgreSQL está descrita en la
-[guía de extremo a extremo](./docs/guia-e2e-ingreso-convertido.md).
-
-## Documentación del proyecto
-
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md): flujo de ramas, estilo, specs y checklist de PR.
-- [`docs/guia-e2e-ingreso-convertido.md`](./docs/guia-e2e-ingreso-convertido.md): registro, login, ingreso, idempotencia y verificación del ledger.
-- [`db/README.md`](./db/README.md): PostgreSQL, migraciones y seeds.
-- [`docs/specs/README.md`](./docs/specs/README.md): guía y reglas para crear specs.
-- [`docs/specs/ledger-y-transacciones/2026-10-21-ledger-append-only.md`](./docs/specs/ledger-y-transacciones/2026-10-21-ledger-append-only.md): diseño del ledger inmutable.
-- [`docs/specs/ledger-y-transacciones/2026-10-23-seeds-db.md`](./docs/specs/ledger-y-transacciones/2026-10-23-seeds-db.md): datos de demostración e idempotencia.
-- [`docs/specs/ledger-y-transacciones/2026-10-24-ledger-balance-route.md`](./docs/specs/ledger-y-transacciones/2026-10-24-ledger-balance-route.md): endpoint de consulta de saldo.
-- [`docs/specs/cuentas-y-wallet/2026-10-24-accounts-endpoints.md`](./docs/specs/cuentas-y-wallet/2026-10-24-accounts-endpoints.md): endpoints de consulta de cuentas y separación por capas.
-- [`docs/specs/plataforma-y-documentacion/2026-10-24-swagger-api-docs.md`](./docs/specs/plataforma-y-documentacion/2026-10-24-swagger-api-docs.md): documentación OpenAPI.
-- [`docs/specs/cuentas-y-wallet/2026-10-24-swagger-account-examples.md`](./docs/specs/cuentas-y-wallet/2026-10-24-swagger-account-examples.md): ejemplos demo usados en Swagger.
-- [`docs/specs/autenticacion/2026-10-26-autenticacion-y-acceso-por-titular.md`](./docs/specs/autenticacion/2026-10-26-autenticacion-y-acceso-por-titular.md): autenticación y autorización por titular.
-- [`docs/specs/ledger-y-transacciones/2026-10-26-transactions-historial-paginado.md`](./docs/specs/ledger-y-transacciones/2026-10-26-transactions-historial-paginado.md): historial paginado y filtros.
-- [`docs/specs/cuentas-y-wallet/2026-10-26-retiro-cuenta.md`](./docs/specs/cuentas-y-wallet/2026-10-26-retiro-cuenta.md): retiro idempotente y serializado por wallet.
-- [`docs/specs/plataforma-y-documentacion/2026-10-26-health-check-db.md`](./docs/specs/plataforma-y-documentacion/2026-10-26-health-check-db.md): health checks de proceso y base de datos.
-- [`docs/specs/plataforma-y-documentacion/2026-10-27-conexion-backend-neon.md`](./docs/specs/plataforma-y-documentacion/2026-10-27-conexion-backend-neon.md): conexión del pool con `DATABASE_URL`.
-- [`docs/auditoria-estado-proyecto-y-deploy.md`](./docs/auditoria-estado-proyecto-y-deploy.md): estado actual, brechas y preparación de deploy.
-
-Cada cambio funcional debe estar acompañado por un spec nuevo en `docs/specs/`,
-siguiendo la convención `YYYY-MM-DD-titulo-corto.md`.
+| `POST /accounts/:id/withdraw` | Sin reemplazo público. |
