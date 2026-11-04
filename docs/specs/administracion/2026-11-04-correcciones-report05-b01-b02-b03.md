@@ -131,9 +131,9 @@ por `me.type` sin cambios. Se replica `interest` en el enum de Swagger
 
 ## Cómo probar
 
-- [ ] Cambio de tasa a mitad del período pendiente: todos los días se procesan con importe distinto de `0.00` (AC-B01-1, AC-B01-2).
+- [x] Cambio de tasa a mitad del período pendiente: todos los días se procesan con importe distinto de `0.00` (AC-B01-1, AC-B01-2).
 - [x] Reejecución sin días pendientes: sin transacciones nuevas (AC-B01-3).
-- [ ] Moneda sin tasa: sin transacción (AC-B01-4).
+- [x] Moneda sin tasa: sin transacción (AC-B01-4).
 - [x] `PATCH` con spread idéntico: cero `INSERT INTO settings_history` y cero `UPDATE app_settings` (AC-B02-1).
 - [x] `PATCH` con tasa idéntica: cero inserciones y cero updates (AC-B02-2).
 - [x] `PATCH` mixto: una inserción y un update sobre el campo distinto (AC-B02-3).
