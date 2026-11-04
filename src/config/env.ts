@@ -98,8 +98,8 @@ const envSchema = z.object({
 
   EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
   RESEND_API_KEY: optionalEnvString,
-  EMAIL_FROM: z.string().min(3).default('Latin Zumi <no-reply@latinzumi.com>'),
-  PASSWORD_RESET_URL: z.string().url().default('http://localhost:5173/restablecer-contrasena'),
+  EMAIL_FROM: z.string().min(3).default('Latin Zumi latinzumi@proton.me'),
+  PASSWORD_RESET_URL: z.string().url().default('https://latin-zumi-front-1x4s.vercel.app/restablecer-contrasena'),
   PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
   INTERNAL_CRON_SECRET: optionalEnvString,
 
