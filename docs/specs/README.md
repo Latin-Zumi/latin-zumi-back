@@ -119,7 +119,8 @@ Antes de escribir código:
 6. Cuando lo apruebe, implementa el cambio.
 7. Al final, marca los checkboxes de "Cómo probar" que se cumplan.
 
-Vas a hacer el siguiente cambio:```
+Vas a hacer el siguiente cambio:
+```
 
 ## Índice de ejecución
 
