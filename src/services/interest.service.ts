@@ -15,7 +15,7 @@ export async function accrueInterest(): Promise<{ processed_days: number; transa
       const accounts = await client.query<{id:string; user_id:string; currency:string; balance:string; rate:string}>(
         `SELECT a.id,a.user_id,RTRIM(a.currency) currency,
           COALESCE(SUM(CASE WHEN e.direction='credit' THEN e.amount ELSE -e.amount END),0)::text balance,
-          COALESCE((SELECT r.annual_percent FROM interest_rates r WHERE r.currency=a.currency AND r.updated_at::date <= $1::date ORDER BY r.updated_at DESC LIMIT 1),0)::text rate
+          COALESCE((SELECT r.annual_percent FROM interest_rates r WHERE r.currency=a.currency),0)::text rate
          FROM accounts a LEFT JOIN entries e ON e.account_id=a.id AND e.created_at < (($1::date + 1)::timestamp AT TIME ZONE 'UTC')
          WHERE a.account_type='user' AND a.closed_at IS NULL GROUP BY a.id,a.user_id,a.currency`,[day]);
       for (const account of accounts.rows) {

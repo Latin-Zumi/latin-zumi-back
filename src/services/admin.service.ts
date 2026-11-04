@@ -31,14 +31,20 @@ export async function patchAdminSettings(userId: string, body: Record<string, un
   try {
     await client.query('BEGIN');
     if (spread !== undefined) {
+      const next = Number(spread).toFixed(2);
       const old = await client.query(`SELECT exchange_spread_percent::text value FROM app_settings WHERE id=1 FOR UPDATE`);
-      await client.query(`UPDATE app_settings SET exchange_spread_percent=$1, updated_at=now(), updated_by=$2 WHERE id=1`, [Number(spread).toFixed(2), userId]);
-      await client.query(`INSERT INTO settings_history(field,old_value,new_value,changed_by) VALUES ('exchange_spread_percent',$1,$2,$3)`, [old.rows[0].value, Number(spread).toFixed(2), userId]);
+      if (old.rows[0].value !== next) {
+        await client.query(`UPDATE app_settings SET exchange_spread_percent=$1, updated_at=now(), updated_by=$2 WHERE id=1`, [next, userId]);
+        await client.query(`INSERT INTO settings_history(field,old_value,new_value,changed_by) VALUES ('exchange_spread_percent',$1,$2,$3)`, [old.rows[0].value, next, userId]);
+      }
     }
     if (interestRates) for (const [currency, value] of Object.entries(interestRates as Record<string, number>)) {
+      const next = Number(value).toFixed(2);
       const old = await client.query(`SELECT annual_percent::text value FROM interest_rates WHERE currency=$1 FOR UPDATE`, [currency]);
-      await client.query(`UPDATE interest_rates SET annual_percent=$2, updated_at=now() WHERE currency=$1`, [currency, Number(value).toFixed(2)]);
-      await client.query(`INSERT INTO settings_history(field,old_value,new_value,changed_by) VALUES ($1,$2,$3,$4)`, [`interest_rates.${currency}`, old.rows[0].value, Number(value).toFixed(2), userId]);
+      if (old.rows[0].value !== next) {
+        await client.query(`UPDATE interest_rates SET annual_percent=$2, updated_at=now() WHERE currency=$1`, [currency, next]);
+        await client.query(`INSERT INTO settings_history(field,old_value,new_value,changed_by) VALUES ($1,$2,$3,$4)`, [`interest_rates.${currency}`, old.rows[0].value, next, userId]);
+      }
     }
     await client.query('COMMIT');
   } catch (error) { await client.query('ROLLBACK'); throw error; }

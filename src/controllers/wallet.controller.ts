@@ -23,7 +23,7 @@ export async function transfer(req: Request, res: Response) {
   return res.status(200).json(await transferBetweenUsers({ userId: getAuthContext(req).userId, idempotencyKey: key, recipientEmail: parsed.data.recipient_email, currency: parsed.data.currency, amount: parsed.data.amount, note: parsed.data.note }));
 }
 
-const types = ['deposit','transfer_sent','transfer_received','withdrawal','exchange'] as const;
+const types = ['deposit','transfer_sent','transfer_received','withdrawal','exchange','interest'] as const;
 export async function getWalletTransactions(req: Request, res: Response) {
   const query = z.object({ type: z.enum(types).optional(), currency: z.enum(['USD','COP','ARS','EUR']).optional(), page: z.coerce.number().int().positive().default(1), limit: z.coerce.number().int().positive().max(100).default(20), from: z.string().datetime({ offset: true }).optional(), to: z.string().datetime({ offset: true }).optional() }).safeParse(req.query);
   if (!query.success || (query.data.from && query.data.to && Date.parse(query.data.from) > Date.parse(query.data.to))) throw new AppError('Filtros de actividad inválidos', 400);

@@ -1,0 +1,30 @@
+name: Accrual de intereses
+
+on:
+  schedule:
+    - cron: '10 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: accrue-interest
+  cancel-in-progress: false
+
+jobs:
+  accrue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --include=dev
+      - run: npm run interest:run
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          INTERNAL_CRON_SECRET: ${{ secrets.INTERNAL_CRON_SECRET }}
+          INTEREST_RUN_CONFIRM: 'yes'
