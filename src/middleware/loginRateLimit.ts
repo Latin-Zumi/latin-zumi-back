@@ -70,3 +70,10 @@ export const quoteRateLimit = rateLimit({
     return createHash('sha256').update(token).digest('hex');
   },
 });
+
+// Abrir la billetera no debe consumir el cupo de cotizaciones
+export const ratesRateLimit = rateLimit({
+  ...commonOptions,
+  limit: 120,
+  keyGenerator: (req) => req.auth?.userId ?? 'anonymous',
+});

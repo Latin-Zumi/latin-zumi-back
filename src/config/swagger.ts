@@ -592,6 +592,65 @@ export const openApiSpec = {
         },
       },
     },
+    '/wallet/rates': {
+      get: {
+        tags: ['wallet'],
+        summary: 'Consultar tasas y costos de la wallet',
+        description:
+          'Devuelve las tasas de cambio contra USD (sin comisión), el spread de cotización y las tasas de interés por moneda. No persiste cotizaciones.',
+        operationId: 'getWalletRates',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Tasas vigentes para las cuatro monedas.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['data'],
+                  properties: {
+                    data: {
+                      type: 'object',
+                      required: ['base', 'rates', 'observed_at', 'exchange_spread_percent', 'interest_rates'],
+                      properties: {
+                        base: { type: 'string', enum: ['USD'], example: 'USD' },
+                        rates: {
+                          type: 'object',
+                          required: ['USD', 'ARS', 'COP', 'EUR'],
+                          properties: {
+                            USD: { type: 'string', example: '1' },
+                            ARS: { type: 'string', example: '1450.25' },
+                            COP: { type: 'string', example: '4100.5' },
+                            EUR: { type: 'string', example: '0.92' },
+                          },
+                        },
+                        observed_at: { type: 'string', format: 'date-time', example: '2026-11-04T18:00:00.000Z' },
+                        exchange_spread_percent: { type: 'string', example: '0.00' },
+                        interest_rates: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            required: ['currency', 'annual_percent'],
+                            properties: {
+                              currency: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] },
+                              annual_percent: { type: 'string', example: '0.00' },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '401': { description: 'Se requiere una sesión válida.' },
+          '403': { description: 'Debes actualizar tu contraseña antes de operar.' },
+          '429': { description: 'Demasiadas consultas; intenta más tarde.' },
+          '503': { description: 'No hay una tasa vigente disponible.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
     '/wallet/exchange/quote': {
       get: {
         tags: ['wallet'],
