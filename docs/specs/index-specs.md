@@ -59,6 +59,8 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 046 | [Fallback de tasas con fawazahmed0](./cuentas-y-wallet/2026-11-03-fallback-fawazahmed0.md) | Reemplaza Frankfurter por el feed USD de fawazahmed0 vía jsDelivr y pages.dev, con tasas cruzadas y caché fallback; conserva contrato y persistencia de cotizaciones. |
 | 047 | [Limpieza de rutas y código obsoleto](./plataforma-y-documentacion/2026-11-03-limpieza-rutas-obsoletas.md) | Audita Swagger frente a rutas montadas y elimina endpoints obsoletos junto con código y referencias exclusivamente asociados. |
 | 048 | [Correcciones B-01, B-02 y B-03 del Report05](./administracion/2026-11-04-correcciones-report05-b01-b02-b03.md) | Ajusta el cálculo de intereses para no perder días, evita historial falso en `PATCH /admin/settings` y habilita `type=interest` en el historial de wallet, Swagger y MCP. Depende del esquema del spec 044. |
+| 049 | [404 con contexto y sin stack en logs](./plataforma-y-documentacion/2026-11-04-log-404-contexto.md) | Cambia el log del `errorHandler` para que los `4xx` operativos registren método y pathname sin stack, y los `5xx` conserven el stack. No agrega rutas ni cambia contratos HTTP. |
+| 050 | [Cron verificable y remitente de email](./plataforma-y-documentacion/2026-11-04-cron-verificable-email-from.md) | Corrige el default de `EMAIL_FROM` y agrega un cliente `interest:run` más un workflow diario/manual de GitHub Actions que imprime `HTTP 200` y `processed_days`. No crea recursos pagos en Render. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de

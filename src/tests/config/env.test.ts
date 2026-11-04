@@ -55,6 +55,23 @@ describe('Firebase environment configuration', () => {
   });
 });
 
+describe('Email environment configuration', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('defaults EMAIL_FROM to a valid display name and address', async () => {
+    configureDatabaseEnvironment();
+    delete process.env.EMAIL_FROM;
+    vi.resetModules();
+
+    const { env } = await import('../../config/env.js');
+
+    expect(env.EMAIL_FROM).toBe('Latin Zumi <no-reply@latinzumi.com>');
+  });
+});
+
 describe('Gemini environment configuration', () => {
   afterEach(() => {
     vi.unstubAllEnvs();

@@ -132,15 +132,15 @@ por `me.type` sin cambios. Se replica `interest` en el enum de Swagger
 ## Cómo probar
 
 - [ ] Cambio de tasa a mitad del período pendiente: todos los días se procesan con importe distinto de `0.00` (AC-B01-1, AC-B01-2).
-- [ ] Reejecución sin días pendientes: sin transacciones nuevas (AC-B01-3).
+- [x] Reejecución sin días pendientes: sin transacciones nuevas (AC-B01-3).
 - [ ] Moneda sin tasa: sin transacción (AC-B01-4).
-- [ ] `PATCH` con spread idéntico: cero `INSERT INTO settings_history` y cero `UPDATE app_settings` (AC-B02-1).
-- [ ] `PATCH` con tasa idéntica: cero inserciones y cero updates (AC-B02-2).
-- [ ] `PATCH` mixto: una inserción y un update sobre el campo distinto (AC-B02-3).
-- [ ] Formatos equivalentes: sin cambios (AC-B02-4).
-- [ ] `GET /wallet/transactions?type=interest`: 200 y solo tipos `interest` (AC-B03-1).
-- [ ] `type=invalid`: 400 (AC-B03-3).
-- [ ] `npm test` y `npm run build` en verde.
+- [x] `PATCH` con spread idéntico: cero `INSERT INTO settings_history` y cero `UPDATE app_settings` (AC-B02-1).
+- [x] `PATCH` con tasa idéntica: cero inserciones y cero updates (AC-B02-2).
+- [x] `PATCH` mixto: una inserción y un update sobre el campo distinto (AC-B02-3).
+- [x] Formatos equivalentes: sin cambios (AC-B02-4).
+- [x] `GET /wallet/transactions?type=interest`: 200 y solo tipos `interest` (AC-B03-1).
+- [x] `type=invalid`: 400 (AC-B03-3).
+- [x] `npm test` y `npm run build` en verde.
 
 ## Riesgos / notas
 
