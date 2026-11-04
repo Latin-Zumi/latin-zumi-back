@@ -58,6 +58,7 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 045 | [Endurecimiento del contrato de wallet y endpoints legados](./plataforma-y-documentacion/2026-11-03-endurecimiento-contrato-wallet.md) | Hace la `Idempotency-Key` única por usuario, marca los endpoints legados como `deprecated` y corrige el `total` del historial. No depende de la migración del panel. |
 | 046 | [Fallback de tasas con fawazahmed0](./cuentas-y-wallet/2026-11-03-fallback-fawazahmed0.md) | Reemplaza Frankfurter por el feed USD de fawazahmed0 vía jsDelivr y pages.dev, con tasas cruzadas y caché fallback; conserva contrato y persistencia de cotizaciones. |
 | 047 | [Limpieza de rutas y código obsoleto](./plataforma-y-documentacion/2026-11-03-limpieza-rutas-obsoletas.md) | Audita Swagger frente a rutas montadas y elimina endpoints obsoletos junto con código y referencias exclusivamente asociados. |
+| 048 | [Correcciones B-01, B-02 y B-03 del Report05](./administracion/2026-11-04-correcciones-report05-b01-b02-b03.md) | Ajusta el cálculo de intereses para no perder días, evita historial falso en `PATCH /admin/settings` y habilita `type=interest` en el historial de wallet, Swagger y MCP. Depende del esquema del spec 044. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
