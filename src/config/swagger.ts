@@ -716,7 +716,7 @@ export const openApiSpec = {
         tags: ['wallet'],
         summary: 'Consultar actividad de la wallet', operationId: 'getWalletTransactions', security: [{ bearerAuth: [] }],
         parameters: [
-          { name: 'type', in: 'query', required: false, schema: { type: 'string', enum: ['deposit', 'transfer_sent', 'transfer_received', 'withdrawal', 'exchange'] } },
+          { name: 'type', in: 'query', required: false, schema: { type: 'string', enum: ['deposit', 'transfer_sent', 'transfer_received', 'withdrawal', 'exchange', 'interest'] } },
           { name: 'currency', in: 'query', required: false, schema: { type: 'string', enum: ['USD', 'COP', 'ARS', 'EUR'] } },
           { name: 'from', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
           { name: 'to', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },

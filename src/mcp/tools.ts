@@ -49,7 +49,7 @@ const exchangeSchema = z.object({
 }).nullable();
 const activityItemSchema = z.object({
   id: z.string().uuid(),
-  type: z.enum(['deposit', 'transfer_sent', 'transfer_received', 'withdrawal', 'exchange']),
+  type: z.enum(['deposit', 'transfer_sent', 'transfer_received', 'withdrawal', 'exchange', 'interest']),
   status: z.literal('completed'),
   currency: z.string(),
   amount: z.string(),
@@ -83,6 +83,7 @@ const activityTypes = [
   'transfer_received',
   'withdrawal',
   'exchange',
+  'interest',
 ] as const;
 const activityInputSchema = z.object({
   page: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).default(1),

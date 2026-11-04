@@ -18,4 +18,14 @@ describe('listWalletTransactions', () => {
     expect(query.mock.calls[0][0]).toContain('SELECT COUNT(*)::int AS total FROM me');
     expect(query.mock.calls[1][0]).not.toContain('COUNT(*) OVER()');
   });
+
+  it('passes type=interest to both queries without rewriting the filter', async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: 0 }] }).mockResolvedValueOnce({ rows: [] });
+
+    await listWalletTransactions({ userId: 'user-1', type: 'interest', page: 1, limit: 20 });
+
+    expect(query.mock.calls[0][1]?.[1]).toBe('interest');
+    expect(query.mock.calls[1][1]?.[1]).toBe('interest');
+    expect(query.mock.calls[1][0]).toContain('ELSE me.type END=$2');
+  });
 });

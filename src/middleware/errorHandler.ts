@@ -14,7 +14,33 @@ export function errorHandler(
   res: Response,
   next: NextFunction,
 ) {
-  console.log(err);
+  const pathname = req.originalUrl.split("?")[0];
+
+  let status = 500;
+  let code = err.code ?? "ERROR";
+
+  if (err instanceof AppError) {
+    status = err.statusCode;
+    code = err.code;
+  } else if (err.type === "entity.parse.failed") {
+    status = 400;
+    code = "INVALID_JSON";
+  } else if (err.type === "entity.too.large") {
+    status = 413;
+    code = "PAYLOAD_TOO_LARGE";
+  } else if (err.code === "23505") {
+    status = 400;
+    code = "DUPLICATE_VALUE";
+  } else if (err.code === "23503") {
+    status = 400;
+    code = "INVALID_REFERENCE";
+  }
+
+  if (status >= 500) {
+    console.error(`[${status}] ${req.method} ${pathname}`, err);
+  } else {
+    console.warn(`[${status}] ${code} ${req.method} ${pathname}`);
+  }
 
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ code: err.code, message: err.message });

@@ -219,6 +219,34 @@ producción no se acepta el provider de consola, que responde `503
 EMAIL_NOT_CONFIGURED`. El enlace de recuperación apunta al frontend
 (`PASSWORD_RESET_URL`), no al backend.
 
+### Ejecución verificable de intereses
+
+`POST /internal/accrue-interest` exige `X-Internal-Secret` con el valor de
+`INTERNAL_CRON_SECRET` y responde `200` con
+`{ "data": { "processed_days": N, "transactions": M } }`.
+
+El workflow [`.github/workflows/accrue-interest.yml`](./.github/workflows/accrue-interest.yml)
+ejecuta el proceso todos los días a las 00:10 UTC y también permite dispararlo a
+mano desde la pestaña **Actions**. Requiere dos secretos del repositorio:
+
+```dotenv
+BACKEND_URL=https://<servicio>.onrender.com
+INTERNAL_CRON_SECRET=<mismo valor que en Render>
+```
+
+Para ejecutarlo localmente:
+
+```bash
+BACKEND_URL=https://<servicio>.onrender.com \
+INTERNAL_CRON_SECRET=<secreto> \
+INTEREST_RUN_CONFIRM=yes \
+npm run interest:run
+```
+
+El comando imprime `HTTP <status>` y el body con `processed_days`. Un cron job
+nativo de Render es una alternativa, pero Render no ofrece plan gratuito para
+`type: cron`; por eso el scheduler vive en GitHub Actions.
+
 Variables de build para el frontend en Vercel:
 
 ```dotenv
