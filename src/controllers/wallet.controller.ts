@@ -7,6 +7,7 @@ import { listWalletTransactions } from '../services/wallet-transactions.service.
 import { depositToWallet } from '../services/deposits.service.js';
 import { createExchangeQuote } from '../services/exchange-quotes.service.js';
 import { executeExchange } from '../services/exchanges.service.js';
+import { getWalletRates } from '../services/wallet-rates.service.js';
 import { requireIdempotencyKey } from '../utils/idempotency.js';
 
 const transferSchema = z.object({ recipient_email: z.string().trim().toLowerCase().email().max(254), currency: z.enum(['USD','COP','ARS','EUR']), amount: z.string().regex(/^\d{1,12}(?:\.\d{1,2})?$/), note: z.string().trim().max(140).optional() });
@@ -87,4 +88,8 @@ export async function exchange(req: Request, res: Response) {
     quoteId: parsed.data.quote_id,
   });
   return res.status(200).json(result);
+}
+
+export async function getWalletRatesHandler(_req: Request, res: Response) {
+  return res.status(200).json({ data: await getWalletRates() });
 }
