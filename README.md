@@ -206,18 +206,20 @@ DATABASE_URL=postgresql://...-pooler.../neondb?sslmode=verify-full
 DATABASE_URL_UNPOOLED=postgresql://.../neondb?sslmode=verify-full
 CORS_ORIGINS=http://localhost:5173,https://<dominio-de-vercel>
 DB_CONNECTION_TIMEOUT_MILLIS=10000
-EMAIL_PROVIDER=resend
-RESEND_API_KEY=<secret>
-EMAIL_FROM=Latin Zumi <no-reply@latinzumi.com>
-PASSWORD_RESET_URL=https://<dominio-del-front>/restablecer-contrasena
-PASSWORD_RESET_TTL_MINUTES=30
+EMAIL_PROVIDER=ses
+AWS_REGION=<region-de-ses>
+AWS_ACCESS_KEY_ID=<secret>
+AWS_SECRET_ACCESS_KEY=<secret>
+SES_FROM_EMAIL=Latin Zumi <no-reply@example.com>
+FRONTEND_URL=https://<dominio-del-front>
+PASSWORD_RESET_TTL_MINUTES=60
 ```
 
-Con `EMAIL_PROVIDER=resend` el servicio de recuperación envía los correos reales
-por Resend; la API key es un secreto que se carga en el dashboard de Render. En
+Con `EMAIL_PROVIDER=ses` el servicio de recuperación envía los correos por
+Amazon SES; las credenciales se cargan como secretos en el dashboard de Render. En
 producción no se acepta el provider de consola, que responde `503
 EMAIL_NOT_CONFIGURED`. El enlace de recuperación apunta al frontend
-(`PASSWORD_RESET_URL`), no al backend.
+(`FRONTEND_URL`), no al backend.
 
 ### Ejecución verificable de intereses
 
@@ -470,7 +472,7 @@ recuperación sin exigir la contraseña actual:
 - `POST /auth/forgot-password` recibe `{ email }` y responde `202` con un
   mensaje constante (no revela si el email está registrado). Si la cuenta
   existe, genera un token de un solo uso (hash SHA-256 en la base, vence a los
-  30 minutos), lo guarda y envía el enlace al frontend.
+  60 minutos por defecto), lo guarda y envía el enlace al frontend.
 - `POST /auth/reset-password` recibe `{ token, password }` y responde `204`.
   Consume el token una sola vez, actualiza el hash de la contraseña y revoca
   todas las sesiones del usuario.
@@ -500,16 +502,17 @@ Respuesta `204`. Con token vencido o ya usado responde `400` con
 
 Variables de entorno relacionadas con el envío de correos:
 
-- `EMAIL_PROVIDER`: `console` (desarrollo/test) o `resend` (producción). Con
+- `EMAIL_PROVIDER`: `console` (desarrollo/test) o `ses` (producción). Con
   `EMAIL_PROVIDER=console` en producción el pedido responde `503
   EMAIL_NOT_CONFIGURED`.
-- `RESEND_API_KEY`: requerida cuando `EMAIL_PROVIDER=resend`.
-- `EMAIL_FROM`: remitente del correo (`Latin Zumi <no-reply@latinzumi.com>` por
-  defecto).
-- `PASSWORD_RESET_URL`: URL del frontend donde se construye el enlace
-  (`http://localhost:5173/restablecer-contrasena` por defecto).
+- `AWS_REGION`, `AWS_ACCESS_KEY_ID` y `AWS_SECRET_ACCESS_KEY`: requeridas cuando
+  `EMAIL_PROVIDER=ses`.
+- `SES_FROM_EMAIL`: remitente del correo (`Latin Zumi <no-reply@latinzumi.com>`
+  por defecto).
+- `FRONTEND_URL`: origen del frontend donde se construye el enlace
+  (`http://localhost:5173` por defecto).
 - `PASSWORD_RESET_TTL_MINUTES`: validez del token en minutos (rango 5–240, default
-  `30`).
+  `60`).
 
 ### Wallet e ingresos
 

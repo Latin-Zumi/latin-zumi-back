@@ -125,11 +125,13 @@ repositorio.
 | `EXCHANGE_RATE_TIMEOUT_MS` | Timeout por proveedor de tasas | `3000` |
 | `EXCHANGE_RATE_MAX_AGE_HOURS` | Antigüedad máxima aceptada para tasas | `24` |
 | `PORT` | Puerto HTTP de Express | `3000` |
-| `EMAIL_PROVIDER` | Proveedor de envío de correos para la recuperación de contraseña: `console` o `resend` | `console` |
-| `RESEND_API_KEY` | API key de Resend; requerida con `EMAIL_PROVIDER=resend` | — |
-| `EMAIL_FROM` | Remitente del correo de recuperación | `Latin Zumi <no-reply@latinzumi.com>` |
-| `PASSWORD_RESET_URL` | URL del frontend donde se construye el enlace de recuperación | `http://localhost:5173/restablecer-contrasena` |
-| `PASSWORD_RESET_TTL_MINUTES` | Validez del token de recuperación en minutos | `30` |
+| `EMAIL_PROVIDER` | Proveedor de envío de correos para la recuperación de contraseña: `console` o `ses` | `console` |
+| `AWS_REGION` | Región de Amazon SES; requerida con `EMAIL_PROVIDER=ses` | — |
+| `AWS_ACCESS_KEY_ID` | ID de credencial AWS; requerido con `EMAIL_PROVIDER=ses` | — |
+| `AWS_SECRET_ACCESS_KEY` | Secreto de credencial AWS; requerido con `EMAIL_PROVIDER=ses` | — |
+| `SES_FROM_EMAIL` | Remitente del correo de recuperación | `Latin Zumi <no-reply@latinzumi.com>` |
+| `FRONTEND_URL` | Origen del frontend donde se construye el enlace de recuperación | `http://localhost:5173` |
+| `PASSWORD_RESET_TTL_MINUTES` | Validez del token de recuperación en minutos | `60` |
 
 ## Inicializar el esquema
 

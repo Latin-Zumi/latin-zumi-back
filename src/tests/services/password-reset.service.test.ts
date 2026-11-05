@@ -33,8 +33,8 @@ vi.mock('../../config/db.js', () => ({
 vi.mock('../../config/env.js', () => ({
   env: {
     EMAIL_PROVIDER: 'console',
-    PASSWORD_RESET_TTL_MINUTES: 30,
-    PASSWORD_RESET_URL: 'http://localhost:5173/restablecer-contrasena',
+    PASSWORD_RESET_TTL_MINUTES: 60,
+    FRONTEND_URL: 'http://localhost:5173/',
   },
 }));
 
@@ -53,6 +53,7 @@ vi.mock('../../utils/password.js', () => ({
 }));
 
 import { AppError } from '../../utils/AppError.js';
+import { ConsoleEmailProvider } from '../../services/email/console-email-provider.js';
 import {
   requestPasswordReset,
   resetPassword,
@@ -60,6 +61,25 @@ import {
 
 const userId = '20000000-0000-4000-8000-000000000001';
 const resetToken = 'reset-token-value-0123456789abcdef';
+
+describe('ConsoleEmailProvider', () => {
+  it('prints the reset link for local development', async () => {
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const provider = new ConsoleEmailProvider();
+
+    await provider.sendPasswordReset({
+      to: 'ana@example.com',
+      nombre: 'Ana Pérez',
+      resetUrl: 'http://localhost:5173/restablecer-contrasena?token=sample-token',
+      expiresInMinutes: 60,
+    });
+
+    expect(consoleInfo).toHaveBeenCalledWith(
+      '[password-reset] ana@example.com: http://localhost:5173/restablecer-contrasena?token=sample-token',
+    );
+    consoleInfo.mockRestore();
+  });
+});
 
 describe('requestPasswordReset', () => {
   beforeEach(() => {
@@ -108,15 +128,44 @@ describe('requestPasswordReset', () => {
     expect(poolQuery.mock.calls[1][1]).toEqual([
       userId,
       expect.any(String),
-      30,
+      60,
       '203.0.113.10',
     ]);
 
     expect(sendPasswordReset).toHaveBeenCalledTimes(1);
-    expect(sendPasswordReset.mock.calls[0][0]).toMatchObject({
+    const message = sendPasswordReset.mock.calls[0][0];
+    expect(message).toMatchObject({
       to: 'ana@example.com',
-      resetUrl: expect.stringContaining('token='),
+      expiresInMinutes: 60,
     });
+    const resetUrl = new URL(message.resetUrl);
+    expect(resetUrl.origin).toBe('http://localhost:5173');
+    expect(resetUrl.pathname).toBe('/restablecer-contrasena');
+    expect(resetUrl.searchParams.get('token')).toEqual(expect.any(String));
+  });
+
+  it('logs a generic email failure without exposing the token or reset link', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const sendPasswordReset = vi
+      .fn()
+      .mockRejectedValue(new Error('Sensitive reset token and link'));
+    findUserByEmail.mockResolvedValueOnce({
+      id: userId,
+      nombre: 'Ana Pérez',
+      email: 'ana@example.com',
+    });
+    getEmailProvider.mockReturnValueOnce({ sendPasswordReset });
+    poolQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{}] });
+
+    await requestPasswordReset('ana@example.com', '203.0.113.10');
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledOnce());
+
+    expect(consoleError).toHaveBeenCalledWith(
+      'No se pudo enviar el email de recuperación',
+    );
+    consoleError.mockRestore();
   });
 
   it('returns 503 when the production email provider is not configured', async () => {
