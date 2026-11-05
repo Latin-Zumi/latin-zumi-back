@@ -45,6 +45,23 @@ describe('SesEmailProvider', () => {
     expect(command.input.Content?.Simple?.Body?.Text?.Data).toContain(message.resetUrl);
   });
 
+  it('escapes user-controlled values in the HTML email', async () => {
+    const send = vi.fn(async (_command: SendEmailCommand) => ({ MessageId: 'message-id' }));
+    const provider = new SesEmailProvider({ send }, 'Latin Zumi <no-reply@example.com>');
+
+    await provider.sendPasswordReset({
+      ...message,
+      nombre: '<img src=x onerror="alert(1)">',
+      resetUrl: 'https://frontend.example.test/reset?x="&y',
+    });
+
+    const [command] = send.mock.calls[0];
+    const html = command.input.Content?.Simple?.Body?.Html?.Data ?? '';
+    expect(html).toContain('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
+    expect(html).toContain('href="https://frontend.example.test/reset?x=&quot;&amp;y"');
+    expect(html).not.toContain('<img src=x');
+  });
+
   it('sanitizes SDK errors without including the reset token or link', async () => {
     const sdkError = Object.assign(
       new Error(`Sensitive link ${message.resetUrl}`),

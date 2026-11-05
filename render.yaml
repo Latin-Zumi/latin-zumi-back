@@ -35,3 +35,5 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: PASSWORD_RESET_TTL_MINUTES
+        sync: false

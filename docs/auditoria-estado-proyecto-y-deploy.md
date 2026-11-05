@@ -136,17 +136,18 @@ rechaza combinaciones contradictorias de `ssl`/`sslmode`.
 | `GEMINI_API_KEY` | Sin ella, `/chat/messages` responde `503` controlado. |
 | `GEMINI_MODEL` | Default `gemini-3.5-flash-lite`. |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Se configuran las tres o ninguna; sin ellas no hay login con Google. |
-| `EMAIL_PROVIDER` | `console` (default) o `resend`. |
-| `RESEND_API_KEY` | Obligatoria si `EMAIL_PROVIDER=resend`. |
-| `EMAIL_FROM` | Remitente de los correos de recuperación. |
-| `PASSWORD_RESET_URL` | URL del frontend para fijar la nueva contraseña. |
-| `PASSWORD_RESET_TTL_MINUTES` | Vigencia del token; default `30`, rango `5–240`. |
+| `EMAIL_PROVIDER` | `console` (default) o `ses`. |
+| `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Requeridas si `EMAIL_PROVIDER=ses`; se configuran como secretos en el gestor de la plataforma. |
+| `SES_FROM_EMAIL` | Remitente verificado para Amazon SES. |
+| `FRONTEND_URL` | Origen del frontend donde se construye el enlace de recuperación; default `http://localhost:5173`. |
+| `PASSWORD_RESET_TTL_MINUTES` | Vigencia del token; default `60`, rango `5–240`. |
 
 El Blueprint actual solo declara `NODE_VERSION`, `NODE_ENV`, `DATABASE_URL`,
 `DATABASE_URL_UNPOOLED`, `CORS_ORIGINS`, `DB_CONNECTION_TIMEOUT_MILLIS`,
-`EMAIL_PROVIDER` y `RESEND_API_KEY`. `GEMINI_*`, `FIREBASE_*`,
-`PASSWORD_RESET_URL` y `PASSWORD_RESET_TTL_MINUTES` deben agregarse a mano en
-el panel o al Blueprint si se despliega por blueprint.
+`EMAIL_PROVIDER`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+`SES_FROM_EMAIL` y `FRONTEND_URL`. `PASSWORD_RESET_TTL_MINUTES` usa el default
+de 60 minutos salvo que se configure en el panel o en el Blueprint. `GEMINI_*`
+y `FIREBASE_*` también deben agregarse cuando esas funciones se habiliten.
 
 Configurar las credenciales en el gestor de secretos de la plataforma, nunca en
 Git. No habilitar acceso TCP público a la base si no hace falta.
