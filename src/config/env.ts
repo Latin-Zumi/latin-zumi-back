@@ -96,19 +96,23 @@ const envSchema = z.object({
   FIREBASE_CLIENT_EMAIL: optionalEnvString,
   FIREBASE_PRIVATE_KEY: optionalEnvString,
 
-  EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
-  RESEND_API_KEY: optionalEnvString,
-  EMAIL_FROM: z.string().min(3).default('Latin Zumi <latinzumi@proton.me>'),
-  PASSWORD_RESET_URL: z.string().url().default('https://latin-zumi-front-1x4s.vercel.app/restablecer-contrasena'),
-  PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
+  EMAIL_PROVIDER: z.enum(['console', 'ses']).default('console'),
+  AWS_REGION: optionalEnvString,
+  AWS_ACCESS_KEY_ID: optionalEnvString,
+  AWS_SECRET_ACCESS_KEY: optionalEnvString,
+  SES_FROM_EMAIL: z.string().min(3).default('Latin Zumi <no-reply@latinzumi.com>'),
+  FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+  PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(240).default(60),
   INTERNAL_CRON_SECRET: optionalEnvString,
 
 }).refine(
-  ({ EMAIL_PROVIDER, RESEND_API_KEY }) =>
-    EMAIL_PROVIDER !== 'resend' || Boolean(RESEND_API_KEY),
+  ({ EMAIL_PROVIDER, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY }) =>
+    EMAIL_PROVIDER !== 'ses' ||
+    Boolean(AWS_REGION && AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY),
   {
-    message: 'RESEND_API_KEY es obligatoria con EMAIL_PROVIDER=resend',
-    path: ['RESEND_API_KEY'],
+    message:
+      'AWS_REGION, AWS_ACCESS_KEY_ID y AWS_SECRET_ACCESS_KEY son obligatorias con EMAIL_PROVIDER=ses',
+    path: ['AWS_REGION'],
   },
 ).refine(
   ({ DATABASE_URL, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD }) =>

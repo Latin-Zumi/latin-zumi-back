@@ -34,18 +34,23 @@ export async function requestPasswordReset(
     [user.id, tokenHash, env.PASSWORD_RESET_TTL_MINUTES, requestedIp],
   );
 
-  const resetUrl = new URL(env.PASSWORD_RESET_URL);
+  const resetUrl = new URL(
+    'restablecer-contrasena',
+    `${env.FRONTEND_URL.replace(/\/+$/, '')}/`,
+  );
   resetUrl.searchParams.set('token', token);
 
   // Se envía después de responder. El tiempo de respuesta no depende de si el
-  // email existe y el usuario no espera a que Resend termine.
+  // email existe y el usuario no espera a que el proveedor termine.
   void provider
-    .sendPasswordReset({ to: user.email, nombre: user.nombre, resetUrl: resetUrl.toString() })
-    .catch((error: unknown) => {
-      console.error(
-        'No se pudo enviar el email de recuperación',
-        error instanceof Error ? error.message : error,
-      );
+    .sendPasswordReset({
+      to: user.email,
+      nombre: user.nombre,
+      resetUrl: resetUrl.toString(),
+      expiresInMinutes: env.PASSWORD_RESET_TTL_MINUTES,
+    })
+    .catch(() => {
+      console.error('No se pudo enviar el email de recuperación');
     });
 }
 

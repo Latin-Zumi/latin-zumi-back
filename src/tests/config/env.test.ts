@@ -61,14 +61,33 @@ describe('Email environment configuration', () => {
     vi.resetModules();
   });
 
-  it('defaults EMAIL_FROM to a valid display name and address', async () => {
+  it('defaults SES_FROM_EMAIL and password reset TTL', async () => {
     configureDatabaseEnvironment();
-    delete process.env.EMAIL_FROM;
+    vi.stubEnv('EMAIL_PROVIDER', 'console');
+    vi.stubEnv('AWS_REGION', '');
+    vi.stubEnv('AWS_ACCESS_KEY_ID', '');
+    vi.stubEnv('AWS_SECRET_ACCESS_KEY', '');
+    vi.stubEnv('SES_FROM_EMAIL', undefined);
+    vi.stubEnv('PASSWORD_RESET_TTL_MINUTES', undefined);
     vi.resetModules();
 
     const { env } = await import('../../config/env.js');
 
-    expect(env.EMAIL_FROM).toBe('Latin Zumi <no-reply@latinzumi.com>');
+    expect(env.SES_FROM_EMAIL).toBe('Latin Zumi <no-reply@latinzumi.com>');
+    expect(env.PASSWORD_RESET_TTL_MINUTES).toBe(60);
+  });
+
+  it('rejects SES when any AWS credential setting is missing', async () => {
+    configureDatabaseEnvironment();
+    vi.stubEnv('EMAIL_PROVIDER', 'ses');
+    vi.stubEnv('AWS_REGION', 'us-east-1');
+    vi.stubEnv('AWS_ACCESS_KEY_ID', '');
+    vi.stubEnv('AWS_SECRET_ACCESS_KEY', 'secret-for-test');
+    vi.resetModules();
+
+    await expect(import('../../config/env.js')).rejects.toThrow(
+      /AWS_REGION, AWS_ACCESS_KEY_ID y AWS_SECRET_ACCESS_KEY son obligatorias con EMAIL_PROVIDER=ses/,
+    );
   });
 });
 
