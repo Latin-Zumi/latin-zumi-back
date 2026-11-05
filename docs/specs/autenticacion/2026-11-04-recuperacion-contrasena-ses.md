@@ -172,8 +172,8 @@ la configuración. El token en claro nunca se guarda ni se registra.
 5. Ejecutar `npm test` y `npm run build`.
 6. Verificar manualmente en AWS y probar los endpoints.
 ## Cómo probar
-- [ ] `npm run build` compila y `npm test` pasa.
-- [ ] `EMAIL_PROVIDER=console` imprime el enlace en el log.
+- [x] `npm run build` compila y `npm test` pasa.
+- [x] `EMAIL_PROVIDER=console` imprime el enlace en el log.
 - [ ] `EMAIL_PROVIDER=ses` con remitente y destinatario verificados envía el
       correo y no registra el token.
 - [ ] `forgot-password` con email existente e inexistente devuelve el mismo
