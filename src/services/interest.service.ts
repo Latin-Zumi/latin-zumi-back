@@ -5,12 +5,14 @@ import { multiplyAndRoundHalfUp } from '../utils/decimal.js';
 export async function accrueInterest(): Promise<{ processed_days: number; transactions: number }> {
   const client = await pool.connect();
   let processedDays = 0, transactionCount = 0;
+
   try {
     await client.query('BEGIN');
     await client.query(`SELECT pg_advisory_xact_lock(hashtext('accrue-interest'))`);
     const last = await client.query<{ run_date: string }>(`SELECT run_date::text FROM interest_runs ORDER BY run_date DESC LIMIT 1`);
     const start = last.rows[0]?.run_date ?? null;
-    const dates = await client.query<{ day: string }>(`SELECT d::date::text day FROM generate_series(COALESCE(($1::date + 1)::timestamp, ((now() AT TIME ZONE 'UTC')::date - 1)::timestamp), (now() AT TIME ZONE 'UTC')::date - 1, interval '1 day') d`,[start]);
+    const dates = await client.query<{ day: string }>(`SELECT d::date::text AS "day" FROM generate_series(COALESCE(($1::date + 1)::timestamp, ((now() AT TIME ZONE 'UTC')::date - 1)::timestamp), (now() AT TIME ZONE 'UTC')::date - 1, interval '1 day') d`,[start]);
+
     for (const {day} of dates.rows) {
       const accounts = await client.query<{id:string; user_id:string; currency:string; balance:string; rate:string}>(
         `SELECT a.id,a.user_id,RTRIM(a.currency) currency,
@@ -18,6 +20,7 @@ export async function accrueInterest(): Promise<{ processed_days: number; transa
           COALESCE((SELECT r.annual_percent FROM interest_rates r WHERE r.currency=a.currency),0)::text rate
          FROM accounts a LEFT JOIN entries e ON e.account_id=a.id AND e.created_at < (($1::date + 1)::timestamp AT TIME ZONE 'UTC')
          WHERE a.account_type='user' AND a.closed_at IS NULL GROUP BY a.id,a.user_id,a.currency`,[day]);
+
       for (const account of accounts.rows) {
         const amount = multiplyAndRoundHalfUp(account.balance, (Number(account.rate)/36500).toFixed(12), 2);
         if (amount === '0.00') continue;
