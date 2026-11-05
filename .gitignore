@@ -56,3 +56,4 @@ build/
 *.bak
 *.old
 .neon
+docs/defensaPF.md
