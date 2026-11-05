@@ -7,8 +7,20 @@ interface SesClient {
   send(command: SendEmailCommand): Promise<unknown>;
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character] ?? character);
+}
+
 function buildResetEmailHtml(message: PasswordResetEmail): string {
-  const { nombre, resetUrl, expiresInMinutes } = message;
+  const nombre = escapeHtml(message.nombre);
+  const resetUrl = escapeHtml(message.resetUrl);
+  const { expiresInMinutes } = message;
   return `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
       <h2>Restablecé tu contraseña de Latin Zumi</h2>

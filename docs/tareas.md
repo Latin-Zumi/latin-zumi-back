@@ -233,7 +233,7 @@ Specs: [depósitos y cambio de moneda](./specs/cuentas-y-wallet/2026-10-27-depos
 - [x] Implementar `POST /wallet/deposits`, `GET /wallet/exchange/quote` y
   `POST /wallet/exchanges` con `exchange_quotes` (migración 011).
 - [x] Implementar `POST /auth/forgot-password` y `POST /auth/reset-password`
-  con tokens de un solo uso y proveedores `console`/`resend`.
+  con tokens de un solo uso y proveedores `console`/`ses` (Spec 052).
 - [x] Implementar `POST /auth/google` con Firebase Admin y `PATCH /users/me`.
 - [x] Aplicar la migración 008 y completar el perfil de los seeds demo.
 - [x] Mover los tests a `src/tests` y limitar el descubrimiento de Vitest.
