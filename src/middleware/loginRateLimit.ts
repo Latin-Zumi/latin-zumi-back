@@ -77,3 +77,10 @@ export const ratesRateLimit = rateLimit({
   limit: 120,
   keyGenerator: (req) => req.auth?.userId ?? 'anonymous',
 });
+
+// Cada mensaje consume el proveedor de IA, que tiene costo y cuota
+export const chatRateLimit = rateLimit({
+  ...commonOptions,
+  limit: 50,
+  keyGenerator: (req) => req.auth?.userId ?? 'anonymous',
+});

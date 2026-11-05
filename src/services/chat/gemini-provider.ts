@@ -129,8 +129,10 @@ export class GeminiChatProvider implements ChatProvider {
         suggestions,
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error del proveedor de IA';
-      throw new AppError(`No fue posible generar la respuesta del asistente: ${message}`, 503);
+      // El detalle queda en el log: puede traer datos internos del proveedor
+      const detail = error instanceof Error ? error.message : 'Error del proveedor de IA';
+      console.error(JSON.stringify({ event: 'chat_provider_error', detail }));
+      throw new AppError('No fue posible generar la respuesta del asistente', 503);
     } finally {
       if (mcpClient) {
         await mcpClient.close().catch(() => undefined);
