@@ -326,7 +326,7 @@ export const openApiSpec = {
         tags: ['auth'],
         summary: 'Solicitar recuperación de contraseña',
         description:
-          'Genera un token de un solo uso, válido por 30 minutos por defecto, y envía el enlace. Responde con el mismo mensaje exista o no el email.',
+          'Genera un token de un solo uso, válido por 60 minutos por defecto, y envía el enlace. Responde con el mismo mensaje exista o no el email.',
         operationId: 'forgotPassword',
         requestBody: {
           required: true,
@@ -946,4 +946,3 @@ export const openApiSpec = {
     },
   },
 } as const;
-
