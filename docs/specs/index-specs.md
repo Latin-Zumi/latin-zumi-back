@@ -62,6 +62,7 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 049 | [404 con contexto y sin stack en logs](./plataforma-y-documentacion/2026-11-04-log-404-contexto.md) | Cambia el log del `errorHandler` para que los `4xx` operativos registren método y pathname sin stack, y los `5xx` conserven el stack. No agrega rutas ni cambia contratos HTTP. |
 | 050 | [Cron verificable y remitente de email](./plataforma-y-documentacion/2026-11-04-cron-verificable-email-from.md) | Corrige el default de `EMAIL_FROM` y agrega un cliente `interest:run` más un workflow diario/manual de GitHub Actions que imprime `HTTP 200` y `processed_days`. No crea recursos pagos en Render. |
 | 051 | [Tasas y costos de la billetera (backend)](./cuentas-y-wallet/2026-11-04-tasas-billetera-backend.md) | Implementa `GET /wallet/rates` con las cuatro tasas sin spread, comisión e interés, y un límite propio. No escribe en `exchange_quotes`. Depende del contrato del front (rama `feat/tasas-reales-billetera`) y de los specs 044 y 046. |
+| 052 | [Recuperación de contraseña con Amazon SES](./autenticacion/2026-11-04-recuperacion-contrasena-ses.md) | Reemplaza el proveedor Resend del flujo del spec 036 por SES v2, ajusta el TTL a 60 minutos y documenta el correo HTML + texto. No cambia rutas ni el esquema de tokens. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de
