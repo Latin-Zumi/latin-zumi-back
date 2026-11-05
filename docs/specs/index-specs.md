@@ -63,6 +63,7 @@ de sus fundamentos. Los nuevos specs reciben el siguiente número libre.
 | 050 | [Cron verificable y remitente de email](./plataforma-y-documentacion/2026-11-04-cron-verificable-email-from.md) | Corrige el default de `EMAIL_FROM` y agrega un cliente `interest:run` más un workflow diario/manual de GitHub Actions que imprime `HTTP 200` y `processed_days`. No crea recursos pagos en Render. |
 | 051 | [Tasas y costos de la billetera (backend)](./cuentas-y-wallet/2026-11-04-tasas-billetera-backend.md) | Implementa `GET /wallet/rates` con las cuatro tasas sin spread, comisión e interés, y un límite propio. No escribe en `exchange_quotes`. Depende del contrato del front (rama `feat/tasas-reales-billetera`) y de los specs 044 y 046. |
 | 052 | [Recuperación de contraseña con Amazon SES](./autenticacion/2026-11-04-recuperacion-contrasena-ses.md) | Reemplaza el proveedor Resend del flujo del spec 036 por SES v2, ajusta el TTL a 60 minutos y documenta el correo HTML + texto. No cambia rutas ni el esquema de tokens. |
+| 053 | [Límite de pedidos y errores del chat](./plataforma-y-documentacion/2026-11-04-chat-limite-y-errores.md) | Limita `POST /chat/messages` por usuario y deja el error del proveedor solo en el log. |
 
 Los órdenes 014–016 reflejan la secuencia documental del historial, no una
 afirmación de que sus diseños sean todos compatibles entre sí. Antes de

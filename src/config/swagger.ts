@@ -163,6 +163,7 @@ export const openApiSpec = {
           },
           '400': { description: 'Payload inválido o mensaje fuera de rango.' },
           '401': { description: 'Se requiere autenticación válida.' },
+          '429': { description: 'Se superó el límite de 50 mensajes cada 15 minutos por usuario.' },
           '503': { description: 'El servicio del asistente IA no está disponible.' },
         },
       },

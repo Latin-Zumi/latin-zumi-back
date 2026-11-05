@@ -71,6 +71,28 @@ describe('GeminiChatProvider', () => {
     expect(serializedRequest).toContain('No tienes herramientas para ejecutar código, consultas SQL ni operaciones financieras');
   });
 
+  it('does not expose the provider error in the response', async () => {
+    connect.mockRejectedValueOnce(new Error('MCP unavailable'));
+    generateContent.mockRejectedValueOnce(new Error('detalle interno del proveedor'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const provider = new GeminiChatProvider('test-key-not-real', 'test-model', {
+      authorizationHeader: '******',
+      mcpServerUrl: 'http://localhost:3000',
+    });
+
+    const error = await provider.generateReply({
+      conversationId: 'conversation-3',
+      message: 'Hola',
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({
+      statusCode: 503,
+      message: 'No fue posible generar la respuesta del asistente',
+    });
+    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('detalle interno del proveedor'));
+    consoleError.mockRestore();
+  });
+
   it('closes the MCP client and falls back to Gemini without tools when MCP connection fails', async () => {
     connect.mockRejectedValueOnce(new Error('MCP unavailable'));
     const provider = new GeminiChatProvider('test-key-not-real', 'test-model', {

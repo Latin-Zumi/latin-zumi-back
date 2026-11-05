@@ -113,6 +113,32 @@ describe('POST /chat/messages', () => {
     });
   });
 
+  it('limits each user to 50 messages per window', async () => {
+    findActiveSession.mockImplementation(async (token: string) => ({
+      userId: token === 'limited-token'
+        ? '20000000-0000-4000-8000-000000000002'
+        : '20000000-0000-4000-8000-000000000003',
+      sessionId: '30000000-0000-4000-8000-000000000002',
+      passwordChangeRequired: false,
+    }));
+    sendChatMessage.mockResolvedValue({ message: 'Hola', conversationId: 'c', suggestions: [] });
+    const send = (token: string) => fetch(`${baseUrl}/chat/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ message: 'Hola' }),
+    });
+
+    for (let index = 0; index < 50; index += 1) {
+      expect((await send('limited-token')).status).toBe(200);
+    }
+    const limited = await send('limited-token');
+
+    expect(limited.status).toBe(429);
+    await expect(limited.json()).resolves.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+    expect(sendChatMessage).toHaveBeenCalledTimes(50);
+    expect((await send('other-token')).status).toBe(200);
+  });
+
   it('requires authentication', async () => {
     const response = await fetch(`${baseUrl}/chat/messages`, {
       method: 'POST',
